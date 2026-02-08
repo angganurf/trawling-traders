@@ -91,12 +91,10 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<LoginIntegration> {
         .execute(&pool)
         .await
         .ok();
-    sqlx::query(
-        "CREATE TABLE _sqlx_migrations_login_backup AS SELECT * FROM _sqlx_migrations",
-    )
-    .execute(&pool)
-    .await
-    .ok();
+    sqlx::query("CREATE TABLE _sqlx_migrations_login_backup AS SELECT * FROM _sqlx_migrations")
+        .execute(&pool)
+        .await
+        .ok();
     sqlx::query("DELETE FROM _sqlx_migrations")
         .execute(&pool)
         .await
