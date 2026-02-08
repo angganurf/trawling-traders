@@ -55,57 +55,11 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         cedros_pay::config::SchemaMapping::default(),
     ));
 
-    // WORKAROUND: cedros-login and cedros-pay share 13 migration version numbers
-    // (20260123-20260202 range) with different SQL content. cedros-login runs first
-    // and inserts its checksums; cedros-pay then fails with "previously applied but
-    // has been modified". Fix: temporarily remove conflicting entries so cedros-pay
-    // can re-apply them idempotently.
-    // BUG: https://github.com/cedros-io — packages need non-overlapping version ranges.
-    let conflicting: &[i64] = &[
-        20260123000001, 20260124000001, 20260125000001, 20260126000001,
-        20260127000001, 20260128000001, 20260130000001, 20260130000002,
-        20260131000001, 20260201000001, 20260202000001, 20260202000002,
-        20260202000003,
-    ];
-    // Save cedros-login's entries so we can restore them after cedros-pay migrates
-    let saved_rows: Vec<(i64, Vec<u8>)> = sqlx::query_as(
-        "SELECT version, checksum FROM _sqlx_migrations WHERE version = ANY($1)",
-    )
-    .bind(conflicting)
-    .fetch_all(&pool)
-    .await
-    .unwrap_or_default();
-
-    if !saved_rows.is_empty() {
-        sqlx::query("DELETE FROM _sqlx_migrations WHERE version = ANY($1)")
-            .bind(conflicting)
-            .execute(&pool)
-            .await?;
-    }
-
     // Build Cedros Pay router with shared pool (runs auto-migrations).
-    // cedros-pay v1.1.8+ uses ignore_missing so it tolerates foreign entries
-    // in _sqlx_migrations from our app and cedros-login.
-    let router_result = cedros_pay::router_with_pool(&cfg, store, Some(pool.clone()))
+    // v1.1.9+ has non-overlapping migration versions with cedros-login.
+    let router = cedros_pay::router_with_pool(&cfg, store, Some(pool))
         .await
-        .map_err(|e| anyhow::anyhow!("{}", e));
-
-    // Restore cedros-login's entries for the conflicting versions so cedros-login
-    // passes checksum validation on next restart.
-    for (version, checksum) in &saved_rows {
-        sqlx::query(
-            "INSERT INTO _sqlx_migrations (version, description, installed_on, success, checksum, execution_time) \
-             VALUES ($1, 'cedros-login-restored', NOW(), true, $2, 0) \
-             ON CONFLICT (version) DO UPDATE SET checksum = $2",
-        )
-        .bind(version)
-        .bind(checksum)
-        .execute(&pool)
-        .await
-        .ok();
-    }
-
-    let router = router_result?;
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     Ok(router)
 }
