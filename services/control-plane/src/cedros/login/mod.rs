@@ -84,25 +84,15 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<LoginIntegration> {
     let jwt_service = JwtService::try_new(&config.jwt)
         .map_err(|e| anyhow::anyhow!("Failed to create JwtService: {}", e))?;
 
-    // cedros-login's embedded migrator rejects unknown entries in _sqlx_migrations.
-    // Strategy: backup ALL entries, clear the table for a clean cedros-login migration,
-    // then restore non-cedros-login entries (our app's + cedros-pay's) afterwards.
-    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_login_backup")
+    // cedros-login v0.0.13+ uses ignore_missing so it tolerates foreign entries
+    // in _sqlx_migrations from our app and cedros-pay. But cedros-login has 55+
+    // non-idempotent DDL statements, so we still drop its tables and re-run from
+    // scratch on every startup. Only delete cedros-login's own migration entries
+    // (version >= 20240101000000) — leave our app's and cedros-pay's entries intact.
+    sqlx::query("DELETE FROM _sqlx_migrations WHERE version >= 20240101000000")
         .execute(&pool)
         .await
         .ok();
-    sqlx::query("CREATE TABLE _sqlx_migrations_login_backup AS SELECT * FROM _sqlx_migrations")
-        .execute(&pool)
-        .await
-        .ok();
-    sqlx::query("DELETE FROM _sqlx_migrations")
-        .execute(&pool)
-        .await
-        .ok();
-
-    // cedros-login has 55+ non-idempotent DDL statements, so we always
-    // reset to avoid partial state. Drop ALL cedros-login objects and re-run from
-    // scratch. Adds ~1s to startup but guarantees correctness. Users table preserved.
     login_migrations::drop_all_cedros_tables(&pool).await;
     login_migrations::drop_orphaned_cedros_indexes(&pool).await;
 
@@ -117,21 +107,6 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<LoginIntegration> {
     if storage_result.is_ok() {
         login_migrations::post_apply_skipped_migrations(&pool).await;
     }
-
-    // Restore all non-cedros-login entries (our app's + cedros-pay's) from backup.
-    // Entries that cedros-login just created are already in _sqlx_migrations;
-    // ON CONFLICT skips those so we don't overwrite fresh entries.
-    sqlx::query(
-        "INSERT INTO _sqlx_migrations SELECT * FROM _sqlx_migrations_login_backup \
-         ON CONFLICT (version) DO NOTHING",
-    )
-    .execute(&pool)
-    .await
-    .ok();
-    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_login_backup")
-        .execute(&pool)
-        .await
-        .ok();
 
     let storage = storage_result
         .map_err(|e| anyhow::anyhow!("Failed to create cedros-login storage: {:?}", e))?;

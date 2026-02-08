@@ -58,43 +58,14 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         cedros_pay::config::SchemaMapping::default(),
     ));
 
-    // cedros-pay's migrator may reject unknown entries in _sqlx_migrations.
-    // Backup all entries, clear the table for a clean migration, then restore
-    // non-cedros-pay entries (our app's + cedros-login's) afterwards.
-    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_backup")
-        .execute(&pool)
+    // Build Cedros Pay router with shared pool (runs auto-migrations).
+    // cedros-pay v1.1.8+ uses ignore_missing so it tolerates foreign entries
+    // in _sqlx_migrations from our app and cedros-login.
+    let router = cedros_pay::router_with_pool(&cfg, store, Some(pool))
         .await
-        .ok();
-    sqlx::query("CREATE TABLE _sqlx_migrations_pay_backup AS SELECT * FROM _sqlx_migrations")
-        .execute(&pool)
-        .await
-        .ok();
-    sqlx::query("DELETE FROM _sqlx_migrations")
-        .execute(&pool)
-        .await
-        .ok();
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    // Build Cedros Pay router with shared pool (runs auto-migrations)
-    let router_result = cedros_pay::router_with_pool(&cfg, store, Some(pool.clone()))
-        .await
-        .map_err(|e| anyhow::anyhow!("{}", e));
-
-    // Restore all non-cedros-pay entries from backup.
-    // cedros-pay's fresh entries are already in _sqlx_migrations;
-    // ON CONFLICT skips those so we don't overwrite.
-    sqlx::query(
-        "INSERT INTO _sqlx_migrations SELECT * FROM _sqlx_migrations_pay_backup \
-         ON CONFLICT (version) DO NOTHING",
-    )
-    .execute(&pool)
-    .await
-    .ok();
-    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_backup")
-        .execute(&pool)
-        .await
-        .ok();
-
-    router_result
+    Ok(router)
 }
 
 /// Simple placeholder routes (used when full integration not configured)
