@@ -35,7 +35,7 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
     // Server config - derived from our platform settings
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     cfg.server.address = format!("0.0.0.0:{}", port);
-    cfg.server.public_url = public_url;
+    cfg.server.public_url = format!("{}/v1/pay", public_url);
     cfg.server.route_prefix = "".to_string(); // Empty - nesting at /v1/pay handles the prefix
     cfg.server.cors_disabled = true; // Host app manages CORS for all routes
 
