@@ -58,21 +58,20 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         cedros_pay::config::SchemaMapping::default(),
     ));
 
-    // cedros-pay's migrator rejects unknown entries in _sqlx_migrations.
-    // Our app uses sequential versions (1-6), cedros-login uses timestamps (20241212...).
-    // Stash non-cedros-pay entries so the migrator only sees its own, then restore.
-    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_stash")
+    // cedros-pay's migrator may reject unknown entries in _sqlx_migrations.
+    // Backup all entries, clear the table for a clean migration, then restore
+    // non-cedros-pay entries (our app's + cedros-login's) afterwards.
+    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_backup")
         .execute(&pool)
         .await
         .ok();
     sqlx::query(
-        "CREATE TABLE _sqlx_migrations_pay_stash AS \
-         SELECT * FROM _sqlx_migrations WHERE version < 1000000",
+        "CREATE TABLE _sqlx_migrations_pay_backup AS SELECT * FROM _sqlx_migrations",
     )
     .execute(&pool)
     .await
     .ok();
-    sqlx::query("DELETE FROM _sqlx_migrations WHERE version < 1000000")
+    sqlx::query("DELETE FROM _sqlx_migrations")
         .execute(&pool)
         .await
         .ok();
@@ -82,15 +81,17 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         .await
         .map_err(|e| anyhow::anyhow!("{}", e));
 
-    // Always restore our entries regardless of success/failure
+    // Restore all non-cedros-pay entries from backup.
+    // cedros-pay's fresh entries are already in _sqlx_migrations;
+    // ON CONFLICT skips those so we don't overwrite.
     sqlx::query(
-        "INSERT INTO _sqlx_migrations SELECT * FROM _sqlx_migrations_pay_stash \
+        "INSERT INTO _sqlx_migrations SELECT * FROM _sqlx_migrations_pay_backup \
          ON CONFLICT (version) DO NOTHING",
     )
     .execute(&pool)
     .await
     .ok();
-    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_stash")
+    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_backup")
         .execute(&pool)
         .await
         .ok();
