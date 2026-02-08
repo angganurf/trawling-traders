@@ -1,10 +1,8 @@
 //! Cedros Login integration - Embedded authentication server
 //!
-//! Uses cedros-login-server 0.0.4 with PostgreSQL storage.
+//! Uses cedros-login-server with PostgreSQL storage.
 //! Provides email/password, Google OAuth, and Solana wallet sign-in.
-//! Auto-migrates its own tables on startup.
-
-mod login_migrations;
+//! Auto-migrates its own tables on startup (idempotent + ignore_missing).
 
 use axum::Router;
 use cedros_login::services::JwtService;
@@ -84,31 +82,10 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<LoginIntegration> {
     let jwt_service = JwtService::try_new(&config.jwt)
         .map_err(|e| anyhow::anyhow!("Failed to create JwtService: {}", e))?;
 
-    // cedros-login v0.0.13+ uses ignore_missing so it tolerates foreign entries
-    // in _sqlx_migrations from our app and cedros-pay. But cedros-login has 55+
-    // non-idempotent DDL statements, so we still drop its tables and re-run from
-    // scratch on every startup. Only delete cedros-login's own migration entries
-    // (version >= 20240101000000) — leave our app's and cedros-pay's entries intact.
-    sqlx::query("DELETE FROM _sqlx_migrations WHERE version >= 20240101000000")
-        .execute(&pool)
+    // cedros-login now uses idempotent DDL + ignore_missing, so it handles
+    // its own migrations cleanly alongside our app's and cedros-pay's entries.
+    let storage = cedros_login::Storage::postgres_with_pool(pool)
         .await
-        .ok();
-    login_migrations::drop_all_cedros_tables(&pool).await;
-    login_migrations::drop_orphaned_cedros_indexes(&pool).await;
-
-    // Pre-insert migration entries for buggy cedros-login migrations:
-    // - 4 migrations use CREATE INDEX CONCURRENTLY (can't run in sqlx transactions)
-    // - 20260123000001: duplicate index name conflict
-    login_migrations::pre_apply_buggy_migrations(&pool).await;
-
-    let storage_result = cedros_login::Storage::postgres_with_pool(pool.clone()).await;
-
-    // Post-apply DDL for skipped migrations. Tables are now created by the migrator.
-    if storage_result.is_ok() {
-        login_migrations::post_apply_skipped_migrations(&pool).await;
-    }
-
-    let storage = storage_result
         .map_err(|e| anyhow::anyhow!("Failed to create cedros-login storage: {:?}", e))?;
 
     let callback = Arc::new(cedros_login::NoopCallback);
