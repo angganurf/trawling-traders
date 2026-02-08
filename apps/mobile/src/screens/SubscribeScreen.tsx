@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
+    fontFamily: lightTheme.typography.families.display,
     textAlign: 'center',
     color: lightTheme.colors.wave[900],
     marginBottom: 8,
@@ -169,12 +170,14 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.wave[900],
     marginBottom: 8,
   },
   planPrice: {
     fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.accent,
   },
   features: {

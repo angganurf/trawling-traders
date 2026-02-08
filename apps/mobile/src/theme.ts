@@ -138,6 +138,10 @@ export const typography = {
     semibold: '600',
     bold: '700',
   },
+  families: {
+    display: 'BNRumble',    // Brand display font for headlines
+    body: undefined,        // System default
+  },
 };
 
 export const shadows = {

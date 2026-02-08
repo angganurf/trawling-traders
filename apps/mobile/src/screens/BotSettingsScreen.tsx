@@ -463,6 +463,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.wave[900],
   },
   headerSubtitle: {

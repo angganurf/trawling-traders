@@ -83,7 +83,7 @@ export function AppNavigator() {
             backgroundColor: lightTheme.colors.primary[900],
           },
           headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '600' },
+          headerTitleStyle: { fontWeight: '600', fontFamily: lightTheme.typography.families.display },
         }}
       >
         <Stack.Screen

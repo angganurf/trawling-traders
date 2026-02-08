@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   botBadgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
   statusDot: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#fff' },
   headerInfo: { flex: 1 },
-  botName: { fontSize: 24, fontWeight: 'bold', color: lightTheme.colors.wave[900] },
+  botName: { fontSize: 24, fontWeight: 'bold', fontFamily: lightTheme.typography.families.display, color: lightTheme.colors.wave[900] },
   statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8, flexWrap: 'wrap' },
   statusText: { fontSize: 14, fontWeight: '600', color: lightTheme.colors.wave[700] },
   pendingBadge: { backgroundColor: lightTheme.colors.caution[500], paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },

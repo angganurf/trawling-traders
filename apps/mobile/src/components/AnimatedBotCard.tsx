@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
   botName: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.text,
     marginBottom: 4,
   },

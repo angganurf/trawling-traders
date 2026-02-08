@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 24,
     fontWeight: 'bold',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.wave[800],
     marginBottom: 12,
   },
@@ -326,12 +327,14 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.accent,
     marginBottom: 8,
   },
   title: {
     fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: lightTheme.typography.families.display,
     color: lightTheme.colors.wave[900],
     marginBottom: 12,
   },
