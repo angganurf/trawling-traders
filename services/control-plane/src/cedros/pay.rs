@@ -1,6 +1,6 @@
 //! Cedros Pay integration - Full payment and subscription support
 //!
-//! Uses cedros-pay 1.1.4 with SQLx 0.8 compatibility.
+//! Uses cedros-pay 1.1.8+ with SQLx 0.8 compatibility.
 //! Stripe configuration is managed via cedros-pay's admin dashboard,
 //! not environment variables.
 
@@ -49,12 +49,9 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
     cfg.cedros_login.enabled = true;
     cfg.cedros_login.base_url = login_base;
 
-    // Create PostgresPool wrapper from existing pool
-    let cedros_pool = cedros_pay::storage::PostgresPool::from_pool(pool.clone());
-
-    // Create PostgresStore
-    let store = Arc::new(cedros_pay::storage::PostgresStore::new(
-        cedros_pool,
+    // Create PostgresStore from shared pool (single-step API from embedding guide)
+    let store = Arc::new(cedros_pay::storage::PostgresStore::from_pool(
+        pool.clone(),
         cedros_pay::config::SchemaMapping::default(),
     ));
 

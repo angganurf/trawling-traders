@@ -43,6 +43,7 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<LoginIntegration> {
     let config = cedros_login::Config {
         server: cedros_login::config::ServerConfig {
             auth_base_path: "".to_string(), // Empty - nesting at /v1/auth handles the prefix
+            bootstrap_admin_email: std::env::var("BOOTSTRAP_ADMIN_EMAIL").ok(),
             ..Default::default()
         },
         jwt: cedros_login::config::JwtConfig {
