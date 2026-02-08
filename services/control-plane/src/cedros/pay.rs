@@ -43,6 +43,12 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
     cfg.paywall.postgres_url = Some(database_url.clone());
     cfg.coupons.postgres_url = Some(database_url);
 
+    // Cedros Login integration - allows cedros-pay to validate admin JWTs
+    // by fetching JWKS from our embedded cedros-login instance
+    let login_base = format!("http://127.0.0.1:{}/v1/auth", port);
+    cfg.cedros_login.enabled = true;
+    cfg.cedros_login.base_url = login_base;
+
     // Create PostgresPool wrapper from existing pool
     let cedros_pool = cedros_pay::storage::PostgresPool::from_pool(pool.clone());
 
