@@ -58,12 +58,44 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         cedros_pay::config::SchemaMapping::default(),
     ));
 
-    // Build Cedros Pay router with shared pool
-    let router = cedros_pay::router_with_pool(&cfg, store, Some(pool))
+    // cedros-pay's migrator rejects unknown entries in _sqlx_migrations.
+    // Our app uses sequential versions (1-6), cedros-login uses timestamps (20241212...).
+    // Stash non-cedros-pay entries so the migrator only sees its own, then restore.
+    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_stash")
+        .execute(&pool)
         .await
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        .ok();
+    sqlx::query(
+        "CREATE TABLE _sqlx_migrations_pay_stash AS \
+         SELECT * FROM _sqlx_migrations WHERE version < 1000000",
+    )
+    .execute(&pool)
+    .await
+    .ok();
+    sqlx::query("DELETE FROM _sqlx_migrations WHERE version < 1000000")
+        .execute(&pool)
+        .await
+        .ok();
 
-    Ok(router)
+    // Build Cedros Pay router with shared pool (runs auto-migrations)
+    let router_result = cedros_pay::router_with_pool(&cfg, store, Some(pool.clone()))
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e));
+
+    // Always restore our entries regardless of success/failure
+    sqlx::query(
+        "INSERT INTO _sqlx_migrations SELECT * FROM _sqlx_migrations_pay_stash \
+         ON CONFLICT (version) DO NOTHING",
+    )
+    .execute(&pool)
+    .await
+    .ok();
+    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations_pay_stash")
+        .execute(&pool)
+        .await
+        .ok();
+
+    Ok(router_result?)
 }
 
 /// Simple placeholder routes (used when full integration not configured)
