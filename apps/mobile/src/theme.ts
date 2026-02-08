@@ -47,6 +47,20 @@ export const colors = {
     900: '#14532d',
   },
 
+  // Amber Accent - Primary CTA / Brand highlight (from web theme)
+  accent: {
+    50: '#fff8eb',
+    100: '#ffefc6',
+    200: '#ffe099',
+    300: '#ffcc66',
+    400: '#ffb24f',  // Dark mode accent
+    500: '#ff9f43',  // Main accent orange
+    600: '#e88a2e',
+    700: '#c4711e',
+    800: '#9d5818',
+    900: '#7a4315',
+  },
+
   // Caution Yellow - Warning
   caution: {
     50: '#fefce8',
@@ -150,19 +164,21 @@ export const shadows = {
   },
 };
 
-// Light theme
+// Light theme - nautical styling from web theme
 export const lightTheme = {
   colors: {
-    background: '#f8fafc',
-    surface: '#ffffff',
+    ...colors,
+    background: '#e9f5ff',       // Ocean-tinted background (web: --background)
+    surface: '#f8fcff',          // Frosted card surface (web: --card)
     surfaceElevated: '#ffffff',
     primary: colors.primary[900],
     primaryLight: colors.primary[700],
-    text: colors.wave[900],
+    accent: colors.accent[500],  // Orange CTA accent (string shorthand)
+    text: '#112c3f',             // Deep navy text (web: --foreground)
     textSecondary: colors.wave[600],
     textMuted: colors.wave[400],
     border: colors.wave[200],
-    ...colors,
+    cardBorder: '#7ecae0',       // Nautical card border (web: --card-border)
   },
   spacing,
   borderRadius,
@@ -170,19 +186,21 @@ export const lightTheme = {
   shadows,
 };
 
-// Dark theme
+// Dark theme - deep navy from web theme
 export const darkTheme = {
   colors: {
-    background: colors.wave[950],
-    surface: colors.wave[900],
+    ...colors,
+    background: '#06263b',       // Deep navy (web: --background)
+    surface: '#0d3a56',          // Dark card surface (web: --card)
     surfaceElevated: colors.wave[800],
     primary: colors.primary[400],
     primaryLight: colors.primary[300],
-    text: colors.wave[50],
+    accent: colors.accent[400],  // Amber accent for dark (string shorthand)
+    text: '#eaf9ff',             // Light text (web: --foreground)
     textSecondary: colors.wave[400],
     textMuted: colors.wave[600],
     border: colors.wave[800],
-    ...colors,
+    cardBorder: '#2b6d91',       // Nautical card border (web: --card-border)
   },
   spacing,
   borderRadius,

@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: lightTheme.colors.primary[700],
+    borderColor: lightTheme.colors.cardBorder,
   },
   badge: {
     position: 'absolute',
@@ -148,8 +148,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   planCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
+    backgroundColor: lightTheme.colors.surface,
+    borderRadius: 24,
     padding: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
     borderWidth: 2,
-    borderColor: lightTheme.colors.primary[200],
+    borderColor: lightTheme.colors.cardBorder,
   },
   planHeader: {
     alignItems: 'center',
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   planPrice: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: lightTheme.colors.primary[700],
+    color: lightTheme.colors.accent,
   },
   features: {
     marginBottom: 24,
@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   subscribeButton: {
-    backgroundColor: lightTheme.colors.primary[700],
+    backgroundColor: lightTheme.colors.accent,
     paddingVertical: 16,
-    borderRadius: 12,
-    shadowColor: lightTheme.colors.primary[700],
+    borderRadius: 20,
+    shadowColor: lightTheme.colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

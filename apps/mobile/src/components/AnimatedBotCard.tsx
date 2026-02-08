@@ -7,6 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import type { Bot } from '@trawling-traders/types';
+import { lightTheme } from '../theme';
 import { pressScale } from '../utils/animations';
 
 interface AnimatedBotCardProps {
@@ -17,18 +18,18 @@ interface AnimatedBotCardProps {
 
 function StatusBadge({ status }: { status: Bot['status'] }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
-  const colors: Record<Bot['status'], { bg: string; text: string }> = {
-    provisioning: { bg: '#FFA500', text: '#fff' },
-    online: { bg: '#4CAF50', text: '#fff' },
-    offline: { bg: '#9E9E9E', text: '#fff' },
-    paused: { bg: '#FFC107', text: '#000' },
-    error: { bg: '#F44336', text: '#fff' },
-    destroying: { bg: '#9C27B0', text: '#fff' },
+
+  const statusColors: Record<Bot['status'], { bg: string; text: string }> = {
+    provisioning: { bg: lightTheme.colors.accent, text: '#fff' },
+    online: { bg: lightTheme.colors.bullish[500], text: '#fff' },
+    offline: { bg: lightTheme.colors.wave[400], text: '#fff' },
+    paused: { bg: lightTheme.colors.caution[500], text: lightTheme.colors.wave[900] },
+    error: { bg: lightTheme.colors.lobster[500], text: '#fff' },
+    destroying: { bg: lightTheme.colors.wave[500], text: '#fff' },
   };
-  
-  const color = colors[status];
-  
+
+  const color = statusColors[status];
+
   // Pulse animation for provisioning/loading states
   useEffect(() => {
     if (status === 'provisioning' || status === 'destroying') {
@@ -50,7 +51,7 @@ function StatusBadge({ status }: { status: Bot['status'] }) {
       return () => pulse.stop();
     }
   }, [status, pulseAnim]);
-  
+
   return (
     <Animated.View
       style={[
@@ -70,10 +71,10 @@ function StatusBadge({ status }: { status: Bot['status'] }) {
 
 function PnLDisplay({ value }: { value?: number }) {
   if (value === undefined) return null;
-  
+
   const isPositive = value >= 0;
   const formatted = `${isPositive ? '+' : ''}${value.toFixed(2)}`;
-  
+
   return (
     <View style={styles.pnlContainer}>
       <Text style={[styles.pnlLabel, isPositive ? styles.positive : styles.negative]}>
@@ -88,7 +89,7 @@ export function AnimatedBotCard({ bot, onPress, index = 0 }: AnimatedBotCardProp
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
-  
+
   // Entrance animation
   useEffect(() => {
     Animated.parallel([
@@ -107,15 +108,15 @@ export function AnimatedBotCard({ bot, onPress, index = 0 }: AnimatedBotCardProp
       }),
     ]).start();
   }, [index, fadeAnim, translateY]);
-  
+
   const handlePressIn = () => {
     pressScale(scaleAnim, true);
   };
-  
+
   const handlePressOut = () => {
     pressScale(scaleAnim, false);
   };
-  
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -142,7 +143,7 @@ export function AnimatedBotCard({ bot, onPress, index = 0 }: AnimatedBotCardProp
           </View>
           <StatusBadge status={bot.status} />
         </View>
-        
+
         <View style={styles.cardBody}>
           <PnLDisplay value={bot.todayPnl} />
 
@@ -158,10 +159,10 @@ export function AnimatedBotCard({ bot, onPress, index = 0 }: AnimatedBotCardProp
             </View>
           )}
         </View>
-        
+
         {bot.configStatus === 'pending' && (
           <View style={styles.pendingBanner}>
-            <Text style={styles.pendingText}>⏳ Config update pending</Text>
+            <Text style={styles.pendingText}>Config update pending</Text>
           </View>
         )}
       </Animated.View>
@@ -171,8 +172,8 @@ export function AnimatedBotCard({ bot, onPress, index = 0 }: AnimatedBotCardProp
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: lightTheme.colors.surface,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: lightTheme.colors.cardBorder,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -195,12 +196,12 @@ const styles = StyleSheet.create({
   botName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: lightTheme.colors.text,
     marginBottom: 4,
   },
   persona: {
     fontSize: 14,
-    color: '#666',
+    color: lightTheme.colors.textSecondary,
     textTransform: 'capitalize',
     fontWeight: '500',
   },
@@ -232,14 +233,14 @@ const styles = StyleSheet.create({
   },
   pnlSuffix: {
     fontSize: 14,
-    color: '#999',
+    color: lightTheme.colors.textMuted,
     fontWeight: '500',
   },
   positive: {
-    color: '#22c55e',
+    color: lightTheme.colors.bullish[500],
   },
   negative: {
-    color: '#ef4444',
+    color: lightTheme.colors.lobster[500],
   },
   heartbeatContainer: {
     flexDirection: 'row',
@@ -250,25 +251,25 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22c55e',
+    backgroundColor: lightTheme.colors.bullish[500],
   },
   heartbeat: {
     fontSize: 12,
-    color: '#999',
+    color: lightTheme.colors.textMuted,
     fontWeight: '500',
   },
   pendingBanner: {
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#fffbeb',
+    backgroundColor: lightTheme.colors.caution[50],
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#fcd34d',
+    borderColor: lightTheme.colors.caution[300],
   },
   pendingText: {
     fontSize: 13,
-    color: '#92400e',
+    color: lightTheme.colors.caution[700],
     fontWeight: '500',
   },
 });

@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   button: {
-    backgroundColor: lightTheme.colors.primary,
+    backgroundColor: lightTheme.colors.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   buttonText: {
     color: '#fff',

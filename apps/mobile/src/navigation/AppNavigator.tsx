@@ -1,6 +1,9 @@
+import React from 'react';
+import { Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { lightTheme } from '../theme';
 
 // Screens
 import { AuthScreen } from '../screens/AuthScreen';
@@ -32,16 +35,38 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Main tab navigator (after auth)
 function MainTabs() {
   return (
-    <Tab.Navigator>
-      <Tab.Screen 
-        name="Bots" 
-        component={BotsListScreen} 
-        options={{ title: 'My Bots' }}
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: lightTheme.colors.primary[900],
+          borderTopWidth: 0,
+          paddingBottom: 4,
+          height: 56,
+        },
+        tabBarActiveTintColor: lightTheme.colors.accent,
+        tabBarInactiveTintColor: lightTheme.colors.primary[400],
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Tab.Screen
+        name="Bots"
+        component={BotsListScreen}
+        options={{
+          title: 'My Trawlers',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🦞</Text>,
+        }}
       />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen} 
-        options={{ title: 'Account' }}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'Account',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚓</Text>,
+        }}
       />
     </Tab.Navigator>
   );
@@ -51,14 +76,23 @@ function MainTabs() {
 export function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Auth">
-        <Stack.Screen 
-          name="Auth" 
+      <Stack.Navigator
+        initialRouteName="Auth"
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: lightTheme.colors.primary[900],
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      >
+        <Stack.Screen
+          name="Auth"
           component={AuthScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="Subscribe" 
+        <Stack.Screen
+          name="Subscribe"
           component={SubscribeScreen}
           options={{ title: 'Subscribe' }}
         />
