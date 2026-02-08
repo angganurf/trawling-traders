@@ -95,7 +95,7 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         .await
         .ok();
 
-    Ok(router_result?)
+    router_result
 }
 
 /// Simple placeholder routes (used when full integration not configured)
