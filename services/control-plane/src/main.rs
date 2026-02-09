@@ -41,8 +41,18 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    // Read max concurrent provisions from DB config (requires restart to change)
+    let max_concurrent: usize = control_plane::config::get_config_or(
+        &db,
+        control_plane::config::keys::MAX_CONCURRENT_PROVISIONS,
+        "3",
+    )
+    .await
+    .parse()
+    .unwrap_or(3);
+
     // Create app state with all components
-    let mut app_state = control_plane::AppState::new(db.clone());
+    let mut app_state = control_plane::AppState::new(db.clone(), max_concurrent);
     if let Some(ref integration) = login_integration {
         app_state = app_state.with_jwt_service(integration.jwt_service.clone());
     }
@@ -255,6 +265,37 @@ async fn build_router(
         .route(
             "/audit",
             get(control_plane::handlers::admin::get_audit_log_entries),
+        )
+        // Admin bots list
+        .route(
+            "/bots",
+            get(control_plane::handlers::admin_bots::list_admin_bots),
+        )
+        // Provisioning settings
+        .route(
+            "/provisioning/settings",
+            get(control_plane::handlers::admin_provisioning::get_provisioning_settings),
+        )
+        .route(
+            "/provisioning/settings",
+            patch(control_plane::handlers::admin_provisioning::update_provisioning_settings),
+        )
+        // Presets CRUD
+        .route(
+            "/presets",
+            get(control_plane::handlers::presets::list_presets),
+        )
+        .route(
+            "/presets",
+            post(control_plane::handlers::presets::create_preset),
+        )
+        .route(
+            "/presets/{id}",
+            patch(control_plane::handlers::presets::update_preset),
+        )
+        .route(
+            "/presets/{id}",
+            axum::routing::delete(control_plane::handlers::presets::delete_preset),
         )
         .layer(axum::middleware::from_fn(
             control_plane::middleware::admin_middleware,

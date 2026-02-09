@@ -190,8 +190,18 @@ pub async fn create_bot(
     let secrets = state.secrets.clone();
     let semaphore = state.droplet_semaphore.clone();
     let metrics = state.metrics.clone();
+    let provision_cb = state.provision_cb.clone();
     tokio::spawn(async move {
-        spawn_bot_droplet(bot_id, req.name.clone(), pool, secrets, metrics, semaphore).await;
+        spawn_bot_droplet(
+            bot_id,
+            req.name.clone(),
+            pool,
+            secrets,
+            metrics,
+            semaphore,
+            provision_cb,
+        )
+        .await;
     });
 
     info!(
@@ -213,6 +223,7 @@ async fn spawn_bot_droplet(
     secrets: crate::SecretsManager,
     metrics: crate::MetricsCollector,
     semaphore: Arc<tokio::sync::Semaphore>,
+    provision_cb: crate::provisioning::CircuitBreaker,
 ) {
     use crate::config::{self, keys};
 
@@ -313,17 +324,40 @@ async fn spawn_bot_droplet(
         &user_data_config,
     );
 
+    let region = config::get_config_or(&pool, keys::DROPLET_REGION, "nyc3").await;
+    let size = config::get_config_or(&pool, keys::DROPLET_SIZE, "s-1vcpu-2gb").await;
+    let image = config::get_config_or(&pool, keys::DROPLET_IMAGE, "ubuntu-22-04-x64").await;
+
     let droplet_req = claw_spawn::domain::DropletCreateRequest {
         name: droplet_name,
-        region: "nyc3".to_string(),
-        size: "s-1vcpu-2gb".to_string(),
-        image: "ubuntu-22-04-x64".to_string(),
+        region,
+        size,
+        image,
         user_data,
         tags: vec!["trawling-traders".to_string(), format!("bot-{}", bot_id)],
     };
 
-    match do_client.create_droplet(droplet_req).await {
+    // Circuit breaker check
+    if !provision_cb.allow().await {
+        warn!("Bot {}: Circuit breaker open, skipping provision", bot_id);
+        update_bot_status(&pool, bot_id, BotStatus::Error, "Provisioning circuit open").await;
+        return;
+    }
+
+    // Retry with exponential backoff (3 attempts, 2s/4s/8s)
+    let result = crate::provisioning::with_retry(
+        || {
+            let client = do_client.clone();
+            let req = droplet_req.clone();
+            async move { client.create_droplet(req).await }
+        },
+        crate::provisioning::RetryConfig::default(),
+    )
+    .await;
+
+    match result {
         Ok(droplet) => {
+            provision_cb.record_success().await;
             info!(
                 "Bot {}: Created droplet {} (id: {})",
                 bot_id, droplet.name, droplet.id
@@ -341,6 +375,7 @@ async fn spawn_bot_droplet(
             }
         }
         Err(e) => {
+            provision_cb.record_failure().await;
             warn!("Bot {}: Failed to create droplet: {}", bot_id, e);
             metrics.increment(metrics::BOT_PROVISION_FAILED, 1).await;
             Logger::provision_event(&bot_id.to_string(), "create", "failed");
@@ -416,6 +451,7 @@ async fn redeploy_bot_droplet(
     secrets: crate::SecretsManager,
     metrics: crate::MetricsCollector,
     semaphore: Arc<tokio::sync::Semaphore>,
+    provision_cb: crate::provisioning::CircuitBreaker,
 ) {
     use crate::config::{self, keys};
 
@@ -450,7 +486,16 @@ async fn redeploy_bot_droplet(
         .await;
 
     // Spawn new droplet with retry logic
-    spawn_bot_droplet(bot_id, bot_name, pool, secrets, metrics, semaphore).await;
+    spawn_bot_droplet(
+        bot_id,
+        bot_name,
+        pool,
+        secrets,
+        metrics,
+        semaphore,
+        provision_cb,
+    )
+    .await;
 }
 
 /// Helper: Update bot status with error message
@@ -613,6 +658,7 @@ pub async fn bot_action(
             let secrets = state.secrets.clone();
             let semaphore = state.droplet_semaphore.clone();
             let metrics = state.metrics.clone();
+            let provision_cb = state.provision_cb.clone();
             tokio::spawn(async move {
                 redeploy_bot_droplet(
                     bot_id,
@@ -622,6 +668,7 @@ pub async fn bot_action(
                     secrets,
                     metrics,
                     semaphore,
+                    provision_cb,
                 )
                 .await;
             });
@@ -642,6 +689,42 @@ pub async fn bot_action(
                 });
             }
             info!("Bot {} destroy triggered", bot_id);
+        }
+        BotAction::DisableLiveTrading => {
+            // Switch latest config version to paper mode and mark pending
+            sqlx::query(
+                r#"
+                UPDATE config_versions SET trading_mode = 'paper'
+                WHERE id = (SELECT desired_version_id FROM bots WHERE id = $1)
+                "#,
+            )
+            .bind(bot_id)
+            .execute(&state.db)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            sqlx::query(
+                "UPDATE bots SET config_status = 'pending', updated_at = NOW() WHERE id = $1",
+            )
+            .bind(bot_id)
+            .execute(&state.db)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            info!("Bot {} live trading disabled (switched to paper)", bot_id);
+        }
+        BotAction::RotateSecrets => {
+            let new_token = generate_bootstrap_token();
+            sqlx::query(
+                "UPDATE bots SET bootstrap_token = $1, bootstrap_token_used_at = NULL, updated_at = NOW() WHERE id = $2",
+            )
+            .bind(&new_token)
+            .bind(bot_id)
+            .execute(&state.db)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            info!("Bot {} secrets rotated", bot_id);
         }
     }
 

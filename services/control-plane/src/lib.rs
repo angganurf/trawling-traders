@@ -5,8 +5,11 @@ pub mod models;
 pub mod user_data;
 pub mod handlers {
     pub mod admin;
+    pub mod admin_bots;
+    pub mod admin_provisioning;
     pub mod bots;
     pub mod openclaw_config;
+    pub mod presets;
     pub mod simulate;
     pub mod sync;
 }
@@ -52,20 +55,23 @@ pub struct AppState {
     pub webhooks: WebhookNotifier,
     /// JWT service for RS256 token validation (from cedros-login)
     pub jwt_service: Option<cedros_login::services::JwtService>,
+    /// Circuit breaker for DO provisioning API calls
+    pub provision_cb: provisioning::CircuitBreaker,
 }
 
 impl AppState {
-    pub fn new(db: Db) -> Self {
+    pub fn new(db: Db, max_concurrent: usize) -> Self {
         Self {
             db,
             secrets: SecretsManager::new(),
             metrics: MetricsCollector::new(),
             rate_limiter: middleware::rate_limit::RateLimiter::new(60, 100),
             bot_rate_limiter: middleware::rate_limit::RateLimiter::new(60, 120),
-            droplet_semaphore: Arc::new(Semaphore::new(3)),
+            droplet_semaphore: Arc::new(Semaphore::new(max_concurrent)),
             alerts: AlertManager::new(AlertConfig::default()),
             webhooks: WebhookNotifier::new(WebhookConfig::default()),
             jwt_service: None,
+            provision_cb: provisioning::create_provision_circuit_breaker(),
         }
     }
 
