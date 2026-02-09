@@ -7,8 +7,8 @@
     "icon": "./assets/lob-avatar.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/lob-avatar.png",
-      "resizeMode": "contain",
+      "image": "./assets/icon.png",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [

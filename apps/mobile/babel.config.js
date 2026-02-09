@@ -5,6 +5,8 @@ module.exports = function(api) {
     plugins: [
       // Support dynamic imports in dependencies
       '@babel/plugin-syntax-dynamic-import',
+      // Must remain last for Reanimated
+      'react-native-reanimated/plugin',
     ],
   };
 };
