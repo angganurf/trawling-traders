@@ -1008,9 +1008,9 @@ dependencies = [
 
 [[package]]
 name = "cedros-pay"
-version = "1.1.11"
+version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e456677db45530b2d30e0859cb10d68e06db61e764462522e1f3636aeaf68d6"
+checksum = "3e09dc7d4efcfc366ccd2f7792a7748457e8f9c2a534c66dc1c111dcd5cbac80"
 dependencies = [
  "aes-gcm",
  "anyhow",
