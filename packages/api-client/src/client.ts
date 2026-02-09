@@ -6,6 +6,8 @@ import type {
   BotConfig,
   BotEvent,
   CreateBotRequest,
+  EmailCsvReportRequest,
+  EmailCsvReportResponse,
   GetBotChatMessagesResponse,
   UpdateBotConfigRequest,
   ListBotsResponse,
@@ -349,6 +351,25 @@ export const userApi = {
   },
 };
 
+export const reportsApi = {
+  async requestEmailCsv(request: EmailCsvReportRequest): Promise<EmailCsvReportResponse> {
+    const response = await fetchApi('/reports/email-csv', {
+      method: 'POST',
+      body: JSON.stringify({
+        report_kind: request.reportKind,
+        timeframe: request.timeframe,
+      }),
+    });
+
+    return {
+      success: Boolean(response.success),
+      message: response.message,
+      deliveredTo: response.deliveredTo ?? response.delivered_to,
+      rowsIncluded: Number(response.rowsIncluded ?? response.rows_included ?? 0),
+    };
+  },
+};
+
 // Price/Data API (separate service)
 export const dataApi = {
   async getPrice(symbol: string, quote: string = 'USD'): Promise<{
@@ -428,6 +449,7 @@ export const dataApi = {
 export const api = {
   bot: botApi,
   user: userApi,
+  reports: reportsApi,
   data: dataApi,
 };
 

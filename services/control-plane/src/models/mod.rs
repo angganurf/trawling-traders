@@ -348,6 +348,20 @@ pub struct PostBotChatMessageResponse {
     pub assistant_message: BotChatMessage,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct EmailCsvReportRequest {
+    pub report_kind: String,
+    pub timeframe: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EmailCsvReportResponse {
+    pub success: bool,
+    pub message: String,
+    pub delivered_to: String,
+    pub rows_included: i64,
+}
+
 // Request types for API
 
 #[derive(Debug, Deserialize, validator::Validate)]

@@ -233,3 +233,15 @@ export interface PostBotChatMessageResponse {
   userMessage: BotChatMessage;
   assistantMessage: BotChatMessage;
 }
+
+export interface EmailCsvReportRequest {
+  reportKind: 'tax' | 'trade-history' | 'full';
+  timeframe: '30d' | '90d' | '1y' | 'all';
+}
+
+export interface EmailCsvReportResponse {
+  success: boolean;
+  message: string;
+  deliveredTo: string;
+  rowsIncluded: number;
+}

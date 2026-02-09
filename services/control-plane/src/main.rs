@@ -185,6 +185,10 @@ async fn build_router(
             post(control_plane::handlers::chat::post_bot_chat_message),
         )
         .route(
+            "/reports/email-csv",
+            post(control_plane::handlers::reports::request_email_csv_report),
+        )
+        .route(
             "/bots/{id}/openclaw-config",
             get(control_plane::handlers::openclaw_config::get_openclaw_config),
         )

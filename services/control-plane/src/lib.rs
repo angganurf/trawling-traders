@@ -11,6 +11,7 @@ pub mod handlers {
     pub mod chat;
     pub mod openclaw_config;
     pub mod presets;
+    pub mod reports;
     pub mod simulate;
     pub mod sync;
 }
@@ -140,6 +141,10 @@ pub async fn app(state: Arc<AppState>) -> Router {
         .route(
             "/bots/:id/chat/messages",
             post(handlers::chat::post_bot_chat_message),
+        )
+        .route(
+            "/reports/email-csv",
+            post(handlers::reports::request_email_csv_report),
         )
         .route(
             "/simulate-signal",
