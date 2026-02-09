@@ -177,6 +177,14 @@ async fn build_router(
             get(control_plane::handlers::bots::get_events),
         )
         .route(
+            "/bots/{id}/chat/messages",
+            get(control_plane::handlers::chat::get_bot_chat_messages),
+        )
+        .route(
+            "/bots/{id}/chat/messages",
+            post(control_plane::handlers::chat::post_bot_chat_message),
+        )
+        .route(
             "/bots/{id}/openclaw-config",
             get(control_plane::handlers::openclaw_config::get_openclaw_config),
         )

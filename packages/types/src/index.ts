@@ -128,6 +128,16 @@ export interface BotEvent {
   metadata?: Record<string, unknown>;
 }
 
+export type BotChatRole = 'user' | 'assistant' | 'system';
+
+export interface BotChatMessage {
+  id: string;
+  botId: string;
+  role: BotChatRole;
+  content: string;
+  timestamp: string;
+}
+
 // User subscription
 export interface Subscription {
   id: string;
@@ -209,4 +219,17 @@ export interface GetMetricsResponse {
 export interface GetEventsResponse {
   events: BotEvent[];
   nextCursor?: string;
+}
+
+export interface GetBotChatMessagesResponse {
+  messages: BotChatMessage[];
+}
+
+export interface PostBotChatMessageRequest {
+  content: string;
+}
+
+export interface PostBotChatMessageResponse {
+  userMessage: BotChatMessage;
+  assistantMessage: BotChatMessage;
 }

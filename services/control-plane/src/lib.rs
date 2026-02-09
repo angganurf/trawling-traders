@@ -8,6 +8,7 @@ pub mod handlers {
     pub mod admin_bots;
     pub mod admin_provisioning;
     pub mod bots;
+    pub mod chat;
     pub mod openclaw_config;
     pub mod presets;
     pub mod simulate;
@@ -132,6 +133,14 @@ pub async fn app(state: Arc<AppState>) -> Router {
         .route("/bots/:id/actions", post(handlers::bots::bot_action))
         .route("/bots/:id/metrics", get(handlers::bots::get_metrics))
         .route("/bots/:id/events", get(handlers::bots::get_events))
+        .route(
+            "/bots/:id/chat/messages",
+            get(handlers::chat::get_bot_chat_messages),
+        )
+        .route(
+            "/bots/:id/chat/messages",
+            post(handlers::chat::post_bot_chat_message),
+        )
         .route(
             "/simulate-signal",
             post(handlers::simulate::simulate_signal),

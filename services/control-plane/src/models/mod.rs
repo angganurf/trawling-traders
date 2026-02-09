@@ -323,6 +323,31 @@ pub struct EventsResponse {
     pub next_cursor: Option<String>,
 }
 
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct BotChatMessage {
+    pub id: Uuid,
+    pub bot_id: Uuid,
+    pub role: String,
+    pub content: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GetBotChatMessagesResponse {
+    pub messages: Vec<BotChatMessage>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BotChatMessageCreateRequest {
+    pub content: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PostBotChatMessageResponse {
+    pub user_message: BotChatMessage,
+    pub assistant_message: BotChatMessage,
+}
+
 // Request types for API
 
 #[derive(Debug, Deserialize, validator::Validate)]

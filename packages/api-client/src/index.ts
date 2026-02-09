@@ -5,14 +5,18 @@ const DATA_API_URL = process.env.DATA_API_URL || 'http://localhost:8080';
 
 import type {
   Bot,
+  BotChatMessage,
   BotConfig,
   BotEvent,
   CreateBotRequest,
+  GetBotChatMessagesResponse,
   UpdateBotConfigRequest,
   ListBotsResponse,
   GetBotResponse,
   GetMetricsResponse,
   GetEventsResponse,
+  PostBotChatMessageRequest,
+  PostBotChatMessageResponse,
   BotActionRequest,
   User,
 } from '@trawling-traders/types';
@@ -225,7 +229,11 @@ async function fetchApi(
 export const botApi = {
   // List all bots for current user
   async listBots(): Promise<ListBotsResponse> {
-    return fetchApi('/bots');
+    const response = await fetchApi('/bots');
+    return {
+      total: response.total || (response.bots || []).length,
+      bots: (response.bots || []).map(mapBot),
+    };
   },
 
   // Create a new bot
@@ -238,7 +246,11 @@ export const botApi = {
 
   // Get bot details with config
   async getBot(botId: string): Promise<GetBotResponse> {
-    return fetchApi(`/bots/${botId}`);
+    const response = await fetchApi(`/bots/${botId}`);
+    return {
+      bot: mapBot(response.bot),
+      config: mapBotConfig(response.config),
+    };
   },
 
   // Update bot config
@@ -265,14 +277,107 @@ export const botApi = {
 
   // Get bot metrics
   async getMetrics(botId: string): Promise<GetMetricsResponse> {
-    return fetchApi(`/bots/${botId}/metrics`);
+    const response = await fetchApi(`/bots/${botId}/metrics`);
+    return {
+      range: response.range || '7d',
+      metrics: (response.metrics || []).map((metric: any) => ({
+        timestamp: metric.timestamp,
+        value: Number(metric.value ?? metric.pnl ?? 0),
+      })),
+    };
   },
 
   // Get bot events
   async getEvents(botId: string): Promise<GetEventsResponse> {
-    return fetchApi(`/bots/${botId}/events`);
+    const response = await fetchApi(`/bots/${botId}/events`);
+    return {
+      nextCursor: response.nextCursor ?? response.next_cursor,
+      events: (response.events || []).map((event: any) => ({
+        id: event.id,
+        botId: event.botId ?? event.bot_id,
+        type: event.type ?? event.event_type,
+        timestamp: event.timestamp ?? event.created_at,
+        message: event.message,
+        metadata: event.metadata,
+      })),
+    };
+  },
+
+  async getChatMessages(botId: string): Promise<GetBotChatMessagesResponse> {
+    const response = await fetchApi(`/bots/${botId}/chat/messages`);
+    return {
+      messages: (response.messages || []).map(mapChatMessage),
+    };
+  },
+
+  async postChatMessage(
+    botId: string,
+    request: PostBotChatMessageRequest
+  ): Promise<PostBotChatMessageResponse> {
+    const response = await fetchApi(`/bots/${botId}/chat/messages`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    return {
+      userMessage: mapChatMessage(response.user_message),
+      assistantMessage: mapChatMessage(response.assistant_message),
+    };
   },
 };
+
+function mapChatMessage(raw: any): BotChatMessage {
+  return {
+    id: raw.id,
+    botId: raw.botId ?? raw.bot_id,
+    role: raw.role,
+    content: raw.content,
+    timestamp: raw.timestamp ?? raw.created_at,
+  };
+}
+
+function mapBot(raw: any): Bot {
+  return {
+    id: raw.id,
+    userId: raw.userId ?? raw.user_id,
+    name: raw.name,
+    status: raw.status,
+    persona: raw.persona,
+    dropletId: raw.dropletId ?? raw.droplet_id,
+    region: raw.region,
+    ipAddress: raw.ipAddress ?? raw.ip_address,
+    agentWallet: raw.agentWallet ?? raw.agent_wallet,
+    desiredVersionId: raw.desiredVersionId ?? raw.desired_version_id,
+    appliedVersionId: raw.appliedVersionId ?? raw.applied_version_id,
+    configStatus: raw.configStatus ?? raw.config_status,
+    createdAt: raw.createdAt ?? raw.created_at,
+    updatedAt: raw.updatedAt ?? raw.updated_at,
+    lastHeartbeatAt: raw.lastHeartbeatAt ?? raw.last_heartbeat_at,
+    todayPnl: Number(raw.todayPnl ?? raw.today_pnl ?? 0),
+    totalPnl: Number(raw.totalPnl ?? raw.total_pnl ?? 0),
+  };
+}
+
+function mapBotConfig(raw: any): BotConfig {
+  if (!raw) return raw;
+  return {
+    id: raw.id,
+    botId: raw.botId ?? raw.bot_id,
+    version: raw.version,
+    createdAt: raw.createdAt ?? raw.created_at,
+    name: raw.name,
+    persona: raw.persona,
+    iconColor: raw.iconColor ?? raw.icon_color,
+    assetFocus: raw.assetFocus ?? raw.asset_focus,
+    customAssets: raw.customAssets ?? raw.custom_assets,
+    algorithmMode: raw.algorithmMode ?? raw.algorithm_mode,
+    strictness: raw.strictness,
+    signalKnobs: raw.signalKnobs ?? raw.signal_knobs,
+    riskCaps: raw.riskCaps ?? raw.risk_caps,
+    tradingMode: raw.tradingMode ?? raw.trading_mode,
+    llmProvider: raw.llmProvider ?? raw.llm_provider,
+    llmApiKey: raw.llmApiKey ?? raw.llm_api_key ?? '',
+  };
+}
 
 // User API
 export const userApi = {
