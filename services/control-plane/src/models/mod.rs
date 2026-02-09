@@ -362,6 +362,59 @@ pub struct EmailCsvReportResponse {
     pub rows_included: i64,
 }
 
+#[derive(Debug, Clone, FromRow)]
+pub struct DocsCategoryRow {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct DocsArticleRow {
+    pub id: String,
+    pub category_id: String,
+    pub title: String,
+    pub summary: String,
+    pub content: serde_json::Value,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocsArticleResponse {
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+    pub content: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocsCategoryResponse {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub articles: Vec<DocsArticleResponse>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GetDocsResponse {
+    pub categories: Vec<DocsCategoryResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrackDocsEventRequest {
+    pub event_type: String,
+    pub category_id: Option<String>,
+    pub article_id: Option<String>,
+    pub query: Option<String>,
+    pub results_count: Option<i32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TrackDocsEventResponse {
+    pub success: bool,
+}
+
 // Request types for API
 
 #[derive(Debug, Deserialize, validator::Validate)]

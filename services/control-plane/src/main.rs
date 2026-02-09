@@ -184,6 +184,11 @@ async fn build_router(
             "/bots/{id}/chat/messages",
             post(control_plane::handlers::chat::post_bot_chat_message),
         )
+        .route("/docs", get(control_plane::handlers::docs::get_docs))
+        .route(
+            "/docs/analytics",
+            post(control_plane::handlers::docs::track_docs_event),
+        )
         .route(
             "/reports/email-csv",
             post(control_plane::handlers::reports::request_email_csv_report),

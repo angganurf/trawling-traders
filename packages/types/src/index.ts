@@ -245,3 +245,33 @@ export interface EmailCsvReportResponse {
   deliveredTo: string;
   rowsIncluded: number;
 }
+
+export interface DocsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  content: string[];
+}
+
+export interface DocsCategory {
+  id: string;
+  title: string;
+  description: string;
+  articles: DocsArticle[];
+}
+
+export interface GetDocsResponse {
+  categories: DocsCategory[];
+}
+
+export interface TrackDocsEventRequest {
+  eventType: 'category_opened' | 'article_opened' | 'search';
+  categoryId?: string;
+  articleId?: string;
+  query?: string;
+  resultsCount?: number;
+}
+
+export interface TrackDocsEventResponse {
+  success: boolean;
+}

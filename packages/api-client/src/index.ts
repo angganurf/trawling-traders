@@ -9,9 +9,13 @@ import type {
   BotConfig,
   BotEvent,
   CreateBotRequest,
+  DocsCategory,
   EmailCsvReportRequest,
   EmailCsvReportResponse,
+  GetDocsResponse,
   GetBotChatMessagesResponse,
+  TrackDocsEventRequest,
+  TrackDocsEventResponse,
   UpdateBotConfigRequest,
   ListBotsResponse,
   GetBotResponse,
@@ -388,6 +392,43 @@ export const userApi = {
   },
 };
 
+export const docsApi = {
+  async getDocs(): Promise<GetDocsResponse> {
+    const response = await fetchApi('/docs');
+
+    const categories = (response.categories || []).map((category: any): DocsCategory => ({
+      id: category.id,
+      title: category.title,
+      description: category.description,
+      articles: (category.articles || []).map((article: any) => ({
+        id: article.id,
+        title: article.title,
+        summary: article.summary,
+        content: Array.isArray(article.content) ? article.content.map((line: any) => String(line)) : [],
+      })),
+    }));
+
+    return { categories };
+  },
+
+  async trackEvent(request: TrackDocsEventRequest): Promise<TrackDocsEventResponse> {
+    const response = await fetchApi('/docs/analytics', {
+      method: 'POST',
+      body: JSON.stringify({
+        event_type: request.eventType,
+        category_id: request.categoryId,
+        article_id: request.articleId,
+        query: request.query,
+        results_count: request.resultsCount,
+      }),
+    });
+
+    return {
+      success: Boolean(response.success),
+    };
+  },
+};
+
 export const reportsApi = {
   async requestEmailCsv(request: EmailCsvReportRequest): Promise<EmailCsvReportResponse> {
     const response = await fetchApi('/reports/email-csv', {
@@ -482,6 +523,7 @@ export const dataApi = {
 export const api = {
   bot: botApi,
   user: userApi,
+  docs: docsApi,
   reports: reportsApi,
   data: dataApi,
 };

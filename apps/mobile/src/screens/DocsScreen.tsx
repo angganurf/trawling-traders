@@ -1,269 +1,273 @@
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import type { DocsArticle, DocsCategory, TrackDocsEventRequest } from '@trawling-traders/types';
+import { api } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
 
-type DocsCategoryId = 'setup' | 'optimization' | 'support';
+type DocsCategoryId = string;
 
-interface DocArticle {
-  id: string;
-  title: string;
-  summary: string;
-  content: string[];
+function matchesQuery(text: string, query: string): boolean {
+  return text.toLowerCase().includes(query);
 }
 
-interface DocCategory {
-  id: DocsCategoryId;
-  title: string;
-  description: string;
-  articles: DocArticle[];
-}
-
-const DOCS_CATEGORIES: DocCategory[] = [
-  {
-    id: 'setup',
-    title: 'Set Up',
-    description: 'Everything needed to launch your first bot safely.',
-    articles: [
-      {
-        id: 'get-started',
-        title: 'Get Started',
-        summary: 'Create your account, fund your wallet, and launch your first bot.',
-        content: [
-          'Create your account and complete onboarding so your workspace is initialized.',
-          'Create your first bot from the Home screen and choose a starter strategy.',
-          'Before enabling live trading, review behavior settings for limits and stop conditions.',
-        ],
-      },
-      {
-        id: 'choose-ai-provider',
-        title: 'Choose Your AI Provider',
-        summary: 'Compare providers and select the one that matches your latency and cost goals.',
-        content: [
-          'Pick a provider based on your priorities: speed, cost, or reasoning depth.',
-          'For active intraday strategies, lower latency typically matters more than long-form output.',
-          'Use strategy and behavior settings together so model decisions remain bounded by your risk rules.',
-        ],
-      },
-      {
-        id: 'connect-telegram',
-        title: 'Connect to Telegram',
-        summary: 'Send bot notifications and reports directly to your Telegram channel.',
-        content: [
-          'Generate a Telegram bot token and add your bot to the destination channel.',
-          'Paste the token and channel ID into your bot behavior configuration.',
-          'Run a test alert first to verify delivery before relying on production notifications.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'optimization',
-    title: 'Optimization',
-    description: 'Tune strategy quality, execution behavior, and monitoring loops.',
-    articles: [
-      {
-        id: 'improve-signal-quality',
-        title: 'Improve Signal Quality',
-        summary: 'Reduce noisy entries with better filters and event validation.',
-        content: [
-          'Start with fewer markets and stricter entry criteria to reduce false positives.',
-          'Adjust event filters and confidence thresholds before increasing trade volume.',
-          'Review historical trades weekly and remove rules that create repeated low-quality entries.',
-        ],
-      },
-      {
-        id: 'risk-controls',
-        title: 'Risk Controls',
-        summary: 'Set hard constraints so AI decisions stay inside your risk envelope.',
-        content: [
-          'Define max position size, daily loss limits, and stop conditions in behavior settings.',
-          'Treat limits as hard controls, not suggestions, and keep them active in all market conditions.',
-          'When testing changes, alter one major setting at a time so impact is measurable.',
-        ],
-      },
-      {
-        id: 'read-pnl-history',
-        title: 'Read P&L History',
-        summary: 'Use chart trends and event timing to evaluate strategy health.',
-        content: [
-          'Check whether gains come from a consistent pattern or a small number of outlier trades.',
-          'Compare drawdown periods against behavior or strategy changes to find regressions.',
-          'Use reports exports to keep an external audit trail for deeper analysis.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'support',
-    title: 'Support',
-    description: 'Troubleshooting, billing, and account-level operational help.',
-    articles: [
-      {
-        id: 'troubleshoot-execution',
-        title: 'Troubleshoot Trade Execution',
-        summary: 'Diagnose common causes of missed, delayed, or failed orders.',
-        content: [
-          'Check bot event history for rejected signals or guardrail-triggered blocks.',
-          'Confirm API credentials and provider status before changing strategy parameters.',
-          'If failures repeat, lower complexity and validate with one market and tighter controls.',
-        ],
-      },
-      {
-        id: 'billing-and-subscriptions',
-        title: 'Billing and Subscriptions',
-        summary: 'Understand plan limits, invoice exports, and renewal timing.',
-        content: [
-          'Use the profile menu to view billing settings and update subscription preferences.',
-          'Track usage against your plan to avoid interruption during high-volume periods.',
-          'Export invoices regularly if your finance workflow requires monthly reconciliation.',
-        ],
-      },
-      {
-        id: 'contact-support',
-        title: 'Contact Support',
-        summary: 'What to include so support can resolve issues quickly.',
-        content: [
-          'Include bot name, timestamp, and a short timeline of what happened.',
-          'Attach relevant report exports or event snippets that show the failure clearly.',
-          'For urgent issues, pause affected bots first, then share details with support.',
-        ],
-      },
-    ],
-  },
-];
-
-function Header({ title, subtitle }: { title: string; subtitle: string }) {
+function articleMatchesQuery(article: DocsArticle, query: string): boolean {
   return (
-    <View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
-    </View>
-  );
-}
-
-function CategoryCard({ category, onPress }: { category: DocCategory; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Text style={styles.cardTitle}>{category.title}</Text>
-      <Text style={styles.cardDescription}>{category.description}</Text>
-      <Text style={styles.linkText}>View Articles</Text>
-    </TouchableOpacity>
-  );
-}
-
-function ArticleCard({ article, onPress }: { article: DocArticle; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Text style={styles.cardTitle}>{article.title}</Text>
-      <Text style={styles.cardDescription}>{article.summary}</Text>
-      <Text style={styles.linkText}>Read Article</Text>
-    </TouchableOpacity>
-  );
-}
-
-function BackButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Text style={styles.backButtonText}>← {label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function ArticleView({ category, article, onBack }: { category: DocCategory; article: DocArticle; onBack: () => void }) {
-  return (
-    <View>
-      <BackButton label={category.title} onPress={onBack} />
-      <Text style={styles.articleTitle}>{article.title}</Text>
-      <Text style={styles.articleSummary}>{article.summary}</Text>
-      {article.content.map((paragraph) => (
-        <Text key={paragraph} style={styles.articleParagraph}>
-          {paragraph}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
-function CategoryView({
-  category,
-  onBack,
-  onOpenArticle,
-}: {
-  category: DocCategory;
-  onBack: () => void;
-  onOpenArticle: (articleId: string) => void;
-}) {
-  return (
-    <View>
-      <BackButton label="Docs Overview" onPress={onBack} />
-      <Header title={category.title} subtitle={category.description} />
-      <View style={styles.stack}>
-        {category.articles.map((article) => (
-          <ArticleCard key={article.id} article={article} onPress={() => onOpenArticle(article.id)} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function OverviewView({ onOpenCategory }: { onOpenCategory: (categoryId: DocsCategoryId) => void }) {
-  return (
-    <View>
-      <Header
-        title="Docs"
-        subtitle="Browse setup guides, optimization playbooks, and support references."
-      />
-      <View style={styles.stack}>
-        {DOCS_CATEGORIES.map((category) => (
-          <CategoryCard key={category.id} category={category} onPress={() => onOpenCategory(category.id)} />
-        ))}
-      </View>
-    </View>
+    matchesQuery(article.title, query) ||
+    matchesQuery(article.summary, query) ||
+    article.content.some((line) => matchesQuery(line, query))
   );
 }
 
 export function DocsScreen() {
+  const [categories, setCategories] = useState<DocsCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<DocsCategoryId | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const searchTrackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTrackedSearchKey = useRef('');
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
   const selectedCategory = useMemo(
-    () => DOCS_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? null,
-    [selectedCategoryId]
+    () => categories.find((category) => category.id === selectedCategoryId) ?? null,
+    [categories, selectedCategoryId]
   );
 
   const selectedArticle = useMemo(
     () => selectedCategory?.articles.find((article) => article.id === selectedArticleId) ?? null,
-    [selectedArticleId, selectedCategory]
+    [selectedCategory, selectedArticleId]
   );
 
-  const resetToOverview = () => {
-    setSelectedArticleId(null);
-    setSelectedCategoryId(null);
-  };
+  const filteredOverviewCategories = useMemo(() => {
+    if (!normalizedQuery) return categories;
+
+    return categories.filter((category) => {
+      if (matchesQuery(category.title, normalizedQuery) || matchesQuery(category.description, normalizedQuery)) {
+        return true;
+      }
+
+      return category.articles.some((article) => articleMatchesQuery(article, normalizedQuery));
+    });
+  }, [categories, normalizedQuery]);
+
+  const filteredCategoryArticles = useMemo(() => {
+    if (!selectedCategory) return [];
+    if (!normalizedQuery) return selectedCategory.articles;
+    return selectedCategory.articles.filter((article) => articleMatchesQuery(article, normalizedQuery));
+  }, [selectedCategory, normalizedQuery]);
+
+  const filteredOverviewCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const category of filteredOverviewCategories) {
+      if (!normalizedQuery) {
+        counts[category.id] = category.articles.length;
+      } else {
+        counts[category.id] = category.articles.filter((article) => articleMatchesQuery(article, normalizedQuery)).length;
+      }
+    }
+    return counts;
+  }, [filteredOverviewCategories, normalizedQuery]);
+
+  const trackDocsEvent = useCallback(async (request: TrackDocsEventRequest) => {
+    try {
+      await api.docs.trackEvent(request);
+    } catch {
+      // Non-blocking analytics
+    }
+  }, []);
+
+  const loadDocs = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.docs.getDocs();
+      setCategories(response.categories);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load docs');
+      setCategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDocs();
+  }, [loadDocs]);
+
+  useEffect(() => {
+    if (searchTrackTimer.current) {
+      clearTimeout(searchTrackTimer.current);
+    }
+
+    if (normalizedQuery.length < 2) {
+      return;
+    }
+
+    const searchScope = selectedCategory?.id ?? 'all';
+    const trackKey = `${searchScope}::${normalizedQuery}`;
+    if (trackKey === lastTrackedSearchKey.current) {
+      return;
+    }
+
+    const resultsCount = selectedCategory ? filteredCategoryArticles.length : filteredOverviewCategories.length;
+
+    searchTrackTimer.current = setTimeout(() => {
+      trackDocsEvent({
+        eventType: 'search',
+        categoryId: selectedCategory?.id,
+        query: normalizedQuery,
+        resultsCount,
+      });
+      lastTrackedSearchKey.current = trackKey;
+    }, 450);
+
+    return () => {
+      if (searchTrackTimer.current) {
+        clearTimeout(searchTrackTimer.current);
+      }
+    };
+  }, [
+    filteredCategoryArticles.length,
+    filteredOverviewCategories.length,
+    normalizedQuery,
+    selectedCategory,
+    trackDocsEvent,
+  ]);
 
   const openCategory = (categoryId: DocsCategoryId) => {
     setSelectedArticleId(null);
     setSelectedCategoryId(categoryId);
+    trackDocsEvent({
+      eventType: 'category_opened',
+      categoryId,
+    });
   };
 
   const openArticle = (articleId: string) => {
     setSelectedArticleId(articleId);
+    trackDocsEvent({
+      eventType: 'article_opened',
+      categoryId: selectedCategory?.id,
+      articleId,
+    });
   };
 
-  const closeArticle = () => {
+  const backToOverview = () => {
+    setSelectedArticleId(null);
+    setSelectedCategoryId(null);
+  };
+
+  const backToCategory = () => {
     setSelectedArticleId(null);
   };
 
+  const subtitle = selectedArticle
+    ? selectedArticle.summary
+    : selectedCategory
+      ? selectedCategory.description
+      : 'Browse setup guides, optimization playbooks, and support references.';
+
   return (
     <OceanBackground>
-      <ScrollView contentContainerStyle={styles.content}>
-        {!selectedCategory && <OverviewView onOpenCategory={openCategory} />}
-        {selectedCategory && !selectedArticle && (
-          <CategoryView category={selectedCategory} onBack={resetToOverview} onOpenArticle={openArticle} />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Docs</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+
+        <View style={styles.searchCard}>
+          <Text style={styles.searchLabel}>Search</Text>
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={selectedCategory ? 'Search this category...' : 'Search all docs...'}
+            placeholderTextColor={lightTheme.colors.wave[400]}
+          />
+        </View>
+
+        {isLoading && (
+          <View style={styles.centeredBlock}>
+            <ActivityIndicator color={lightTheme.colors.primary[700]} />
+          </View>
         )}
-        {selectedCategory && selectedArticle && (
-          <ArticleView category={selectedCategory} article={selectedArticle} onBack={closeArticle} />
+
+        {!isLoading && error && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Unable to load docs</Text>
+            <Text style={styles.cardDescription}>{error}</Text>
+            <TouchableOpacity style={styles.actionButton} onPress={loadDocs}>
+              <Text style={styles.actionButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!isLoading && !error && !selectedCategory && (
+          <View style={styles.stack}>
+            {filteredOverviewCategories.map((category) => (
+              <TouchableOpacity key={category.id} style={styles.card} onPress={() => openCategory(category.id)}>
+                <Text style={styles.cardTitle}>{category.title}</Text>
+                <Text style={styles.cardDescription}>{category.description}</Text>
+                <Text style={styles.linkText}>{filteredOverviewCounts[category.id] ?? 0} articles</Text>
+              </TouchableOpacity>
+            ))}
+            {filteredOverviewCategories.length === 0 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>No matches</Text>
+                <Text style={styles.cardDescription}>Try a different search term.</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {!isLoading && !error && selectedCategory && !selectedArticle && (
+          <View style={styles.stack}>
+            <TouchableOpacity style={styles.backButton} onPress={backToOverview}>
+              <Text style={styles.backButtonText}>← Docs Overview</Text>
+            </TouchableOpacity>
+
+            {filteredCategoryArticles.map((article) => (
+              <TouchableOpacity key={article.id} style={styles.card} onPress={() => openArticle(article.id)}>
+                <Text style={styles.cardTitle}>{article.title}</Text>
+                <Text style={styles.cardDescription}>{article.summary}</Text>
+                <Text style={styles.linkText}>Read Article</Text>
+              </TouchableOpacity>
+            ))}
+
+            {filteredCategoryArticles.length === 0 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>No matches in {selectedCategory.title}</Text>
+                <Text style={styles.cardDescription}>Adjust your search to find related articles.</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {!isLoading && !error && selectedCategory && selectedArticle && (
+          <View style={styles.stack}>
+            <TouchableOpacity style={styles.backButton} onPress={backToCategory}>
+              <Text style={styles.backButtonText}>← {selectedCategory.title}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.card}>
+              <Text style={styles.articleTitle}>{selectedArticle.title}</Text>
+              {selectedArticle.content.map((paragraph) => (
+                <Text key={paragraph} style={styles.articleParagraph}>
+                  {paragraph}
+                </Text>
+              ))}
+            </View>
+          </View>
         )}
       </ScrollView>
     </OceanBackground>
@@ -286,8 +290,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: lightTheme.colors.wave[600],
   },
-  stack: {
+  searchCard: {
     marginTop: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.cardBorder,
+    backgroundColor: lightTheme.colors.surface,
+    padding: 12,
+  },
+  searchLabel: {
+    fontSize: 12,
+    color: lightTheme.colors.wave[500],
+    marginBottom: 6,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[300],
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    fontSize: 14,
+    color: lightTheme.colors.wave[900],
+  },
+  centeredBlock: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  stack: {
+    marginTop: 12,
     gap: 10,
   },
   card: {
@@ -321,7 +352,6 @@ const styles = StyleSheet.create({
     borderColor: lightTheme.colors.wave[300],
     paddingHorizontal: 10,
     paddingVertical: 6,
-    marginBottom: 12,
     backgroundColor: '#fff',
   },
   backButtonText: {
@@ -330,21 +360,27 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.wave[700],
   },
   articleTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
     color: lightTheme.colors.wave[900],
     fontFamily: lightTheme.typography.families.display,
-  },
-  articleSummary: {
-    marginTop: 8,
-    fontSize: 14,
-    color: lightTheme.colors.wave[600],
-    lineHeight: 20,
   },
   articleParagraph: {
     marginTop: 12,
     fontSize: 15,
     color: lightTheme.colors.wave[800],
     lineHeight: 22,
+  },
+  actionButton: {
+    marginTop: 12,
+    borderRadius: 10,
+    backgroundColor: lightTheme.colors.primary[700],
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
