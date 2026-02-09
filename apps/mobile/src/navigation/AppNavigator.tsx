@@ -16,6 +16,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
 import { DocsScreen } from '../screens/DocsScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   BotBehaviorConfig: { botId: string };
   BotSettings: { botId: string };
   Profile: undefined;
+  Settings: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -57,11 +59,11 @@ function MainDrawer() {
   );
 }
 
-function profileMenu(onNavigateProfile: () => void, onLogout: () => void) {
+function profileMenu(onNavigateProfile: () => void, onNavigateSettings: () => void, onLogout: () => void) {
   Alert.alert('Profile Menu', 'Choose an option', [
     { text: 'Profile', onPress: onNavigateProfile },
     { text: 'Billing', onPress: () => Alert.alert('Billing', 'Billing page is staged next.') },
-    { text: 'Settings', onPress: () => Alert.alert('Settings', 'Settings page is staged next.') },
+    { text: 'Settings', onPress: onNavigateSettings },
     { text: 'Log out', style: 'destructive', onPress: onLogout },
     { text: 'Cancel', style: 'cancel' },
   ]);
@@ -81,6 +83,7 @@ export function AppNavigator() {
               onPress={() =>
                 profileMenu(
                   () => navigation.navigate('Profile'),
+                  () => navigation.navigate('Settings'),
                   () => navigation.navigate('Auth')
                 )
               }
@@ -99,6 +102,7 @@ export function AppNavigator() {
         <Stack.Screen name="BotStrategyConfig" component={BotStrategyConfigScreen} options={{ title: 'Strategy Config' }} />
         <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

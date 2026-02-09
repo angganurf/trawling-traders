@@ -184,6 +184,14 @@ async fn build_router(
             "/bots/{id}/chat/messages",
             post(control_plane::handlers::chat::post_bot_chat_message),
         )
+        .route(
+            "/account/settings",
+            get(control_plane::handlers::settings::get_user_settings),
+        )
+        .route(
+            "/account/settings",
+            patch(control_plane::handlers::settings::update_user_settings),
+        )
         .route("/docs", get(control_plane::handlers::docs::get_docs))
         .route(
             "/docs/analytics",

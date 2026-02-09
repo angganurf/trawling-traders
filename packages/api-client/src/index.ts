@@ -16,6 +16,7 @@ import type {
   GetBotChatMessagesResponse,
   TrackDocsEventRequest,
   TrackDocsEventResponse,
+  UpdateUserSettingsRequest,
   UpdateBotConfigRequest,
   ListBotsResponse,
   GetBotResponse,
@@ -25,6 +26,7 @@ import type {
   PostBotChatMessageResponse,
   BotActionRequest,
   User,
+  UserSettings,
 } from '@trawling-traders/types';
 
 // Generic API error
@@ -389,6 +391,46 @@ function mapBotConfig(raw: any): BotConfig {
 export const userApi = {
   async getCurrentUser(): Promise<User> {
     return fetchApi('/me');
+  },
+
+  async getSettings(): Promise<UserSettings> {
+    const response = await fetchApi('/account/settings');
+    return {
+      id: response.id,
+      email: response.email,
+      displayName: response.displayName ?? response.display_name,
+      picture: response.picture,
+      authMethods: {
+        emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),
+        google: Boolean(response.authMethods?.google ?? response.auth_methods?.google),
+        apple: Boolean(response.authMethods?.apple ?? response.auth_methods?.apple),
+      },
+      createdAt: response.createdAt ?? response.created_at,
+      updatedAt: response.updatedAt ?? response.updated_at,
+    };
+  },
+
+  async updateSettings(request: UpdateUserSettingsRequest): Promise<UserSettings> {
+    const response = await fetchApi('/account/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        display_name: request.displayName,
+      }),
+    });
+
+    return {
+      id: response.id,
+      email: response.email,
+      displayName: response.displayName ?? response.display_name,
+      picture: response.picture,
+      authMethods: {
+        emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),
+        google: Boolean(response.authMethods?.google ?? response.auth_methods?.google),
+        apple: Boolean(response.authMethods?.apple ?? response.auth_methods?.apple),
+      },
+      createdAt: response.createdAt ?? response.created_at,
+      updatedAt: response.updatedAt ?? response.updated_at,
+    };
   },
 };
 

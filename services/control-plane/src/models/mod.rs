@@ -362,6 +362,29 @@ pub struct EmailCsvReportResponse {
     pub rows_included: i64,
 }
 
+#[derive(Debug, Serialize)]
+pub struct AuthMethodsStatus {
+    pub email_password: bool,
+    pub google: bool,
+    pub apple: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserSettingsResponse {
+    pub id: Uuid,
+    pub email: Option<String>,
+    pub display_name: Option<String>,
+    pub picture: Option<String>,
+    pub auth_methods: AuthMethodsStatus,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserSettingsRequest {
+    pub display_name: Option<String>,
+}
+
 #[derive(Debug, Clone, FromRow)]
 pub struct DocsCategoryRow {
     pub id: String,

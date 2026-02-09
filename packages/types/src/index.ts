@@ -155,6 +155,26 @@ export interface User {
   subscription?: Subscription;
 }
 
+export interface UserAuthMethods {
+  emailPassword: boolean;
+  google: boolean;
+  apple: boolean;
+}
+
+export interface UserSettings {
+  id: string;
+  email?: string;
+  displayName?: string;
+  picture?: string;
+  authMethods: UserAuthMethods;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserSettingsRequest {
+  displayName?: string;
+}
+
 // API request/response types
 export interface CreateBotRequest {
   name: string;
