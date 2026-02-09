@@ -152,6 +152,10 @@ pub async fn app(state: Arc<AppState>) -> Router {
             "/account/settings",
             patch(handlers::settings::update_user_settings),
         )
+        .route(
+            "/account/billing",
+            get(handlers::settings::get_billing_summary),
+        )
         .route("/docs", get(handlers::docs::get_docs))
         .route("/docs/analytics", post(handlers::docs::track_docs_event))
         .route(

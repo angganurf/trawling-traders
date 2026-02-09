@@ -17,6 +17,7 @@ import { ChatScreen } from '../screens/ChatScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
 import { DocsScreen } from '../screens/DocsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { BillingScreen } from '../screens/BillingScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -29,6 +30,7 @@ export type RootStackParamList = {
   BotSettings: { botId: string };
   Profile: undefined;
   Settings: undefined;
+  Billing: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -59,10 +61,15 @@ function MainDrawer() {
   );
 }
 
-function profileMenu(onNavigateProfile: () => void, onNavigateSettings: () => void, onLogout: () => void) {
+function profileMenu(
+  onNavigateProfile: () => void,
+  onNavigateBilling: () => void,
+  onNavigateSettings: () => void,
+  onLogout: () => void
+) {
   Alert.alert('Profile Menu', 'Choose an option', [
     { text: 'Profile', onPress: onNavigateProfile },
-    { text: 'Billing', onPress: () => Alert.alert('Billing', 'Billing page is staged next.') },
+    { text: 'Billing', onPress: onNavigateBilling },
     { text: 'Settings', onPress: onNavigateSettings },
     { text: 'Log out', style: 'destructive', onPress: onLogout },
     { text: 'Cancel', style: 'cancel' },
@@ -83,6 +90,7 @@ export function AppNavigator() {
               onPress={() =>
                 profileMenu(
                   () => navigation.navigate('Profile'),
+                  () => navigation.navigate('Billing'),
                   () => navigation.navigate('Settings'),
                   () => navigation.navigate('Auth')
                 )
@@ -103,6 +111,7 @@ export function AppNavigator() {
         <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -385,6 +385,15 @@ pub struct UpdateUserSettingsRequest {
     pub display_name: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct BillingSummaryResponse {
+    pub status: String,
+    pub plan_code: String,
+    pub max_bots: i32,
+    pub bot_count: i32,
+    pub current_period_end: Option<DateTime<Utc>>,
+}
+
 #[derive(Debug, Clone, FromRow)]
 pub struct DocsCategoryRow {
     pub id: String,

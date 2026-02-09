@@ -192,6 +192,10 @@ async fn build_router(
             "/account/settings",
             patch(control_plane::handlers::settings::update_user_settings),
         )
+        .route(
+            "/account/billing",
+            get(control_plane::handlers::settings::get_billing_summary),
+        )
         .route("/docs", get(control_plane::handlers::docs::get_docs))
         .route(
             "/docs/analytics",

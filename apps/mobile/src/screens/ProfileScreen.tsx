@@ -1,50 +1,55 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Button,
   ActivityIndicator,
   Alert,
   RefreshControl,
-  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { RootStackParamList } from '../navigation/AppNavigator';
-import type { User, Subscription } from '@trawling-traders/types';
+import { useCedrosLogin } from '@cedros/login-react-native';
+import type { BillingSummary, UserSettings } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
+import type { RootStackParamList } from '../navigation/AppNavigator';
+import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
 
-// LOB Avatar - our lobster mascot
-const LOB_AVATAR = require('../../assets/lob-avatar.png');
+type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
-type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+function formatPlanName(planCode: string): string {
+  const normalized = planCode.toLowerCase();
+  if (normalized.includes('enterprise')) return 'Enterprise';
+  if (normalized.includes('pro')) return 'Trader Pro';
+  return 'Free';
+}
 
 export function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const { logout } = useCedrosLogin();
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [billing, setBilling] = useState<BillingSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [botsUsed, setBotsUsed] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchUserData = useCallback(async () => {
+  const loadProfile = useCallback(async () => {
+    setError(null);
     try {
-      const [userData, botsData] = await Promise.all([
-        api.user.getCurrentUser(),
-        api.bot.listBots(),
+      const [settingsResponse, billingResponse] = await Promise.all([
+        api.user.getSettings(),
+        api.user.getBillingSummary(),
       ]);
-
-      setUser(userData);
-      setSubscription(userData.subscription || null);
-      setBotsUsed(botsData.total);
-    } catch (error) {
-      console.error('Failed to fetch user data:', error);
-      Alert.alert('Error', 'Failed to load profile data');
+      setSettings(settingsResponse);
+      setBilling(billingResponse);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load profile');
+      setSettings(null);
+      setBilling(null);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -52,395 +57,243 @@ export function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    loadProfile();
+  }, [loadProfile]);
 
-  const handleRefresh = () => {
+  const onRefresh = () => {
     setIsRefreshing(true);
-    fetchUserData();
+    loadProfile();
   };
 
+  const displayName = useMemo(() => {
+    const name = settings?.displayName?.trim();
+    if (name) return name;
+    return settings?.email ?? 'Trader';
+  }, [settings?.displayName, settings?.email]);
+
   const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Clear Cedros SDK auth state
-              const { logout } = await import('@cedros/login-react-native');
-              await logout();
-            } catch (e) {
-              // Cedros logout may fail if not initialized, continue anyway
-              console.warn('Cedros logout error:', e);
-            }
-
-            // Clear all stored tokens and user data from AsyncStorage
-            try {
-              await AsyncStorage.multiRemove([
-                '@auth_token',
-                '@refresh_token',
-                '@user_data',
-                '@session_data',
-              ]);
-            } catch (e) {
-              console.warn('AsyncStorage clear error:', e);
-            }
-
-            // Reset navigation stack to Auth screen
-            // This prevents back button from returning to authenticated screens
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          setIsLoggingOut(true);
+          try {
+            await logout();
+          } catch {
+            // fallback navigation still applies below
+          } finally {
+            setIsLoggingOut(false);
             navigation.dispatch(
               CommonActions.reset({
                 index: 0,
                 routes: [{ name: 'Auth' }],
               })
             );
-          },
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <Image source={LOB_AVATAR} style={styles.loadingAvatar} />
-        <ActivityIndicator style={styles.loadingIndicator} />
-      </View>
+      <OceanBackground>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={lightTheme.colors.primary[700]} />
+        </View>
+      </OceanBackground>
     );
   }
 
-  const botsLimit = subscription?.maxBots || 4;
-  const usagePercent = Math.min((botsUsed / botsLimit) * 100, 100);
-
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-      }
-    >
-      {/* Header with LOB Avatar */}
-      <View style={styles.header}>
-        <View style={styles.avatarContainer}>
-          <Image source={LOB_AVATAR} style={styles.avatar} />
-          <View style={styles.idBadge}>
-            <Text style={styles.idBadgeText}>#4821</Text>
-          </View>
-        </View>
-
-        <Text style={styles.email}>{user?.email || 'trader@trawlingtraders.com'}</Text>
-        <View style={[
-          styles.statusBadge,
-          { backgroundColor: subscription?.status === 'active' ? lightTheme.colors.bullish[500] : lightTheme.colors.lobster[500] }
-        ]}>
-          <Text style={styles.statusText}>{(subscription?.status || 'active').toUpperCase()}</Text>
-        </View>
-
-        <Text style={styles.tagline}>Trawling the markets 24/7</Text>
-      </View>
-
-      {/* Subscription */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Subscription</Text>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Plan</Text>
-          <Text style={styles.infoValue}>Pro ({botsLimit} Bots)</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Bots Used</Text>
-          <Text style={styles.infoValue}>{botsUsed} / {botsLimit}</Text>
-        </View>
-
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${usagePercent}%`,
-                backgroundColor: usagePercent > 80 ? lightTheme.colors.lobster[500] : lightTheme.colors.bullish[500]
-              }
-            ]}
+    <OceanBackground>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={lightTheme.colors.primary[700]}
           />
-        </View>
+        }
+      >
+        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.subtitle}>Read-only account overview. Edit details in Settings.</Text>
 
-        {subscription?.currentPeriodEnd && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Renews</Text>
-            <Text style={styles.infoValue}>
-              {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-            </Text>
+        {error && (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>Unable to load profile</Text>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
-        <View style={styles.upgradeBox}>
-          <Text style={styles.upgradeTitle}>Need more trawlers?</Text>
-          <Text style={styles.upgradeText}>Upgrade to Enterprise for up to 20 bots</Text>
-          <TouchableOpacity style={styles.upgradeButton}>
-            <Text style={styles.upgradeButtonText}>Upgrade (via Cedros Pay)</Text>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Display Name</Text>
+            <Text style={styles.value}>{displayName}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Email</Text>
+            <Text style={styles.value}>{settings?.email || 'No email set'}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Google Sign-In</Text>
+            <Text style={styles.value}>{settings?.authMethods.google ? 'Connected' : 'Not connected'}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Apple Sign-In</Text>
+            <Text style={styles.value}>{settings?.authMethods.apple ? 'Connected' : 'Not connected'}</Text>
+          </View>
+
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Settings')}>
+            <Text style={styles.primaryButtonText}>Edit Settings</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* API Keys */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>API Keys</Text>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Subscription Snapshot</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Plan</Text>
+            <Text style={styles.value}>{formatPlanName(billing?.planCode || 'free')}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Status</Text>
+            <Text style={styles.value}>{(billing?.status || 'inactive').toUpperCase()}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Bots Used</Text>
+            <Text style={styles.value}>{billing?.botCount ?? 0} / {billing?.maxBots ?? 1}</Text>
+          </View>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Default LLM Key</Text>
-          <Text style={[styles.menuItemValue, { color: lightTheme.colors.bullish[600] }]}>Configured</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Billing')}>
+            <Text style={styles.secondaryButtonText}>Open Billing</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Webhook URL</Text>
-          <Text style={styles.menuItemValue}>Not set</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Trading API Keys</Text>
-          <Text style={[styles.menuItemValue, { color: lightTheme.colors.accent }]}>Manage</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Preferences */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Notifications</Text>
-          <Text style={styles.menuItemValue}>On</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Currency Display</Text>
-          <Text style={styles.menuItemValue}>USD</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Dark Mode</Text>
-          <Text style={styles.menuItemValue}>Auto</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Support */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Support</Text>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Documentation</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Discord Community</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Report a Bug</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Danger Zone */}
-      <View style={[styles.section, styles.dangerSection]}>
-        <Text style={[styles.sectionTitle, styles.dangerTitle]}>Danger Zone</Text>
-
-        <Button
-          title="Sign Out"
-          onPress={handleLogout}
-          color={lightTheme.colors.lobster[600]}
-        />
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.version}>Trawling Traders v1.0.0</Text>
-        <Text style={styles.credits}>Built with OpenClaw</Text>
-      </View>
-    </ScrollView>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Session</Text>
+          <TouchableOpacity
+            style={[styles.dangerButton, isLoggingOut && styles.dangerButtonDisabled]}
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+          >
+            <Text style={styles.dangerButtonText}>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </OceanBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: lightTheme.colors.background,
+  content: {
+    padding: 16,
+    paddingBottom: 28,
   },
   centered: {
     flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: lightTheme.colors.background,
   },
-  loadingAvatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 20,
+  title: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: lightTheme.colors.wave[900],
+    fontFamily: lightTheme.typography.families.display,
   },
-  loadingIndicator: {
-    marginTop: 10,
-  },
-  header: {
-    backgroundColor: lightTheme.colors.surface,
-    padding: 32,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: lightTheme.colors.cardBorder,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: lightTheme.colors.cardBorder,
-  },
-  idBadge: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    backgroundColor: lightTheme.colors.bullish[500],
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: lightTheme.colors.surface,
-  },
-  idBadgeText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  email: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: lightTheme.colors.text,
-    marginBottom: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  tagline: {
-    fontSize: 14,
-    color: lightTheme.colors.textSecondary,
+  subtitle: {
     marginTop: 8,
-    fontStyle: 'italic',
+    fontSize: 14,
+    color: lightTheme.colors.wave[600],
   },
-  section: {
-    backgroundColor: lightTheme.colors.surface,
-    margin: 16,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 20,
+  card: {
+    marginTop: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: lightTheme.colors.cardBorder,
+    backgroundColor: lightTheme.colors.surface,
+    padding: 14,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: lightTheme.colors.text,
-    marginBottom: 16,
+    fontSize: 17,
+    fontWeight: '700',
+    color: lightTheme.colors.wave[900],
+    marginBottom: 10,
   },
-  infoRow: {
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  infoLabel: {
+  label: {
+    fontSize: 13,
+    color: lightTheme.colors.wave[600],
+  },
+  value: {
     fontSize: 14,
-    color: lightTheme.colors.textSecondary,
+    fontWeight: '700',
+    color: lightTheme.colors.wave[900],
   },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: lightTheme.colors.text,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: lightTheme.colors.wave[200],
-    borderRadius: 4,
-    marginBottom: 16,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  upgradeBox: {
-    backgroundColor: lightTheme.colors.background,
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  upgradeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: lightTheme.colors.text,
-    marginBottom: 4,
-  },
-  upgradeText: {
-    fontSize: 14,
-    color: lightTheme.colors.textSecondary,
-    marginBottom: 12,
-  },
-  upgradeButton: {
-    backgroundColor: lightTheme.colors.accent,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+  primaryButton: {
+    marginTop: 10,
+    borderRadius: 10,
+    backgroundColor: lightTheme.colors.primary[700],
+    paddingVertical: 11,
     alignItems: 'center',
   },
-  upgradeButtonText: {
+  primaryButtonText: {
     color: '#fff',
-    fontWeight: '600',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: lightTheme.colors.wave[100],
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: lightTheme.colors.text,
-  },
-  menuItemValue: {
     fontSize: 14,
-    color: lightTheme.colors.textSecondary,
+    fontWeight: '700',
   },
-  dangerSection: {
-    borderColor: lightTheme.colors.lobster[400],
+  secondaryButton: {
+    marginTop: 10,
+    borderRadius: 10,
     borderWidth: 1,
+    borderColor: lightTheme.colors.primary[700],
+    paddingVertical: 11,
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  dangerTitle: {
-    color: lightTheme.colors.lobster[600],
+  secondaryButtonText: {
+    color: lightTheme.colors.primary[700],
+    fontSize: 14,
+    fontWeight: '700',
   },
-  footer: {
-    padding: 32,
+  dangerButton: {
+    borderRadius: 10,
+    backgroundColor: lightTheme.colors.lobster[600],
+    paddingVertical: 11,
     alignItems: 'center',
   },
-  version: {
-    fontSize: 12,
-    color: lightTheme.colors.textMuted,
-    marginBottom: 4,
+  dangerButtonDisabled: {
+    opacity: 0.6,
   },
-  credits: {
+  dangerButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  errorCard: {
+    marginTop: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.lobster[300],
+    backgroundColor: lightTheme.colors.lobster[50],
+    padding: 12,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: lightTheme.colors.lobster[700],
+  },
+  errorText: {
+    marginTop: 4,
+    color: lightTheme.colors.lobster[700],
     fontSize: 12,
-    color: lightTheme.colors.textMuted,
   },
 });

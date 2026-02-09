@@ -2,6 +2,7 @@ import { getConfig, type ApiClientConfig } from './config';
 
 import type {
   Bot,
+  BillingSummary,
   BotChatMessage,
   BotConfig,
   BotEvent,
@@ -393,6 +394,17 @@ export const userApi = {
       },
       createdAt: response.createdAt ?? response.created_at,
       updatedAt: response.updatedAt ?? response.updated_at,
+    };
+  },
+
+  async getBillingSummary(): Promise<BillingSummary> {
+    const response = await fetchApi('/account/billing');
+    return {
+      status: response.status,
+      planCode: response.planCode ?? response.plan_code,
+      maxBots: Number(response.maxBots ?? response.max_bots ?? 1),
+      botCount: Number(response.botCount ?? response.bot_count ?? 0),
+      currentPeriodEnd: response.currentPeriodEnd ?? response.current_period_end ?? undefined,
     };
   },
 };

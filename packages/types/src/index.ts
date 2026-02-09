@@ -175,6 +175,14 @@ export interface UpdateUserSettingsRequest {
   displayName?: string;
 }
 
+export interface BillingSummary {
+  status: string;
+  planCode: string;
+  maxBots: number;
+  botCount: number;
+  currentPeriodEnd?: string;
+}
+
 // API request/response types
 export interface CreateBotRequest {
   name: string;

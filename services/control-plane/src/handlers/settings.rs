@@ -8,7 +8,9 @@ use uuid::Uuid;
 
 use crate::{
     middleware::AuthContext,
-    models::{AuthMethodsStatus, UpdateUserSettingsRequest, UserSettingsResponse},
+    models::{
+        AuthMethodsStatus, BillingSummaryResponse, UpdateUserSettingsRequest, UserSettingsResponse,
+    },
     AppState,
 };
 
@@ -23,6 +25,13 @@ struct UserSettingsRow {
     apple_id: Option<String>,
     created_at: chrono::DateTime<chrono::Utc>,
     updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct BillingRow {
+    status: String,
+    product_id: String,
+    current_period_end: chrono::DateTime<chrono::Utc>,
 }
 
 fn normalize_display_name(value: Option<String>) -> Option<String> {
@@ -108,9 +117,66 @@ pub async fn update_user_settings(
     Ok(Json(to_response(row)))
 }
 
+fn plan_max_bots(product_id: &str) -> i32 {
+    if product_id.contains("enterprise") {
+        20
+    } else if product_id.contains("pro") {
+        4
+    } else {
+        1
+    }
+}
+
+pub async fn get_billing_summary(
+    State(state): State<Arc<AppState>>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<Json<BillingSummaryResponse>, (StatusCode, String)> {
+    let user_id = Uuid::parse_str(&auth.user_id)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
+
+    let subscription = sqlx::query_as::<_, BillingRow>(
+        "SELECT status, product_id, current_period_end
+         FROM subscriptions
+         WHERE user_id = $1
+         ORDER BY current_period_end DESC
+         LIMIT 1",
+    )
+    .bind(user_id.to_string())
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let bot_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM bots WHERE user_id = $1 AND status != 'destroying'",
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let response = match subscription {
+        Some(sub) => BillingSummaryResponse {
+            status: sub.status,
+            plan_code: sub.product_id.clone(),
+            max_bots: plan_max_bots(&sub.product_id),
+            bot_count: bot_count as i32,
+            current_period_end: Some(sub.current_period_end),
+        },
+        None => BillingSummaryResponse {
+            status: "inactive".to_string(),
+            plan_code: "free".to_string(),
+            max_bots: 1,
+            bot_count: bot_count as i32,
+            current_period_end: None,
+        },
+    };
+
+    Ok(Json(response))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::normalize_display_name;
+    use super::{normalize_display_name, plan_max_bots};
 
     #[test]
     fn normalize_display_name_trims_and_keeps_valid_input() {
@@ -122,5 +188,15 @@ mod tests {
     fn normalize_display_name_returns_none_for_blank_input() {
         let normalized = normalize_display_name(Some("   ".to_string()));
         assert_eq!(normalized, None);
+    }
+
+    #[test]
+    fn plan_max_bots_for_pro_product() {
+        assert_eq!(plan_max_bots("trader-pro-monthly"), 4);
+    }
+
+    #[test]
+    fn plan_max_bots_defaults_to_free_when_unknown() {
+        assert_eq!(plan_max_bots("starter"), 1);
     }
 }

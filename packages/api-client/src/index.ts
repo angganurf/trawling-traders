@@ -5,6 +5,7 @@ const DATA_API_URL = process.env.DATA_API_URL || 'http://localhost:8080';
 
 import type {
   Bot,
+  BillingSummary,
   BotChatMessage,
   BotConfig,
   BotEvent,
@@ -430,6 +431,17 @@ export const userApi = {
       },
       createdAt: response.createdAt ?? response.created_at,
       updatedAt: response.updatedAt ?? response.updated_at,
+    };
+  },
+
+  async getBillingSummary(): Promise<BillingSummary> {
+    const response = await fetchApi('/account/billing');
+    return {
+      status: response.status,
+      planCode: response.planCode ?? response.plan_code,
+      maxBots: Number(response.maxBots ?? response.max_bots ?? 1),
+      botCount: Number(response.botCount ?? response.bot_count ?? 0),
+      currentPeriodEnd: response.currentPeriodEnd ?? response.current_period_end ?? undefined,
     };
   },
 };
