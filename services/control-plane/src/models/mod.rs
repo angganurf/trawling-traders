@@ -348,6 +348,105 @@ pub struct PostBotChatMessageResponse {
     pub assistant_message: BotChatMessage,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct EmailCsvReportRequest {
+    pub report_kind: String,
+    pub timeframe: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EmailCsvReportResponse {
+    pub success: bool,
+    pub message: String,
+    pub delivered_to: String,
+    pub rows_included: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AuthMethodsStatus {
+    pub email_password: bool,
+    pub google: bool,
+    pub apple: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserSettingsResponse {
+    pub id: Uuid,
+    pub email: Option<String>,
+    pub display_name: Option<String>,
+    pub picture: Option<String>,
+    pub auth_methods: AuthMethodsStatus,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserSettingsRequest {
+    pub display_name: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BillingSummaryResponse {
+    pub status: String,
+    pub plan_code: String,
+    pub max_bots: i32,
+    pub bot_count: i32,
+    pub current_period_end: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct DocsCategoryRow {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct DocsArticleRow {
+    pub id: String,
+    pub category_id: String,
+    pub title: String,
+    pub summary: String,
+    pub content: serde_json::Value,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocsArticleResponse {
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+    pub content: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocsCategoryResponse {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub articles: Vec<DocsArticleResponse>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GetDocsResponse {
+    pub categories: Vec<DocsCategoryResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrackDocsEventRequest {
+    pub event_type: String,
+    pub category_id: Option<String>,
+    pub article_id: Option<String>,
+    pub query: Option<String>,
+    pub results_count: Option<i32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TrackDocsEventResponse {
+    pub success: bool,
+}
+
 // Request types for API
 
 #[derive(Debug, Deserialize, validator::Validate)]

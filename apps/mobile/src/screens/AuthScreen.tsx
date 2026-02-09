@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -18,6 +19,7 @@ import { lightTheme } from '../theme';
 import {
   useCedrosLogin,
   EmailLoginForm,
+  EmailRegisterForm,
   GoogleLoginButton,
 } from '@cedros/login-react-native';
 import { api } from '@trawling-traders/api-client';
@@ -33,6 +35,7 @@ export function AuthScreen() {
   const navigation = useNavigation<AuthScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, isLoading: authLoading, user } = useCedrosLogin();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
 
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -191,27 +194,41 @@ export function AuthScreen() {
 
           {/* Cedros Login Form */}
           <Animated.View style={[styles.authContainer, { opacity: featureAnim }]}>
-            <EmailLoginForm
-              onSubmit={async (email, _password) => {
-                // CedrosLoginProvider handles the auth state
-                // Navigation happens automatically via useEffect above
-                if (__DEV__) {
-                  console.log('Login attempt:', email);
-                }
-              }}
-              isLoading={authLoading}
-            />
+            {mode === 'login' ? (
+              <EmailLoginForm
+                onSuccess={() => {
+                  if (__DEV__) {
+                    console.log('Email login success');
+                  }
+                }}
+                onRegisterPress={() => setMode('register')}
+              />
+            ) : (
+              <EmailRegisterForm
+                onSuccess={() => {
+                  if (__DEV__) {
+                    console.log('Registration success');
+                  }
+                }}
+                onLoginPress={() => setMode('login')}
+              />
+            )}
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>or continue with</Text>
               <View style={styles.dividerLine} />
             </View>
 
             <GoogleLoginButton
+              onRequestToken={async () => {
+                Alert.alert(
+                  'Google Sign-In',
+                  'Google native sign-in is not configured in this build yet. Use email login/register for now.'
+                );
+                throw new Error('Google sign-in unavailable in this build');
+              }}
               onSuccess={() => {
-                // CedrosLoginProvider handles the auth state
-                // Navigation happens automatically via useEffect above
                 if (__DEV__) {
                   console.log('Google login success');
                 }
@@ -222,7 +239,6 @@ export function AuthScreen() {
                 }
               }}
               style={styles.googleButton}
-              textStyle={styles.googleButtonText}
             />
           </Animated.View>
 
@@ -407,24 +423,8 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.wave[500],
   },
   googleButton: {
-    backgroundColor: lightTheme.colors.surface,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    paddingVertical: 14,
     borderRadius: 20,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: lightTheme.colors.wave[700],
+    overflow: 'hidden',
   },
   footer: {
     alignItems: 'center',

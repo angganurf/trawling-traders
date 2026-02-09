@@ -66,7 +66,10 @@ async fn get_authorized_bot(
     Ok(bot)
 }
 
-async fn load_llm_config(state: &AppState, bot_id: Uuid) -> Result<LlmConfig, (StatusCode, String)> {
+async fn load_llm_config(
+    state: &AppState,
+    bot_id: Uuid,
+) -> Result<LlmConfig, (StatusCode, String)> {
     let openclaw_cfg = sqlx::query_as::<_, BotOpenClawConfig>(
         "SELECT * FROM bot_openclaw_config WHERE bot_id = $1",
     )
@@ -82,7 +85,12 @@ async fn load_llm_config(state: &AppState, bot_id: Uuid) -> Result<LlmConfig, (S
             state
                 .secrets
                 .decrypt(&cfg.encrypted_llm_api_key)
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to decrypt API key: {e}")))?
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to decrypt API key: {e}"),
+                    )
+                })?
         };
 
         if !api_key.is_empty() {
@@ -119,7 +127,12 @@ async fn load_llm_config(state: &AppState, bot_id: Uuid) -> Result<LlmConfig, (S
         state
             .secrets
             .decrypt(&cfg.encrypted_llm_api_key)
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to decrypt API key: {e}")))?
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to decrypt API key: {e}"),
+                )
+            })?
     };
 
     if api_key.is_empty() {
@@ -154,7 +167,9 @@ async fn call_llm(
     let provider = llm.provider.to_lowercase();
     match provider.as_str() {
         "anthropic" => call_anthropic(llm, system_prompt, messages).await,
-        "openai" | "openrouter" | "venice" => call_openai_compatible(llm, system_prompt, messages).await,
+        "openai" | "openrouter" | "venice" => {
+            call_openai_compatible(llm, system_prompt, messages).await
+        }
         _ => Err((
             StatusCode::BAD_REQUEST,
             format!("Unsupported LLM provider: {}", llm.provider),
@@ -217,10 +232,12 @@ async fn call_openai_compatible(
         ));
     }
 
-    let parsed: OpenAiResponse = response
-        .json()
-        .await
-        .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Invalid LLM response: {e}")))?;
+    let parsed: OpenAiResponse = response.json().await.map_err(|e| {
+        (
+            StatusCode::BAD_GATEWAY,
+            format!("Invalid LLM response: {e}"),
+        )
+    })?;
 
     let content = parsed
         .choices
@@ -285,10 +302,12 @@ async fn call_anthropic(
         ));
     }
 
-    let parsed: AnthropicResponse = response
-        .json()
-        .await
-        .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Invalid LLM response: {e}")))?;
+    let parsed: AnthropicResponse = response.json().await.map_err(|e| {
+        (
+            StatusCode::BAD_GATEWAY,
+            format!("Invalid LLM response: {e}"),
+        )
+    })?;
 
     let content = parsed
         .content
@@ -348,7 +367,10 @@ pub async fn post_bot_chat_message(
 
     let content = req.content.trim();
     if content.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Message content is required".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Message content is required".to_string(),
+        ));
     }
     if content.len() > 4000 {
         return Err((

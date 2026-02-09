@@ -58,17 +58,19 @@ export function AnimatedCard({
     ],
   };
 
-  const CardWrapper = onPress ? TouchableOpacity : View;
-
   return (
     <Animated.View style={[styles.container, animatedStyle, style]}>
-      <CardWrapper
-        onPress={onPress}
-        activeOpacity={onPress ? 0.9 : 1}
-        style={[styles.card, elevated && styles.elevated]}
-      >
-        {children}
-      </CardWrapper>
+      {onPress ? (
+        <TouchableOpacity
+          onPress={onPress}
+          activeOpacity={0.9}
+          style={[styles.card, elevated && styles.elevated]}
+        >
+          {children}
+        </TouchableOpacity>
+      ) : (
+        <View style={[styles.card, elevated && styles.elevated]}>{children}</View>
+      )}
     </Animated.View>
   );
 }

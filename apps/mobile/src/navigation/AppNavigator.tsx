@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -13,6 +13,11 @@ import { BotDetailScreen } from '../screens/BotDetailScreen';
 import { BotStrategyConfigScreen } from '../screens/BotStrategyConfigScreen';
 import { BotBehaviorConfigScreen } from '../screens/BotBehaviorConfigScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { ChatScreen } from '../screens/ChatScreen';
+import { ReportsScreen } from '../screens/ReportsScreen';
+import { DocsScreen } from '../screens/DocsScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
+import { BillingScreen } from '../screens/BillingScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -24,6 +29,8 @@ export type RootStackParamList = {
   BotBehaviorConfig: { botId: string };
   BotSettings: { botId: string };
   Profile: undefined;
+  Settings: undefined;
+  Billing: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -36,15 +43,6 @@ export type MainDrawerParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
 
-function PlaceholderScreen({ title }: { title: string }) {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: lightTheme.colors.background }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', color: lightTheme.colors.wave[800] }}>{title}</Text>
-      <Text style={{ marginTop: 6, color: lightTheme.colors.wave[500] }}>This section is staged next.</Text>
-    </View>
-  );
-}
-
 function MainDrawer() {
   return (
     <Drawer.Navigator
@@ -56,18 +54,23 @@ function MainDrawer() {
       }}
     >
       <Drawer.Screen name="Home" component={HomeOverviewScreen} />
-      <Drawer.Screen name="Docs" children={() => <PlaceholderScreen title="Docs" />} />
-      <Drawer.Screen name="Reports" children={() => <PlaceholderScreen title="Reports" />} />
-      <Drawer.Screen name="Chat" children={() => <PlaceholderScreen title="Chat" />} />
+      <Drawer.Screen name="Docs" component={DocsScreen} />
+      <Drawer.Screen name="Reports" component={ReportsScreen} />
+      <Drawer.Screen name="Chat" component={ChatScreen} />
     </Drawer.Navigator>
   );
 }
 
-function profileMenu(onNavigateProfile: () => void, onLogout: () => void) {
+function profileMenu(
+  onNavigateProfile: () => void,
+  onNavigateBilling: () => void,
+  onNavigateSettings: () => void,
+  onLogout: () => void
+) {
   Alert.alert('Profile Menu', 'Choose an option', [
     { text: 'Profile', onPress: onNavigateProfile },
-    { text: 'Billing', onPress: () => Alert.alert('Billing', 'Billing page is staged next.') },
-    { text: 'Settings', onPress: () => Alert.alert('Settings', 'Settings page is staged next.') },
+    { text: 'Billing', onPress: onNavigateBilling },
+    { text: 'Settings', onPress: onNavigateSettings },
     { text: 'Log out', style: 'destructive', onPress: onLogout },
     { text: 'Cancel', style: 'cancel' },
   ]);
@@ -87,6 +90,8 @@ export function AppNavigator() {
               onPress={() =>
                 profileMenu(
                   () => navigation.navigate('Profile'),
+                  () => navigation.navigate('Billing'),
+                  () => navigation.navigate('Settings'),
                   () => navigation.navigate('Auth')
                 )
               }
@@ -105,6 +110,8 @@ export function AppNavigator() {
         <Stack.Screen name="BotStrategyConfig" component={BotStrategyConfigScreen} options={{ title: 'Strategy Config' }} />
         <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

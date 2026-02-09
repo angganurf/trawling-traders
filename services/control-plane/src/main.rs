@@ -185,6 +185,27 @@ async fn build_router(
             post(control_plane::handlers::chat::post_bot_chat_message),
         )
         .route(
+            "/account/settings",
+            get(control_plane::handlers::settings::get_user_settings),
+        )
+        .route(
+            "/account/settings",
+            patch(control_plane::handlers::settings::update_user_settings),
+        )
+        .route(
+            "/account/billing",
+            get(control_plane::handlers::settings::get_billing_summary),
+        )
+        .route("/docs", get(control_plane::handlers::docs::get_docs))
+        .route(
+            "/docs/analytics",
+            post(control_plane::handlers::docs::track_docs_event),
+        )
+        .route(
+            "/reports/email-csv",
+            post(control_plane::handlers::reports::request_email_csv_report),
+        )
+        .route(
             "/bots/{id}/openclaw-config",
             get(control_plane::handlers::openclaw_config::get_openclaw_config),
         )

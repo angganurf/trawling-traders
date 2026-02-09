@@ -155,6 +155,34 @@ export interface User {
   subscription?: Subscription;
 }
 
+export interface UserAuthMethods {
+  emailPassword: boolean;
+  google: boolean;
+  apple: boolean;
+}
+
+export interface UserSettings {
+  id: string;
+  email?: string;
+  displayName?: string;
+  picture?: string;
+  authMethods: UserAuthMethods;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserSettingsRequest {
+  displayName?: string;
+}
+
+export interface BillingSummary {
+  status: string;
+  planCode: string;
+  maxBots: number;
+  botCount: number;
+  currentPeriodEnd?: string;
+}
+
 // API request/response types
 export interface CreateBotRequest {
   name: string;
@@ -232,4 +260,46 @@ export interface PostBotChatMessageRequest {
 export interface PostBotChatMessageResponse {
   userMessage: BotChatMessage;
   assistantMessage: BotChatMessage;
+}
+
+export interface EmailCsvReportRequest {
+  reportKind: 'tax' | 'trade-history' | 'full';
+  timeframe: '30d' | '90d' | '1y' | 'all';
+}
+
+export interface EmailCsvReportResponse {
+  success: boolean;
+  message: string;
+  deliveredTo: string;
+  rowsIncluded: number;
+}
+
+export interface DocsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  content: string[];
+}
+
+export interface DocsCategory {
+  id: string;
+  title: string;
+  description: string;
+  articles: DocsArticle[];
+}
+
+export interface GetDocsResponse {
+  categories: DocsCategory[];
+}
+
+export interface TrackDocsEventRequest {
+  eventType: 'category_opened' | 'article_opened' | 'search';
+  categoryId?: string;
+  articleId?: string;
+  query?: string;
+  resultsCount?: number;
+}
+
+export interface TrackDocsEventResponse {
+  success: boolean;
 }

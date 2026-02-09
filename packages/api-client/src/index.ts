@@ -5,11 +5,19 @@ const DATA_API_URL = process.env.DATA_API_URL || 'http://localhost:8080';
 
 import type {
   Bot,
+  BillingSummary,
   BotChatMessage,
   BotConfig,
   BotEvent,
   CreateBotRequest,
+  DocsCategory,
+  EmailCsvReportRequest,
+  EmailCsvReportResponse,
+  GetDocsResponse,
   GetBotChatMessagesResponse,
+  TrackDocsEventRequest,
+  TrackDocsEventResponse,
+  UpdateUserSettingsRequest,
   UpdateBotConfigRequest,
   ListBotsResponse,
   GetBotResponse,
@@ -19,6 +27,7 @@ import type {
   PostBotChatMessageResponse,
   BotActionRequest,
   User,
+  UserSettings,
 } from '@trawling-traders/types';
 
 // Generic API error
@@ -41,40 +50,36 @@ export class AuthExpiredError extends ApiError {
   }
 }
 
-// Get auth token from Cedros Login (via AsyncStorage)
+// Pluggable auth provider (configured by host app)
+export type AuthTokenProvider = () => Promise<string | null>;
+export type TokenRefreshFn = () => Promise<string | null>;
+export type ClearAuthFn = () => Promise<void>;
+
+interface AuthConfig {
+  getToken: AuthTokenProvider;
+  refreshToken?: TokenRefreshFn;
+  clearAuth?: ClearAuthFn;
+}
+
+let authConfig: AuthConfig | null = null;
+
+export function setAuthProvider(config: AuthConfig): void {
+  authConfig = config;
+}
+
 async function getAuthToken(): Promise<string | null> {
-  try {
-    // Cedros Login stores token in AsyncStorage using 'auth_tokens' key
-    const { getItem } = await import('@cedros/login-react-native');
-    const data = await getItem('auth_tokens');
-    if (data) {
-      const parsed = JSON.parse(data);
-      if (parsed.expiresAt > Date.now()) {
-        return parsed.tokens.accessToken;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  if (!authConfig?.getToken) return null;
+  return authConfig.getToken();
 }
 
-// Attempt to refresh the access token
-// Note: This is a simplified version - full refresh requires calling the auth API
 async function refreshAuthToken(): Promise<string | null> {
-  // For now, we'll return null and let the app handle re-authentication
-  // A full implementation would call the Cedros Login refresh endpoint
-  return null;
+  if (!authConfig?.refreshToken) return null;
+  return authConfig.refreshToken();
 }
 
-// Clear auth state on permanent auth failure
 async function clearAuthState(): Promise<void> {
-  try {
-    const { removeItem } = await import('@cedros/login-react-native');
-    await removeItem('auth_tokens');
-  } catch {
-    // Best effort
-  }
+  if (!authConfig?.clearAuth) return;
+  await authConfig.clearAuth();
 }
 
 // Default timeout for API requests (30 seconds)
@@ -384,6 +389,113 @@ export const userApi = {
   async getCurrentUser(): Promise<User> {
     return fetchApi('/me');
   },
+
+  async getSettings(): Promise<UserSettings> {
+    const response = await fetchApi('/account/settings');
+    return {
+      id: response.id,
+      email: response.email,
+      displayName: response.displayName ?? response.display_name,
+      picture: response.picture,
+      authMethods: {
+        emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),
+        google: Boolean(response.authMethods?.google ?? response.auth_methods?.google),
+        apple: Boolean(response.authMethods?.apple ?? response.auth_methods?.apple),
+      },
+      createdAt: response.createdAt ?? response.created_at,
+      updatedAt: response.updatedAt ?? response.updated_at,
+    };
+  },
+
+  async updateSettings(request: UpdateUserSettingsRequest): Promise<UserSettings> {
+    const response = await fetchApi('/account/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        display_name: request.displayName,
+      }),
+    });
+
+    return {
+      id: response.id,
+      email: response.email,
+      displayName: response.displayName ?? response.display_name,
+      picture: response.picture,
+      authMethods: {
+        emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),
+        google: Boolean(response.authMethods?.google ?? response.auth_methods?.google),
+        apple: Boolean(response.authMethods?.apple ?? response.auth_methods?.apple),
+      },
+      createdAt: response.createdAt ?? response.created_at,
+      updatedAt: response.updatedAt ?? response.updated_at,
+    };
+  },
+
+  async getBillingSummary(): Promise<BillingSummary> {
+    const response = await fetchApi('/account/billing');
+    return {
+      status: response.status,
+      planCode: response.planCode ?? response.plan_code,
+      maxBots: Number(response.maxBots ?? response.max_bots ?? 1),
+      botCount: Number(response.botCount ?? response.bot_count ?? 0),
+      currentPeriodEnd: response.currentPeriodEnd ?? response.current_period_end ?? undefined,
+    };
+  },
+};
+
+export const docsApi = {
+  async getDocs(): Promise<GetDocsResponse> {
+    const response = await fetchApi('/docs');
+
+    const categories = (response.categories || []).map((category: any): DocsCategory => ({
+      id: category.id,
+      title: category.title,
+      description: category.description,
+      articles: (category.articles || []).map((article: any) => ({
+        id: article.id,
+        title: article.title,
+        summary: article.summary,
+        content: Array.isArray(article.content) ? article.content.map((line: any) => String(line)) : [],
+      })),
+    }));
+
+    return { categories };
+  },
+
+  async trackEvent(request: TrackDocsEventRequest): Promise<TrackDocsEventResponse> {
+    const response = await fetchApi('/docs/analytics', {
+      method: 'POST',
+      body: JSON.stringify({
+        event_type: request.eventType,
+        category_id: request.categoryId,
+        article_id: request.articleId,
+        query: request.query,
+        results_count: request.resultsCount,
+      }),
+    });
+
+    return {
+      success: Boolean(response.success),
+    };
+  },
+};
+
+export const reportsApi = {
+  async requestEmailCsv(request: EmailCsvReportRequest): Promise<EmailCsvReportResponse> {
+    const response = await fetchApi('/reports/email-csv', {
+      method: 'POST',
+      body: JSON.stringify({
+        report_kind: request.reportKind,
+        timeframe: request.timeframe,
+      }),
+    });
+
+    return {
+      success: Boolean(response.success),
+      message: response.message,
+      deliveredTo: response.deliveredTo ?? response.delivered_to,
+      rowsIncluded: Number(response.rowsIncluded ?? response.rows_included ?? 0),
+    };
+  },
 };
 
 // Price/Data API (separate service)
@@ -461,7 +573,10 @@ export const dataApi = {
 export const api = {
   bot: botApi,
   user: userApi,
+  docs: docsApi,
+  reports: reportsApi,
   data: dataApi,
 };
 
+export { configureApi } from './config';
 export default api;

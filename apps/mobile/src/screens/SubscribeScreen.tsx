@@ -72,7 +72,7 @@ export function SubscribeScreen() {
             <View style={styles.buttonContainer}>
               <SubscribeButton
                 resource="trader-pro-monthly"
-                interval="month"
+                interval="monthly"
                 label="Subscribe with Stripe"
                 onSuccess={handleSubscribeSuccess}
                 onError={handleSubscribeError}

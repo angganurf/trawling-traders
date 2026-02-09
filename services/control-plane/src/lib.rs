@@ -9,8 +9,11 @@ pub mod handlers {
     pub mod admin_provisioning;
     pub mod bots;
     pub mod chat;
+    pub mod docs;
     pub mod openclaw_config;
     pub mod presets;
+    pub mod reports;
+    pub mod settings;
     pub mod simulate;
     pub mod sync;
 }
@@ -140,6 +143,24 @@ pub async fn app(state: Arc<AppState>) -> Router {
         .route(
             "/bots/:id/chat/messages",
             post(handlers::chat::post_bot_chat_message),
+        )
+        .route(
+            "/account/settings",
+            get(handlers::settings::get_user_settings),
+        )
+        .route(
+            "/account/settings",
+            patch(handlers::settings::update_user_settings),
+        )
+        .route(
+            "/account/billing",
+            get(handlers::settings::get_billing_summary),
+        )
+        .route("/docs", get(handlers::docs::get_docs))
+        .route("/docs/analytics", post(handlers::docs::track_docs_event))
+        .route(
+            "/reports/email-csv",
+            post(handlers::reports::request_email_csv_report),
         )
         .route(
             "/simulate-signal",
