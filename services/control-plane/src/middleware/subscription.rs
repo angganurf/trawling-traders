@@ -92,19 +92,19 @@ pub async fn subscription_middleware(
 
     let user_id = Uuid::parse_str(&auth.user_id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    // Fetch subscription from database
-    // Schema: subscriptions(status subscription_status, max_bots, current_period_end)
-    let subscription = sqlx::query_as::<_, (String, i32, chrono::DateTime<chrono::Utc>, i64)>(
+    // Fetch subscription from cedros-pay's subscriptions table.
+    // Tier is derived from product_id (e.g. "trader-pro-monthly" -> Pro).
+    let subscription = sqlx::query_as::<_, (String, String, chrono::DateTime<chrono::Utc>, i64)>(
         r#"
-            SELECT s.status::text, s.max_bots, s.current_period_end, COUNT(b.id) as bot_count
+            SELECT s.status, s.product_id, s.current_period_end, COUNT(b.id) as bot_count
             FROM subscriptions s
-            LEFT JOIN bots b ON b.user_id = s.user_id AND b.status != 'destroying'
+            LEFT JOIN bots b ON b.user_id = s.user_id::uuid AND b.status != 'destroying'
             WHERE s.user_id = $1
             AND s.current_period_end > NOW()
             GROUP BY s.id
             "#,
     )
-    .bind(user_id)
+    .bind(user_id.to_string())
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
@@ -113,9 +113,9 @@ pub async fn subscription_middleware(
     })?;
 
     let (tier, expires_at, bot_count) = match subscription {
-        Some((status, max_bots, period_end, count)) => {
+        Some((status, product_id, period_end, count)) => {
             let tier = if status == "active" {
-                if max_bots >= 20 {
+                if product_id.contains("enterprise") {
                     SubscriptionTier::Enterprise
                 } else {
                     SubscriptionTier::Pro
