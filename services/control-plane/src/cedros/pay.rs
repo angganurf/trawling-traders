@@ -48,6 +48,15 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
     let login_base = format!("http://127.0.0.1:{}/v1/auth", port);
     cfg.cedros_login.enabled = true;
     cfg.cedros_login.base_url = login_base;
+    // Must match cedros-login's issuer/audience so JWT validation passes
+    cfg.cedros_login.jwt_issuer = Some(
+        std::env::var("JWT_ISSUER")
+            .unwrap_or_else(|_| "cedros-login".to_string()),
+    );
+    cfg.cedros_login.jwt_audience = Some(
+        std::env::var("JWT_AUDIENCE")
+            .unwrap_or_else(|_| "cedros-app".to_string()),
+    );
 
     // Create PostgresStore from shared pool (single-step API from embedding guide)
     let store = Arc::new(cedros_pay::storage::PostgresStore::from_pool(
