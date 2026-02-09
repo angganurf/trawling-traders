@@ -13,6 +13,7 @@ import { BotDetailScreen } from '../screens/BotDetailScreen';
 import { BotStrategyConfigScreen } from '../screens/BotStrategyConfigScreen';
 import { BotBehaviorConfigScreen } from '../screens/BotBehaviorConfigScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { ChatScreen } from '../screens/ChatScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -58,7 +59,7 @@ function MainDrawer() {
       <Drawer.Screen name="Home" component={HomeOverviewScreen} />
       <Drawer.Screen name="Docs" children={() => <PlaceholderScreen title="Docs" />} />
       <Drawer.Screen name="Reports" children={() => <PlaceholderScreen title="Reports" />} />
-      <Drawer.Screen name="Chat" children={() => <PlaceholderScreen title="Chat" />} />
+      <Drawer.Screen name="Chat" component={ChatScreen} />
     </Drawer.Navigator>
   );
 }
