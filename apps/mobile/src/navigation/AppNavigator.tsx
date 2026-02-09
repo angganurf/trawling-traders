@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -15,6 +15,7 @@ import { BotBehaviorConfigScreen } from '../screens/BotBehaviorConfigScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
+import { DocsScreen } from '../screens/DocsScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -38,15 +39,6 @@ export type MainDrawerParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
 
-function PlaceholderScreen({ title }: { title: string }) {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: lightTheme.colors.background }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', color: lightTheme.colors.wave[800] }}>{title}</Text>
-      <Text style={{ marginTop: 6, color: lightTheme.colors.wave[500] }}>This section is staged next.</Text>
-    </View>
-  );
-}
-
 function MainDrawer() {
   return (
     <Drawer.Navigator
@@ -58,7 +50,7 @@ function MainDrawer() {
       }}
     >
       <Drawer.Screen name="Home" component={HomeOverviewScreen} />
-      <Drawer.Screen name="Docs" children={() => <PlaceholderScreen title="Docs" />} />
+      <Drawer.Screen name="Docs" component={DocsScreen} />
       <Drawer.Screen name="Reports" component={ReportsScreen} />
       <Drawer.Screen name="Chat" component={ChatScreen} />
     </Drawer.Navigator>
