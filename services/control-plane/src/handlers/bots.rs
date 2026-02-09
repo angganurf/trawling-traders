@@ -216,6 +216,7 @@ pub async fn create_bot(
 ///
 /// Uses semaphore for concurrency control (max 3 concurrent provisions)
 /// and retry with exponential backoff for DO API calls
+#[allow(clippy::too_many_arguments)]
 async fn spawn_bot_droplet(
     bot_id: Uuid,
     bot_name: String,
@@ -443,6 +444,7 @@ async fn destroy_bot_droplet(
 }
 
 /// Redeploy bot droplet (destroy and recreate)
+#[allow(clippy::too_many_arguments)]
 async fn redeploy_bot_droplet(
     bot_id: Uuid,
     bot_name: String,
