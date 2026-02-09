@@ -67,7 +67,7 @@ fn build_report_csv(
         csv_escape(recipient_email)
     ));
     csv.push_str(&format!("generated_at,{}\n", csv_escape(&generated_at)));
-    csv.push_str("\n");
+    csv.push('\n');
 
     csv.push_str("timestamp,bot_name,event_type,message\n");
     for (bot_name, event) in rows {
