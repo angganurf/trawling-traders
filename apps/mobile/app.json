@@ -4,11 +4,11 @@
     "slug": "trawling-traders",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/lob-avatar.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "cover",
+      "image": "./assets/lob-avatar.png",
+      "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
@@ -17,11 +17,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.trawlingtraders.app",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/lob-avatar.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/lob-avatar.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.trawlingtraders.app"
