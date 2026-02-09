@@ -11,10 +11,15 @@
     "dev:mobile": "cd apps/mobile && npm run start",
     "build:mobile": "cd apps/mobile && npm run build",
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "npx patch-package"
   },
   "devDependencies": {
     "@types/node": "^20",
     "typescript": "^5.3"
+  },
+  "dependencies": {
+    "expo-crypto": "^15.0.8",
+    "text-encoding-polyfill": "^0.6.7"
   }
 }

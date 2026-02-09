@@ -383,6 +383,8 @@ pub enum BotAction {
     Resume,
     Redeploy,
     Destroy,
+    DisableLiveTrading,
+    RotateSecrets,
 }
 
 #[derive(Debug, Deserialize)]

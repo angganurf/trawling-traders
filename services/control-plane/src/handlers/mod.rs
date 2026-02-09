@@ -1,5 +1,8 @@
 pub mod admin;
+pub mod admin_bots;
+pub mod admin_provisioning;
 pub mod bots;
 pub mod openclaw_config;
+pub mod presets;
 pub mod simulate;
 pub mod sync;
