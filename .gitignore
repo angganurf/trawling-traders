@@ -39,6 +39,16 @@ secrets.env
 *.log
 logs/
 
+# AI tools
+.claude/
+.gemini/
+.opencode/
+.mcp.json
+opencode.json
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
 # Build artifacts
 dist/
 build/
