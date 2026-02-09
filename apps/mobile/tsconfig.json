@@ -1,4 +1,13 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "module": "esnext",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "react-native": ["./node_modules/react-native"],
+      "react": ["./node_modules/react"],
+      "@cedros/pay-react-native": ["./src/types/cedros-pay-react-native"]
+    }
+  },
   "extends": "expo/tsconfig.base"
 }

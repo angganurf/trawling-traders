@@ -15,11 +15,15 @@
     "postinstall": "npx patch-package"
   },
   "devDependencies": {
+    "@types/react": "18.2.79",
     "@types/node": "^20",
     "typescript": "^5.3"
   },
   "dependencies": {
     "expo-crypto": "^15.0.8",
     "text-encoding-polyfill": "^0.6.7"
+  },
+  "overrides": {
+    "@types/react": "18.2.79"
   }
 }

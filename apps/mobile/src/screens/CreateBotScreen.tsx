@@ -99,14 +99,6 @@ export function CreateBotScreen() {
     ]).start();
   }, []);
 
-  // Update model when provider changes
-  useEffect(() => {
-    const models = LLM_MODELS[llmProvider];
-    if (models && models.length > 0) {
-      setLlmModel(models[0].value);
-    }
-  }, [llmProvider]);
-
   // Form state
   const [name, setName] = useState('');
   const [persona, setPersona] = useState<Persona>('beginner');
@@ -127,6 +119,14 @@ export function CreateBotScreen() {
   const [volatilityBrake, setVolatilityBrake] = useState(true);
   const [liquidityFilter, setLiquidityFilter] = useState<'low' | 'medium' | 'high'>('high');
   const [correlationBrake, setCorrelationBrake] = useState(true);
+
+  // Update model when provider changes
+  useEffect(() => {
+    const models = LLM_MODELS[llmProvider];
+    if (models && models.length > 0) {
+      setLlmModel(models[0].value);
+    }
+  }, [llmProvider]);
 
   const handleCreate = async () => {
     if (!name.trim()) {

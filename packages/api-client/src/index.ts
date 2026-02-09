@@ -50,40 +50,36 @@ export class AuthExpiredError extends ApiError {
   }
 }
 
-// Get auth token from Cedros Login (via AsyncStorage)
+// Pluggable auth provider (configured by host app)
+export type AuthTokenProvider = () => Promise<string | null>;
+export type TokenRefreshFn = () => Promise<string | null>;
+export type ClearAuthFn = () => Promise<void>;
+
+interface AuthConfig {
+  getToken: AuthTokenProvider;
+  refreshToken?: TokenRefreshFn;
+  clearAuth?: ClearAuthFn;
+}
+
+let authConfig: AuthConfig | null = null;
+
+export function setAuthProvider(config: AuthConfig): void {
+  authConfig = config;
+}
+
 async function getAuthToken(): Promise<string | null> {
-  try {
-    // Cedros Login stores token in AsyncStorage using 'auth_tokens' key
-    const { getItem } = await import('@cedros/login-react-native');
-    const data = await getItem('auth_tokens');
-    if (data) {
-      const parsed = JSON.parse(data);
-      if (parsed.expiresAt > Date.now()) {
-        return parsed.tokens.accessToken;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  if (!authConfig?.getToken) return null;
+  return authConfig.getToken();
 }
 
-// Attempt to refresh the access token
-// Note: This is a simplified version - full refresh requires calling the auth API
 async function refreshAuthToken(): Promise<string | null> {
-  // For now, we'll return null and let the app handle re-authentication
-  // A full implementation would call the Cedros Login refresh endpoint
-  return null;
+  if (!authConfig?.refreshToken) return null;
+  return authConfig.refreshToken();
 }
 
-// Clear auth state on permanent auth failure
 async function clearAuthState(): Promise<void> {
-  try {
-    const { removeItem } = await import('@cedros/login-react-native');
-    await removeItem('auth_tokens');
-  } catch {
-    // Best effort
-  }
+  if (!authConfig?.clearAuth) return;
+  await authConfig.clearAuth();
 }
 
 // Default timeout for API requests (30 seconds)
@@ -582,4 +578,5 @@ export const api = {
   data: dataApi,
 };
 
+export { configureApi } from './config';
 export default api;
