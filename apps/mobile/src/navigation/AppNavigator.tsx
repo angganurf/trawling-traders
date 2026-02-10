@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightTheme } from '../theme';
 import { AppHeader } from '../components/AppHeader';
 import { AppTabBar } from '../components/AppTabBar';
@@ -111,6 +112,7 @@ function MainDrawer() {
 }
 
 function MainDrawerContent(props: any) {
+  const insets = useSafeAreaInsets();
   const nav = props.navigation;
   const activeRoute = props.state?.routeNames?.[props.state?.index] ?? 'Home';
   const items: { key: string; label: string; active?: boolean; onPress: () => void }[] = [
@@ -162,10 +164,11 @@ function MainDrawerContent(props: any) {
   return (
     <DrawerContentScrollView
       {...props}
+      style={styles.drawerScrollContainer}
       contentContainerStyle={styles.drawerScroll}
     >
       <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
-        <View style={styles.drawerItemsWrap}>
+        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 18 }]}>
           {items.map((item) => (
             <DrawerLabelButton
               key={item.key}
@@ -233,6 +236,7 @@ function AppStack() {
 }
 
 function ProfileDrawerContent(props: any) {
+  const insets = useSafeAreaInsets();
   const nav = props.navigation;
   const items: { key: string; label: string; onPress: () => void }[] = [
     {
@@ -271,10 +275,11 @@ function ProfileDrawerContent(props: any) {
   return (
     <DrawerContentScrollView
       {...props}
+      style={styles.drawerScrollContainer}
       contentContainerStyle={styles.drawerScroll}
     >
       <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
-        <View style={styles.drawerItemsWrap}>
+        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 18 }]}>
           {items.map((item) => (
             <DrawerLabelButton
               key={item.key}
@@ -329,43 +334,44 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
+  drawerScrollContainer: {
+    marginTop: 0,
+    paddingTop: 0,
+  },
   drawerScroll: {
     flexGrow: 1,
+    paddingTop: 0,
   },
   drawerBg: {
     flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 0,
   },
   drawerItemsWrap: {
-    gap: 16,
-    paddingTop: 34,
+    gap: 10,
+    paddingBottom: 20,
   },
   drawerLabel: {
+    marginHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#8b98a5',
-    borderRadius: 6,
-    backgroundColor: 'rgba(246, 244, 239, 0.9)',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    shadowColor: '#111',
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    borderColor: 'rgba(171, 211, 241, 0.45)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(8, 31, 56, 0.42)',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
   },
   drawerLabelActive: {
-    borderColor: '#4f6f8a',
-    backgroundColor: 'rgba(230, 240, 248, 0.92)',
+    borderColor: 'rgba(187, 227, 255, 0.8)',
+    backgroundColor: 'rgba(24, 84, 132, 0.58)',
   },
   drawerLabelText: {
-    color: '#233140',
+    color: '#eaf5ff',
     fontSize: 16,
     fontWeight: '700',
-    textAlign: 'center',
+    textAlign: 'left',
     letterSpacing: 0.2,
   },
   drawerLabelTextActive: {
-    color: '#0f3f67',
+    color: '#ffffff',
   },
 });
