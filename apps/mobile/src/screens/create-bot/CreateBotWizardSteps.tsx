@@ -379,7 +379,13 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                 }}
                 activeOpacity={0.9}
               >
-                <Image source={imageForCaptainKey(option.imageKey)} style={styles.captainImage} resizeMode="cover" />
+                <View style={styles.captainImageFrame}>
+                  <Image
+                    source={imageForCaptainKey(option.imageKey)}
+                    style={styles.captainImage}
+                    resizeMode="cover"
+                  />
+                </View>
                 <Text style={styles.captainName}>{option.captainName}</Text>
                 <Text style={styles.captainDescription}>{option.personalityDescription}</Text>
               </TouchableOpacity>
