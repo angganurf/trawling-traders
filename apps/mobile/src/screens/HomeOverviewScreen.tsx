@@ -196,6 +196,12 @@ export function HomeOverviewScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No bots yet</Text>
             <Text style={styles.emptyText}>Create your first bot to populate overview stats.</Text>
+            <TouchableOpacity
+              style={styles.emptyCtaButton}
+              onPress={() => navigation.navigate('CreateBot')}
+            >
+              <Text style={styles.emptyCtaButtonText}>Create Your First Bot</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -315,5 +321,17 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: lightTheme.colors.wave[500],
+  },
+  emptyCtaButton: {
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: lightTheme.colors.primary[700],
+  },
+  emptyCtaButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
