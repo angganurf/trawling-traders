@@ -29,11 +29,13 @@ import { CreateBotWizardSteps } from './create-bot/CreateBotWizardSteps';
 import { createBotWizardStyles as styles } from './create-bot/CreateBotWizard.styles';
 
 type CreateBotScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateBot'>;
-type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type StrategyType = 'macro' | 'event-driven' | 'smart-money' | 'range';
 
 const STEP_META = [
   { title: 'Basics', description: 'Name your bot, choose your style, and decide if you want paper-only testing.' },
-  { title: 'Strategy', description: 'Pick a market category, then select the exact assets this bot is allowed to trade.' },
+  { title: 'Specialty', description: 'Pick a category, then choose the exact assets this bot is allowed to trade.' },
+  { title: 'Strategy', description: 'Choose the trading style this bot should apply to your selected assets.' },
   { title: 'Risk', description: 'Set caps and strictness for how cautiously signals are executed.' },
   { title: 'Algorithm', description: 'Build a weighted factor formula for this bot.' },
   { title: 'AI', description: 'Connect the LLM provider and model your bot will use.' },
@@ -175,6 +177,13 @@ const STRICTNESS_OPTIONS: { value: Strictness; label: string }[] = [
   { value: 'low', label: 'Low' },
 ];
 
+const STRATEGY_OPTIONS: { value: StrategyType; label: string }[] = [
+  { value: 'macro', label: 'Macro' },
+  { value: 'event-driven', label: 'Event Driven' },
+  { value: 'smart-money', label: 'Smart Money' },
+  { value: 'range', label: 'Range' },
+];
+
 const LLM_MODELS: Record<LlmProvider, { value: LlmModel; label: string }[]> = {
   openai: [
     { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
@@ -212,7 +221,6 @@ export function CreateBotScreen() {
   const [name, setName] = useState('');
   const [persona, setPersona] = useState<Persona>('beginner');
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
-  const [algorithmMode] = useState<AlgorithmMode>('trend');
   const [algorithmFactors, setAlgorithmFactors] = useState<AlgorithmFactor[]>([
     { factor: 'price_momentum', weight: 0.4 },
     { factor: 'volume_confirmation', weight: 0.25 },
@@ -223,6 +231,7 @@ export function CreateBotScreen() {
   const [tradeableAssets, setTradeableAssets] = useState<TradeableAsset[]>([]);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
+  const [strategyType, setStrategyType] = useState<StrategyType>('macro');
   const [maxPositionSize, setMaxPositionSize] = useState('5');
   const [maxDailyLoss, setMaxDailyLoss] = useState('50');
   const [maxDrawdown, setMaxDrawdown] = useState('10');
@@ -234,6 +243,21 @@ export function CreateBotScreen() {
   const [telegramBotToken, setTelegramBotToken] = useState('');
   const [telegramUserId, setTelegramUserId] = useState('');
   const [telegramPairingCode, setTelegramPairingCode] = useState('');
+
+  const algorithmMode = useMemo<AlgorithmMode>(() => {
+    switch (strategyType) {
+      case 'macro':
+        return 'trend';
+      case 'event-driven':
+        return 'breakout';
+      case 'smart-money':
+        return 'mean-reversion';
+      case 'range':
+        return 'mean-reversion';
+      default:
+        return 'trend';
+    }
+  }, [strategyType]);
 
   const modelsForProvider = useMemo(() => LLM_MODELS[llmProvider], [llmProvider]);
 
@@ -354,7 +378,7 @@ export function CreateBotScreen() {
       if (assetsLoading) return 'Loading assets for this category. Please wait a moment.';
       if (selectedAssets.length === 0) return 'Select at least one asset to trade.';
     }
-    if (step === 2) {
+    if (step === 3) {
       const checks = [
         parseNumberField(maxPositionSize, 'Max position %', 1, 50),
         parseNumberField(maxDailyLoss, 'Max daily loss', 1, 100000),
@@ -364,13 +388,13 @@ export function CreateBotScreen() {
       const failed = checks.find((check) => check.error);
       if (failed?.error) return failed.error;
     }
-    if (step === 3 && algorithmFactors.length === 0) {
+    if (step === 4 && algorithmFactors.length === 0) {
       return 'Add at least one algorithm factor.';
     }
-    if (step === 4) {
+    if (step === 5) {
       if (!llmApiKey.trim()) return 'Enter your LLM API key to continue.';
     }
-    if (step === 5) {
+    if (step === 6) {
       if (telegramEnabled && !telegramBotToken.trim()) return 'Enter a Telegram token or disable Telegram.';
       if (telegramEnabled && !telegramUserId.trim()) return 'Enter your Telegram user ID.';
       if (telegramEnabled && !telegramPairingCode.trim()) return 'Enter your Telegram pairing code.';
@@ -385,7 +409,7 @@ export function CreateBotScreen() {
       setInlineError(error);
       return;
     }
-    if (step < 6) {
+    if (step < 7) {
       setStep((prev) => (prev + 1) as WizardStep);
     }
   };
@@ -490,6 +514,9 @@ export function CreateBotScreen() {
             selectedAssets={selectedAssets}
             setSelectedAssets={setSelectedAssets}
             assetsLoading={assetsLoading}
+            strategyOptions={STRATEGY_OPTIONS}
+            strategyType={strategyType}
+            setStrategyType={setStrategyType}
             algorithmMode={algorithmMode}
             strictnessOptions={STRICTNESS_OPTIONS}
             strictness={strictness}
@@ -528,7 +555,7 @@ export function CreateBotScreen() {
             <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isSubmitting}>
               <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
             </TouchableOpacity>
-            {step < 6 ? (
+            {step < 7 ? (
               <TouchableOpacity style={styles.nextButton} onPress={onNext} disabled={isSubmitting}>
                 <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>

@@ -15,7 +15,8 @@ import type {
 import { lightTheme } from '../../theme';
 import { createBotWizardStyles as styles } from './CreateBotWizard.styles';
 
-export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type StrategyType = 'macro' | 'event-driven' | 'smart-money' | 'range';
 
 type Option<T extends string> = {
   value: T;
@@ -38,6 +39,9 @@ type CreateBotWizardStepsProps = {
   selectedAssets: string[];
   setSelectedAssets: (value: string[]) => void;
   assetsLoading: boolean;
+  strategyOptions: Option<StrategyType>[];
+  strategyType: StrategyType;
+  setStrategyType: (value: StrategyType) => void;
   algorithmMode: AlgorithmMode;
   strictness: Strictness;
   setStrictness: (value: Strictness) => void;
@@ -134,6 +138,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     selectedAssets,
     setSelectedAssets,
     assetsLoading,
+    strategyOptions,
+    strategyType,
+    setStrategyType,
     algorithmMode,
     strictnessOptions,
     strictness,
@@ -257,9 +264,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
 
     return (
       <View>
-        <Text style={styles.sectionLabel}>Asset Focus</Text>
+        <Text style={styles.sectionLabel}>Categories</Text>
         {renderChip(assetChoices, assetFocus, setAssetFocus)}
-        <Text style={styles.sectionLabel}>Allowed Assets</Text>
+        <Text style={styles.sectionLabel}>Target Assets</Text>
         {assetsLoading ? (
           <Text style={styles.helperText}>Loading curated assets...</Text>
         ) : assetsForFocus.length === 0 ? (
@@ -296,6 +303,18 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   }
 
   if (step === 2) {
+    return (
+      <View>
+        <Text style={styles.sectionLabel}>Strategy Type</Text>
+        {renderChip(strategyOptions, strategyType, setStrategyType)}
+        <Text style={styles.helperText}>
+          This chooses the style of trading logic for your selected assets.
+        </Text>
+      </View>
+    );
+  }
+
+  if (step === 3) {
     return (
       <View>
         <Text style={styles.sectionLabel}>Risk Caps</Text>
@@ -361,7 +380,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 3) {
+  if (step === 4) {
     const coefficientSum = algorithmFactors.reduce((sum, factor) => sum + factor.weight, 0);
     const canAddAnother = algorithmFactors.length < factorCatalog.length;
 
@@ -509,7 +528,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 4) {
+  if (step === 5) {
     return (
       <View>
         <Text style={styles.sectionLabel}>LLM Provider</Text>
@@ -543,7 +562,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 5) {
+  if (step === 6) {
     return (
       <View>
         <View style={styles.instructionBox}>
@@ -637,7 +656,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
       <View style={styles.summaryRow}>
         <Text style={styles.summaryLabel}>Persona / Strategy</Text>
         <Text style={styles.summaryValue}>
-          {persona} • {algorithmMode} • {strictness}
+          {persona} • {strategyType} • {strictness}
         </Text>
       </View>
       <View style={styles.summaryRow}>
