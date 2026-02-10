@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -26,8 +26,6 @@ interface OverviewStats {
   openTrades: number;
 }
 
-type ScreenState = 'loading' | 'empty' | 'active';
-
 export function HomeOverviewScreen() {
   const { user } = useUser();
   const { performAction } = useBotAction();
@@ -39,7 +37,7 @@ export function HomeOverviewScreen() {
     totalTrades: 0,
     openTrades: 0,
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [botsLoaded, setBotsLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +46,12 @@ export function HomeOverviewScreen() {
     try {
       const botsResponse = await api.bot.listBots();
       setBots(botsResponse.bots);
+      setBotsLoaded(true);
 
+      // No bots → nothing else to fetch
+      if (botsResponse.bots.length === 0) return;
+
+      // Fetch metrics + events in background (UI already visible)
       const [metricsByBot, eventsByBot] = await Promise.all([
         Promise.all(
           botsResponse.bots.map(async (bot) => {
@@ -89,6 +92,7 @@ export function HomeOverviewScreen() {
       if (__DEV__) {
         console.error('Overview load failed:', loadErr);
       }
+      setBotsLoaded(true);
       if (loadErr instanceof AuthExpiredError) {
         setError('Session expired. Please log in again.');
       } else if (loadErr instanceof NetworkError) {
@@ -99,7 +103,6 @@ export function HomeOverviewScreen() {
         setError('Unable to refresh overview right now.');
       }
     } finally {
-      setIsLoading(false);
       setRefreshing(false);
     }
   }, []);
@@ -127,12 +130,9 @@ export function HomeOverviewScreen() {
     [performAction, loadData]
   );
 
-  const screenState: ScreenState = useMemo(() => {
-    if (isLoading) return 'loading';
-    return bots.length > 0 ? 'active' : 'empty';
-  }, [isLoading, bots.length]);
+  const hasActiveBots = bots.length > 0;
 
-  if (screenState === 'loading') {
+  if (!botsLoaded) {
     return (
       <OceanBackground>
         <View style={styles.centered}>
@@ -159,7 +159,7 @@ export function HomeOverviewScreen() {
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {screenState === 'active' && (
+        {hasActiveBots && (
           <>
             <KpiStrip
               bots={bots}
@@ -183,7 +183,7 @@ export function HomeOverviewScreen() {
           </>
         )}
 
-        {screenState === 'empty' && (
+        {!hasActiveBots && (
           <OnboardingSection hasBots={false} hasFundedBot={false} />
         )}
       </ScrollView>
