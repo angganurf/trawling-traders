@@ -386,8 +386,7 @@ const styles = StyleSheet.create({
   drawerLabelText: {
     color: '#eef6ff',
     fontSize: 17,
-    fontWeight: '700',
-    fontFamily: lightTheme.typography.families.display,
+    fontFamily: 'BNRumble',
     textAlign: 'left',
     letterSpacing: 0.25,
   },
