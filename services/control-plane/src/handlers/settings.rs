@@ -25,6 +25,7 @@ struct UserSettingsRow {
     id: Uuid,
     email: Option<String>,
     name: Option<String>,
+    default_persona: Option<crate::models::Persona>,
     picture: Option<String>,
     password_hash: Option<String>,
     google_id: Option<String>,
@@ -53,10 +54,14 @@ fn normalize_display_name(value: Option<String>) -> Option<String> {
 }
 
 fn to_response(row: UserSettingsRow) -> UserSettingsResponse {
+    let default_persona = row
+        .default_persona
+        .unwrap_or_else(|| derive_default_persona(row.id));
     UserSettingsResponse {
         id: row.id,
         email: row.email,
         display_name: row.name,
+        default_persona,
         picture: row.picture,
         auth_methods: AuthMethodsStatus {
             email_password: row.password_hash.is_some(),
@@ -68,12 +73,57 @@ fn to_response(row: UserSettingsRow) -> UserSettingsResponse {
     }
 }
 
+fn derive_default_persona(user_id: Uuid) -> crate::models::Persona {
+    let bucket = (user_id.as_bytes()[15] % 3) as i32;
+    match bucket {
+        0 => crate::models::Persona::Beginner,
+        1 => crate::models::Persona::Tweaker,
+        _ => crate::models::Persona::QuantLite,
+    }
+}
+
+async fn ensure_default_persona(
+    state: &AppState,
+    user_id: Uuid,
+) -> Result<crate::models::Persona, (StatusCode, String)> {
+    let existing: Option<crate::models::Persona> =
+        sqlx::query_scalar("SELECT default_persona FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                if matches!(e, sqlx::Error::RowNotFound) {
+                    (StatusCode::NOT_FOUND, "User not found".to_string())
+                } else {
+                    (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+                }
+            })?;
+
+    if let Some(persona) = existing {
+        return Ok(persona);
+    }
+
+    let derived = derive_default_persona(user_id);
+    sqlx::query(
+        "UPDATE users
+         SET default_persona = $1, updated_at = NOW()
+         WHERE id = $2 AND default_persona IS NULL",
+    )
+    .bind(derived)
+    .bind(user_id)
+    .execute(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(derived)
+}
+
 async fn load_user_settings_row(
     state: &AppState,
     user_id: Uuid,
 ) -> Result<UserSettingsRow, (StatusCode, String)> {
     sqlx::query_as::<_, UserSettingsRow>(
-        "SELECT id, email, name, picture, password_hash, google_id, apple_id, created_at, updated_at \
+        "SELECT id, email, name, default_persona, picture, password_hash, google_id, apple_id, created_at, updated_at \
          FROM users \
          WHERE id = $1",
     )
@@ -95,6 +145,7 @@ pub async fn get_user_settings(
 ) -> Result<Json<UserSettingsResponse>, (StatusCode, String)> {
     let user_id = Uuid::parse_str(&auth.user_id)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
+    let _ = ensure_default_persona(&state, user_id).await?;
     let row = load_user_settings_row(&state, user_id).await?;
     Ok(Json(to_response(row)))
 }
@@ -107,18 +158,21 @@ pub async fn update_user_settings(
     let user_id = Uuid::parse_str(&auth.user_id)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
     let display_name = normalize_display_name(req.display_name);
+    let default_persona = req.default_persona;
 
     sqlx::query(
         "UPDATE users
-         SET name = $1, updated_at = NOW()
-         WHERE id = $2",
+         SET name = $1, default_persona = COALESCE($2, default_persona), updated_at = NOW()
+         WHERE id = $3",
     )
     .bind(display_name)
+    .bind(default_persona)
     .bind(user_id)
     .execute(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
+    let _ = ensure_default_persona(&state, user_id).await?;
     let row = load_user_settings_row(&state, user_id).await?;
     Ok(Json(to_response(row)))
 }

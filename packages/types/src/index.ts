@@ -184,6 +184,7 @@ export interface UserSettings {
   id: string;
   email?: string;
   displayName?: string;
+  defaultPersona?: Persona;
   picture?: string;
   authMethods: UserAuthMethods;
   createdAt: string;
@@ -192,6 +193,7 @@ export interface UserSettings {
 
 export interface UpdateUserSettingsRequest {
   displayName?: string;
+  defaultPersona?: Persona;
 }
 
 export interface BillingSummary {
@@ -211,7 +213,7 @@ export interface NameAvailability {
 // API request/response types
 export interface CreateBotRequest {
   name: string;
-  persona: Persona;
+  persona?: Persona;
   assetFocus: AssetFocus;
   customAssets?: string[];
   algorithmMode: AlgorithmMode;

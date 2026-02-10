@@ -10,11 +10,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { UserSettings } from '@trawling-traders/types';
+import type { Persona, UserSettings } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { API_URL } from '../config/api';
 import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
+
+const ASSISTANT_STYLE_OPTIONS: { value: Persona; label: string; description: string }[] = [
+  { value: 'beginner', label: 'Clear Guide', description: 'Friendly and plain-language explanations.' },
+  { value: 'tweaker', label: 'Pro Operator', description: 'Direct and professional output style.' },
+  { value: 'quant-lite', label: 'Quant Analyst', description: 'Technical and data-heavy communication.' },
+];
 
 async function requestPasswordReset(email: string): Promise<void> {
   const response = await fetch(`${API_URL}/v1/auth/forgot-password`, {
@@ -42,6 +48,7 @@ function AuthMethodPill({ label, connected }: { label: string; connected: boolea
 export function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [displayNameDraft, setDisplayNameDraft] = useState('');
+  const [assistantStyleDraft, setAssistantStyleDraft] = useState<Persona>('beginner');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,10 +56,11 @@ export function SettingsScreen() {
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const hasUnsavedDisplayName = useMemo(() => {
+  const hasUnsavedSettings = useMemo(() => {
     const saved = settings?.displayName?.trim() ?? '';
-    return displayNameDraft.trim() !== saved;
-  }, [displayNameDraft, settings?.displayName]);
+    const savedStyle = settings?.defaultPersona ?? 'beginner';
+    return displayNameDraft.trim() !== saved || assistantStyleDraft !== savedStyle;
+  }, [assistantStyleDraft, displayNameDraft, settings?.defaultPersona, settings?.displayName]);
 
   const loadSettings = useCallback(async () => {
     setError(null);
@@ -60,6 +68,7 @@ export function SettingsScreen() {
       const response = await api.user.getSettings();
       setSettings(response);
       setDisplayNameDraft(response.displayName ?? '');
+      setAssistantStyleDraft(response.defaultPersona ?? 'beginner');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load settings');
       setSettings(null);
@@ -79,7 +88,7 @@ export function SettingsScreen() {
   };
 
   const saveDisplayName = async () => {
-    if (!hasUnsavedDisplayName || isSaving) {
+    if (!hasUnsavedSettings || isSaving) {
       return;
     }
 
@@ -87,10 +96,12 @@ export function SettingsScreen() {
     try {
       const response = await api.user.updateSettings({
         displayName: displayNameDraft.trim() || undefined,
+        defaultPersona: assistantStyleDraft,
       });
       setSettings(response);
       setDisplayNameDraft(response.displayName ?? '');
-      Alert.alert('Saved', 'Display name updated.');
+      setAssistantStyleDraft(response.defaultPersona ?? assistantStyleDraft);
+      Alert.alert('Saved', 'Settings updated.');
     } catch (err) {
       Alert.alert('Update Failed', err instanceof Error ? err.message : 'Could not update display name');
     } finally {
@@ -182,15 +193,34 @@ export function SettingsScreen() {
             maxLength={80}
           />
 
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Assistant Style</Text>
+          {ASSISTANT_STYLE_OPTIONS.map((option) => {
+            const selected = assistantStyleDraft === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.methodPill, selected ? styles.methodPillOn : styles.methodPillOff, { marginBottom: 8 }]}
+                onPress={() => setAssistantStyleDraft(option.value)}
+              >
+                <Text style={[styles.methodPillText, selected ? styles.methodPillTextOn : styles.methodPillTextOff]}>
+                  {option.label}
+                </Text>
+                <Text style={[styles.helper, { marginTop: 4, marginBottom: 0 }]}>
+                  {option.description}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
           <Text style={[styles.inputLabel, { marginTop: 14 }]}>Email</Text>
           <View style={styles.readonlyBox}>
             <Text style={styles.readonlyText}>{settings?.email || 'No email on account'}</Text>
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, (!hasUnsavedDisplayName || isSaving) && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, (!hasUnsavedSettings || isSaving) && styles.primaryButtonDisabled]}
             onPress={saveDisplayName}
-            disabled={!hasUnsavedDisplayName || isSaving}
+            disabled={!hasUnsavedSettings || isSaving}
           >
             <Text style={styles.primaryButtonText}>{isSaving ? 'Saving...' : 'Save Changes'}</Text>
           </TouchableOpacity>

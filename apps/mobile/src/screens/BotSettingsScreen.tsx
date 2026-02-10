@@ -24,9 +24,9 @@ type BotSettingsScreenRouteProp = RouteProp<RootStackParamList, 'BotSettings'>;
 type BotSettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'BotSettings'>;
 
 const PERSONAS: { value: Persona; label: string; description: string }[] = [
-  { value: 'beginner', label: 'Set & Forget', description: 'Blue-chip crypto + xStocks/metals' },
-  { value: 'tweaker', label: 'Hands-on', description: 'Tune assets, risk controls' },
-  { value: 'quant-lite', label: 'Power User', description: 'Signal knobs, full control' },
+  { value: 'beginner', label: 'Clear Guide', description: 'Friendly and plain-language explanations.' },
+  { value: 'tweaker', label: 'Pro Operator', description: 'Direct and professional communication style.' },
+  { value: 'quant-lite', label: 'Quant Analyst', description: 'Technical and data-heavy communication style.' },
 ];
 
 const ALGORITHMS: { value: AlgorithmMode; label: string; description: string }[] = [
@@ -137,12 +137,12 @@ export function BotSettingsScreen() {
           tradingMode,
           llmProvider,
           llmApiKey: llmApiKey.trim(),
-          signalKnobs: persona === 'quant-lite' ? {
+          signalKnobs: {
             volumeConfirmation,
             volatilityBrake,
             liquidityFilter,
             correlationBrake,
-          } : undefined,
+          },
         },
       });
       setHasChanges(false);
@@ -222,7 +222,7 @@ export function BotSettingsScreen() {
           </>
         )}
 
-        {renderSection('Persona',
+        {renderSection('Assistant Style',
           <>
             {PERSONAS.map((p) => (
               <TouchableOpacity
@@ -380,7 +380,7 @@ export function BotSettingsScreen() {
           </>
         )}
 
-        {persona === 'quant-lite' && renderSection('Signal Knobs',
+        {renderSection('Signal Knobs',
           <>
             {[
               { label: 'Volume Confirmation', value: volumeConfirmation, setter: setVolumeConfirmation },

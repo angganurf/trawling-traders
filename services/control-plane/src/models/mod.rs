@@ -380,6 +380,7 @@ pub struct UserSettingsResponse {
     pub id: Uuid,
     pub email: Option<String>,
     pub display_name: Option<String>,
+    pub default_persona: Persona,
     pub picture: Option<String>,
     pub auth_methods: AuthMethodsStatus,
     pub created_at: DateTime<Utc>,
@@ -389,6 +390,7 @@ pub struct UserSettingsResponse {
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserSettingsRequest {
     pub display_name: Option<String>,
+    pub default_persona: Option<Persona>,
 }
 
 #[derive(Debug, Serialize)]
@@ -485,7 +487,7 @@ pub struct ListTradeableAssetsResponse {
 pub struct CreateBotRequest {
     #[validate(length(min = 1, max = 100))]
     pub name: String,
-    pub persona: Persona,
+    pub persona: Option<Persona>,
     pub algorithm_mode: AlgorithmMode,
     /// Optional weighted factor list for linear-regression style strategy builder
     pub algorithm_factors: Option<Vec<AlgorithmFactorInput>>,

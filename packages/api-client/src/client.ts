@@ -424,6 +424,7 @@ export const userApi = {
       id: response.id,
       email: response.email,
       displayName: response.displayName ?? response.display_name,
+      defaultPersona: response.defaultPersona ?? response.default_persona ?? undefined,
       picture: response.picture,
       authMethods: {
         emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),
@@ -440,6 +441,7 @@ export const userApi = {
       method: 'PATCH',
       body: JSON.stringify({
         display_name: request.displayName,
+        default_persona: request.defaultPersona,
       }),
     });
 
@@ -447,6 +449,7 @@ export const userApi = {
       id: response.id,
       email: response.email,
       displayName: response.displayName ?? response.display_name,
+      defaultPersona: response.defaultPersona ?? response.default_persona ?? undefined,
       picture: response.picture,
       authMethods: {
         emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),

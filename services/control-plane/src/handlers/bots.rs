@@ -216,6 +216,14 @@ async fn validate_selected_assets(
     Ok(())
 }
 
+fn derive_default_persona(user_id: Uuid) -> Persona {
+    match user_id.as_bytes()[15] % 3 {
+        0 => Persona::Beginner,
+        1 => Persona::Tweaker,
+        _ => Persona::QuantLite,
+    }
+}
+
 /// POST /bots - Create a new bot
 pub async fn create_bot(
     State(state): State<Arc<AppState>>,
@@ -241,6 +249,34 @@ pub async fn create_bot(
         .begin()
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let default_persona: Option<Persona> =
+        sqlx::query_scalar("SELECT default_persona FROM users WHERE id = $1 FOR UPDATE")
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::RowNotFound => (StatusCode::NOT_FOUND, "User not found".to_string()),
+                _ => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            })?;
+
+    let resolved_persona = req
+        .persona
+        .or(default_persona)
+        .unwrap_or_else(|| derive_default_persona(user_id));
+
+    if default_persona.is_none() {
+        sqlx::query(
+            "UPDATE users
+             SET default_persona = $1, updated_at = NOW()
+             WHERE id = $2 AND default_persona IS NULL",
+        )
+        .bind(resolved_persona)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    }
 
     // Lock user's bots with FOR UPDATE to prevent concurrent creation
     let bot_count: i64 = sqlx::query_scalar(
@@ -281,7 +317,7 @@ pub async fn create_bot(
     .bind(Uuid::nil())
     .bind(1)
     .bind(&req.name)
-    .bind(req.persona)
+    .bind(resolved_persona)
     .bind(req.asset_focus)
     .bind(custom_assets_json)
     .bind(req.algorithm_mode)
@@ -319,7 +355,7 @@ pub async fn create_bot(
     .bind(bot_id)
     .bind(user_id)
     .bind(&req.name)
-    .bind(req.persona)
+    .bind(resolved_persona)
     .bind(config_id)
     .bind(&bootstrap_token)
     .fetch_one(&mut *tx)

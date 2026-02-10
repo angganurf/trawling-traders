@@ -18,7 +18,6 @@ import type {
   AssetFocus,
   LlmModel,
   LlmProvider,
-  Persona,
   Strictness,
   TradeableAsset,
   TradingMode,
@@ -33,7 +32,7 @@ type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 type StrategyType = 'macro' | 'event-driven' | 'smart-money' | 'range';
 
 const STEP_META = [
-  { title: 'Basics', description: 'Name your bot, choose your style, and decide if you want paper-only testing.' },
+  { title: 'Basics', description: 'Name your bot and decide if you want paper-only testing.' },
   { title: 'Specialty', description: 'Pick a category, then choose the exact assets this bot is allowed to trade.' },
   { title: 'Strategy', description: 'Choose the trading style this bot should apply to your selected assets.' },
   { title: 'Algorithm', description: 'Build your signal formula. Full controls are currently available for Macro strategy.' },
@@ -157,12 +156,6 @@ const NAME_BOATS = [
   'lifeboat',
 ];
 
-const PERSONAS: { value: Persona; label: string; description: string; recommended?: boolean }[] = [
-  { value: 'beginner', label: 'Set & Forget', description: 'Balanced defaults for most traders.', recommended: true },
-  { value: 'tweaker', label: 'Hands-on', description: 'More tuning and intervention options.' },
-  { value: 'quant-lite', label: 'Power User', description: 'Advanced style with tighter control.' },
-];
-
 const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }[] = [
   { value: 'tokenized-equities', label: 'Stocks' },
   { value: 'tokenized-metals', label: 'Metals' },
@@ -219,7 +212,6 @@ export function CreateBotScreen() {
   const [nameCheckLoading, setNameCheckLoading] = useState(false);
 
   const [name, setName] = useState('');
-  const [persona, setPersona] = useState<Persona>('beginner');
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
   const [algorithmFactors, setAlgorithmFactors] = useState<AlgorithmFactor[]>([
     { factor: 'price_momentum', weight: 0.4 },
@@ -445,7 +437,6 @@ export function CreateBotScreen() {
     try {
       await api.bot.createBot({
         name: name.trim(),
-        persona,
         assetFocus,
         customAssets: selectedAssets,
         algorithmMode,
@@ -500,9 +491,6 @@ export function CreateBotScreen() {
           {inlineError ? <Text style={styles.inlineError}>{inlineError}</Text> : null}
           <CreateBotWizardSteps
             step={step}
-            personas={PERSONAS}
-            persona={persona}
-            setPersona={setPersona}
             name={name}
             setName={setName}
             nameAvailability={nameAvailability}

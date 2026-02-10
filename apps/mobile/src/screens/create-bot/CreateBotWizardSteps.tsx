@@ -7,7 +7,6 @@ import type {
   LlmModel,
   LlmProvider,
   NameAvailability,
-  Persona,
   Strictness,
   TradeableAsset,
   TradingMode,
@@ -27,8 +26,6 @@ type Option<T extends string> = {
 
 type CreateBotWizardStepsProps = {
   step: WizardStep;
-  persona: Persona;
-  setPersona: (value: Persona) => void;
   name: string;
   setName: (value: string) => void;
   nameAvailability: NameAvailability | null;
@@ -74,7 +71,6 @@ type CreateBotWizardStepsProps = {
   setTelegramPairingCode: (value: string) => void;
   modelsForProvider: { value: LlmModel; label: string }[];
   llmModels: Record<LlmProvider, { value: LlmModel; label: string }[]>;
-  personas: Option<Persona>[];
   assetChoices: Option<AssetFocus>[];
   strictnessOptions: Option<Strictness>[];
 };
@@ -124,9 +120,6 @@ function renderChip<T extends string>(
 export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const {
     step,
-    personas,
-    persona,
-    setPersona,
     name,
     setName,
     nameAvailability,
@@ -211,22 +204,6 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             </View>
           )
         ) : null}
-        <Text style={styles.sectionLabel}>Persona</Text>
-        {personas.map((item) => (
-          <TouchableOpacity
-            key={item.value}
-            style={[styles.optionCard, persona === item.value && styles.optionCardActive]}
-            onPress={() => setPersona(item.value)}
-          >
-            <Text style={styles.optionTitle}>{item.label}</Text>
-            <Text style={styles.optionDescription}>{item.description}</Text>
-            {item.recommended ? (
-              <View style={styles.recommendedTag}>
-                <Text style={styles.recommendedTagText}>Recommended Start</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-        ))}
         <Text style={styles.sectionLabel}>Trading Mode</Text>
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
@@ -672,7 +649,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
       <View style={styles.summaryRow}>
         <Text style={styles.summaryLabel}>Persona / Strategy</Text>
         <Text style={styles.summaryValue}>
-          {persona} • {strategyType} • {strictness}
+          {strategyType} • {strictness}
         </Text>
       </View>
       <View style={styles.summaryRow}>
