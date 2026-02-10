@@ -381,11 +381,11 @@ All admin routes are under `/admin/`. Auth uses Ed25519 signature (primary) or J
 | POST | `/admin/products` | Admin | Create product |
 | PUT | `/admin/products/{id}` | Admin | Update product |
 | DELETE | `/admin/products/{id}` | Admin | Delete product |
-| GET | `/admin/products/{id}/inventory` | Admin | Get product inventory |
+| PUT | `/admin/products/{id}/inventory` | Admin | Set product inventory |
 | POST | `/admin/products/{id}/inventory/adjust` | Admin | Adjust inventory |
 | GET | `/admin/products/{id}/inventory/adjustments` | Admin | Inventory adjustment history |
 | GET | `/admin/products/{id}/variations` | Admin | List variations |
-| POST | `/admin/products/{id}/variations` | Admin | Create variation |
+| PUT | `/admin/products/{id}/variations` | Admin | Update variations |
 | POST | `/admin/products/{id}/variants/inventory` | Admin | Update variant inventory |
 | GET | `/admin/collections` | Admin | List collections |
 | POST | `/admin/collections` | Admin | Create collection |
@@ -420,6 +420,7 @@ All admin routes are under `/admin/`. Auth uses Ed25519 signature (primary) or J
 | GET | `/admin/taxes/{id}` | Admin | Get tax rule |
 | PUT | `/admin/taxes/{id}` | Admin | Update tax rule |
 | DELETE | `/admin/taxes/{id}` | Admin | Delete tax rule |
+| GET | `/admin/credits/refund-requests` | Admin | List credits refund requests |
 | GET | `/admin/stripe/refunds` | Admin | List Stripe refunds |
 | POST | `/admin/stripe/refunds/{id}/process` | Admin | Process Stripe refund |
 | GET | `/admin/refunds` | Admin | List refunds |
