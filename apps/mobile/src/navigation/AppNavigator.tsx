@@ -249,10 +249,27 @@ function AppStack() {
 function ProfileDrawerContent(props: any) {
   const insets = useSafeAreaInsets();
   const nav = props.navigation;
-  const items: { key: string; label: string; onPress: () => void }[] = [
+  const getFocusedRouteName = (state: any): string | null => {
+    if (!state?.routes || typeof state.index !== 'number') {
+      return null;
+    }
+    const current = state.routes[state.index];
+    if (!current) {
+      return null;
+    }
+    if (current.state) {
+      return getFocusedRouteName(current.state);
+    }
+    return current.name ?? null;
+  };
+
+  const currentRouteName = getFocusedRouteName(nav.getState()) ?? '';
+
+  const items: { key: string; label: string; active?: boolean; onPress: () => void }[] = [
     {
       key: 'profile',
       label: 'Profile',
+      active: currentRouteName === 'Profile',
       onPress: () => {
         nav.closeDrawer();
         nav.navigate('App', { screen: 'Profile' });
@@ -261,6 +278,7 @@ function ProfileDrawerContent(props: any) {
     {
       key: 'billing',
       label: 'Billing',
+      active: currentRouteName === 'Billing',
       onPress: () => {
         nav.closeDrawer();
         nav.navigate('App', { screen: 'Billing' });
@@ -269,6 +287,7 @@ function ProfileDrawerContent(props: any) {
     {
       key: 'settings',
       label: 'Settings',
+      active: currentRouteName === 'Settings',
       onPress: () => {
         nav.closeDrawer();
         nav.navigate('App', { screen: 'Settings' });
@@ -295,6 +314,7 @@ function ProfileDrawerContent(props: any) {
             <DrawerLabelButton
               key={item.key}
               label={item.label}
+              active={item.active}
               onPress={item.onPress}
             />
           ))}
