@@ -59,8 +59,9 @@ function MainTabs() {
         tabBarActiveTintColor: lightTheme.colors.primary[900],
         tabBarInactiveTintColor: lightTheme.colors.wave[500],
         tabBarActiveBackgroundColor: '#d6eefb',
+        tabBarShowLabel: false,
         tabBarIcon: ({ color, focused, size }) => {
-          const iconSize = focused ? size + 2 : size;
+          const iconSize = focused ? size : Math.max(size - 1, 18);
           const iconByRoute: Record<string, keyof typeof Ionicons.glyphMap> = {
             Bots: focused ? 'grid' : 'grid-outline',
             Research: focused ? 'search' : 'search-outline',
@@ -69,26 +70,22 @@ function MainTabs() {
           };
           return <Ionicons name={iconByRoute[route.name] || 'ellipse'} size={iconSize} color={color} />;
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-          marginTop: -1,
-          marginBottom: 2,
-        },
         tabBarItemStyle: {
-          borderRadius: 12,
-          marginHorizontal: 4,
-          marginVertical: 8,
-          paddingVertical: 2,
+          borderRadius: 8,
+          marginHorizontal: 0,
+          marginVertical: 6,
+          paddingVertical: 0,
+          borderRightWidth: route.name === 'Community' ? 0 : 1,
+          borderRightColor: lightTheme.colors.cardBorder,
         },
         tabBarStyle: {
           backgroundColor: lightTheme.colors.surface,
           borderTopColor: lightTheme.colors.cardBorder,
           borderTopWidth: 1,
-          height: 74,
-          paddingHorizontal: 8,
-          paddingBottom: 8,
-          paddingTop: 4,
+          height: 50,
+          paddingHorizontal: 0,
+          paddingBottom: 4,
+          paddingTop: 2,
         },
       })}
     >
