@@ -228,7 +228,7 @@ export function ChatScreen() {
                     <Text style={[styles.modalItemText, selectedBotId === bot.id && styles.modalItemTextSelected]}>
                       {bot.name}
                     </Text>
-                    <Text style={styles.modalItemSubtext}>{bot.persona}</Text>
+                    <Text style={styles.modalItemSubtext}>{bot.assistantStyle}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>

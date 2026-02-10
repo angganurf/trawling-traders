@@ -158,6 +158,7 @@ pub struct Bot {
     pub user_id: Uuid,
     pub name: String,
     pub status: BotStatus,
+    #[serde(rename = "assistant_style")]
     pub persona: Persona,
     pub droplet_id: Option<i64>,
     pub region: String,
@@ -184,6 +185,7 @@ pub struct ConfigVersion {
     pub bot_id: Uuid,
     pub version: i32,
     pub name: String,
+    #[serde(rename = "assistant_style")]
     pub persona: Persona,
     pub asset_focus: AssetFocus,
     pub custom_assets: Option<serde_json::Value>,
@@ -380,7 +382,7 @@ pub struct UserSettingsResponse {
     pub id: Uuid,
     pub email: Option<String>,
     pub display_name: Option<String>,
-    pub default_persona: Persona,
+    pub default_assistant_style: Persona,
     pub picture: Option<String>,
     pub auth_methods: AuthMethodsStatus,
     pub created_at: DateTime<Utc>,
@@ -390,7 +392,7 @@ pub struct UserSettingsResponse {
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserSettingsRequest {
     pub display_name: Option<String>,
-    pub default_persona: Option<Persona>,
+    pub default_assistant_style: Option<Persona>,
 }
 
 #[derive(Debug, Serialize)]
@@ -487,7 +489,7 @@ pub struct ListTradeableAssetsResponse {
 pub struct CreateBotRequest {
     #[validate(length(min = 1, max = 100))]
     pub name: String,
-    pub persona: Option<Persona>,
+    pub assistant_style: Option<Persona>,
     pub algorithm_mode: AlgorithmMode,
     /// Optional weighted factor list for linear-regression style strategy builder
     pub algorithm_factors: Option<Vec<AlgorithmFactorInput>>,
@@ -516,7 +518,7 @@ pub struct CreateBotRequest {
 #[derive(Debug, Deserialize)]
 pub struct BotConfigInput {
     pub name: String,
-    pub persona: Persona,
+    pub assistant_style: Persona,
     pub asset_focus: AssetFocus,
     pub algorithm_mode: AlgorithmMode,
     /// Optional weighted factor list for linear-regression style strategy builder
@@ -579,6 +581,7 @@ pub struct BotRegisterRequest {
 #[derive(Debug, Serialize)]
 pub struct AgentConfig {
     pub name: String,
+    #[serde(rename = "assistant_style")]
     pub persona: Persona,
     pub max_position_size_percent: i32,
     pub max_daily_loss_usd: i32,

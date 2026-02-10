@@ -261,7 +261,7 @@ pub async fn create_bot(
             })?;
 
     let resolved_persona = req
-        .persona
+        .assistant_style
         .or(default_persona)
         .unwrap_or_else(|| derive_default_persona(user_id));
 
@@ -821,7 +821,7 @@ pub async fn update_bot_config(
     .bind(bot_id)
     .bind(new_version)
     .bind(&req.config.name)
-    .bind(req.config.persona)
+    .bind(req.config.assistant_style)
     .bind(req.config.asset_focus)
     .bind(custom_assets_json)
     .bind(req.config.algorithm_mode)

@@ -92,7 +92,7 @@ const BotCard = React.memo(function BotCard({ bot, onPress, index }: { bot: Bot;
             </View>
 
             <View style={styles.cardBody}>
-              <Text style={styles.persona}>{bot.persona}</Text>
+              <Text style={styles.persona}>{bot.assistantStyle}</Text>
               <View style={styles.pnlRow}>
                 <View style={styles.pnlItem}>
                   <Text style={styles.pnlLabel}>Today</Text>

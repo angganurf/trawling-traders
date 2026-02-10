@@ -82,7 +82,7 @@ export function BotSettingsScreen() {
       
       if (response.config) {
         setName(response.config.name || '');
-        setPersona(response.config.persona);
+        setPersona(response.config.assistantStyle ?? 'beginner');
         setAssetFocus(response.config.assetFocus);
         setAlgorithmMode(response.config.algorithmMode);
         setStrictness(response.config.strictness);
@@ -124,7 +124,7 @@ export function BotSettingsScreen() {
       await api.bot.updateBotConfig(botId, {
         config: {
           name: name.trim(),
-          persona,
+          assistantStyle: persona,
           assetFocus,
           algorithmMode,
           strictness,

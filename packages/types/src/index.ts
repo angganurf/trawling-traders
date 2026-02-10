@@ -55,7 +55,7 @@ export interface BotConfig {
   
   // Identity
   name: string;
-  persona: Persona;
+  assistantStyle: Persona;
   iconColor?: string;
   
   // Trading focus - QUALITY ASSETS FIRST
@@ -96,7 +96,7 @@ export interface Bot {
   userId: string;
   name: string;
   status: BotStatus;
-  persona: Persona;
+  assistantStyle: Persona;
   
   // Provisioning
   dropletId?: string;
@@ -184,7 +184,7 @@ export interface UserSettings {
   id: string;
   email?: string;
   displayName?: string;
-  defaultPersona?: Persona;
+  defaultAssistantStyle?: Persona;
   picture?: string;
   authMethods: UserAuthMethods;
   createdAt: string;
@@ -193,7 +193,7 @@ export interface UserSettings {
 
 export interface UpdateUserSettingsRequest {
   displayName?: string;
-  defaultPersona?: Persona;
+  defaultAssistantStyle?: Persona;
 }
 
 export interface BillingSummary {
@@ -213,7 +213,7 @@ export interface NameAvailability {
 // API request/response types
 export interface CreateBotRequest {
   name: string;
-  persona?: Persona;
+  assistantStyle?: Persona;
   assetFocus: AssetFocus;
   customAssets?: string[];
   algorithmMode: AlgorithmMode;

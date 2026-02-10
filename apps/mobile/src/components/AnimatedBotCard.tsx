@@ -139,7 +139,7 @@ export function AnimatedBotCard({ bot, onPress, index = 0 }: AnimatedBotCardProp
         <View style={styles.cardHeader}>
           <View style={styles.nameContainer}>
             <Text style={styles.botName}>{bot.name}</Text>
-            <Text style={styles.persona}>{bot.persona}</Text>
+            <Text style={styles.persona}>{bot.assistantStyle}</Text>
           </View>
           <StatusBadge status={bot.status} />
         </View>

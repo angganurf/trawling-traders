@@ -58,9 +58,9 @@ export function SettingsScreen() {
 
   const hasUnsavedSettings = useMemo(() => {
     const saved = settings?.displayName?.trim() ?? '';
-    const savedStyle = settings?.defaultPersona ?? 'beginner';
+    const savedStyle = settings?.defaultAssistantStyle ?? 'beginner';
     return displayNameDraft.trim() !== saved || assistantStyleDraft !== savedStyle;
-  }, [assistantStyleDraft, displayNameDraft, settings?.defaultPersona, settings?.displayName]);
+  }, [assistantStyleDraft, displayNameDraft, settings?.defaultAssistantStyle, settings?.displayName]);
 
   const loadSettings = useCallback(async () => {
     setError(null);
@@ -68,7 +68,7 @@ export function SettingsScreen() {
       const response = await api.user.getSettings();
       setSettings(response);
       setDisplayNameDraft(response.displayName ?? '');
-      setAssistantStyleDraft(response.defaultPersona ?? 'beginner');
+      setAssistantStyleDraft(response.defaultAssistantStyle ?? 'beginner');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load settings');
       setSettings(null);
@@ -96,11 +96,11 @@ export function SettingsScreen() {
     try {
       const response = await api.user.updateSettings({
         displayName: displayNameDraft.trim() || undefined,
-        defaultPersona: assistantStyleDraft,
+        defaultAssistantStyle: assistantStyleDraft,
       });
       setSettings(response);
       setDisplayNameDraft(response.displayName ?? '');
-      setAssistantStyleDraft(response.defaultPersona ?? assistantStyleDraft);
+      setAssistantStyleDraft(response.defaultAssistantStyle ?? assistantStyleDraft);
       Alert.alert('Saved', 'Settings updated.');
     } catch (err) {
       Alert.alert('Update Failed', err instanceof Error ? err.message : 'Could not update display name');

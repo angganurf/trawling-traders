@@ -246,7 +246,7 @@ export const botApi = {
       method: 'POST',
       body: JSON.stringify({
         name: request.name,
-        persona: request.persona,
+        assistant_style: request.assistantStyle,
         asset_focus: request.assetFocus,
         custom_assets: request.customAssets,
         algorithm_mode: request.algorithmMode,
@@ -362,7 +362,7 @@ function mapBot(raw: any): Bot {
     userId: raw.userId ?? raw.user_id,
     name: raw.name,
     status: raw.status,
-    persona: raw.persona,
+    assistantStyle: raw.assistantStyle ?? raw.assistant_style,
     dropletId: raw.dropletId ?? raw.droplet_id,
     region: raw.region,
     ipAddress: raw.ipAddress ?? raw.ip_address,
@@ -386,7 +386,7 @@ function mapBotConfig(raw: any): BotConfig {
     version: raw.version,
     createdAt: raw.createdAt ?? raw.created_at,
     name: raw.name,
-    persona: raw.persona,
+    assistantStyle: raw.assistantStyle ?? raw.assistant_style,
     iconColor: raw.iconColor ?? raw.icon_color,
     assetFocus: raw.assetFocus ?? raw.asset_focus,
     customAssets: raw.customAssets ?? raw.custom_assets,
@@ -424,7 +424,8 @@ export const userApi = {
       id: response.id,
       email: response.email,
       displayName: response.displayName ?? response.display_name,
-      defaultPersona: response.defaultPersona ?? response.default_persona ?? undefined,
+      defaultAssistantStyle:
+        response.defaultAssistantStyle ?? response.default_assistant_style ?? undefined,
       picture: response.picture,
       authMethods: {
         emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),
@@ -441,7 +442,7 @@ export const userApi = {
       method: 'PATCH',
       body: JSON.stringify({
         display_name: request.displayName,
-        default_persona: request.defaultPersona,
+        default_assistant_style: request.defaultAssistantStyle,
       }),
     });
 
@@ -449,7 +450,8 @@ export const userApi = {
       id: response.id,
       email: response.email,
       displayName: response.displayName ?? response.display_name,
-      defaultPersona: response.defaultPersona ?? response.default_persona ?? undefined,
+      defaultAssistantStyle:
+        response.defaultAssistantStyle ?? response.default_assistant_style ?? undefined,
       picture: response.picture,
       authMethods: {
         emailPassword: Boolean(response.authMethods?.emailPassword ?? response.auth_methods?.email_password),

@@ -58,7 +58,7 @@ export function BotBehaviorConfigScreen() {
       await api.bot.updateBotConfig(botId, {
         config: {
           name: config.name,
-          persona: config.persona,
+          assistantStyle: config.assistantStyle,
           assetFocus: config.assetFocus,
           algorithmMode: config.algorithmMode,
           strictness: config.strictness,

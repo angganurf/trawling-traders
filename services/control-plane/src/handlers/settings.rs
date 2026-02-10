@@ -61,7 +61,7 @@ fn to_response(row: UserSettingsRow) -> UserSettingsResponse {
         id: row.id,
         email: row.email,
         display_name: row.name,
-        default_persona,
+        default_assistant_style: default_persona,
         picture: row.picture,
         auth_methods: AuthMethodsStatus {
             email_password: row.password_hash.is_some(),
@@ -158,7 +158,7 @@ pub async fn update_user_settings(
     let user_id = Uuid::parse_str(&auth.user_id)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
     let display_name = normalize_display_name(req.display_name);
-    let default_persona = req.default_persona;
+    let default_persona = req.default_assistant_style;
 
     sqlx::query(
         "UPDATE users

@@ -94,7 +94,7 @@ export function BotFleetCard({ bot, index, onPauseResume }: BotFleetCardProps) {
             <Text style={styles.botName} numberOfLines={1}>
               {bot.name}
             </Text>
-            <Text style={styles.persona}>{bot.persona}</Text>
+            <Text style={styles.persona}>{bot.assistantStyle}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: statusColor.bg }]}>
             <Text style={[styles.badgeText, { color: statusColor.text }]}>
