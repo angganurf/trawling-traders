@@ -5,9 +5,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { lightTheme } from '../theme';
 import { AppHeader } from '../components/AppHeader';
+import { AppTabBar } from '../components/AppTabBar';
 
 import { AuthScreen } from '../screens/AuthScreen';
 import { SubscribeScreen } from '../screens/SubscribeScreen';
@@ -54,51 +54,10 @@ const Tab = createBottomTabNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      tabBar={(props) => <AppTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: lightTheme.colors.primary[900],
-        tabBarInactiveTintColor: lightTheme.colors.wave[500],
-        tabBarShowLabel: false,
-        tabBarIcon: ({ color, focused, size }) => {
-          const iconSize = focused ? size : Math.max(size - 1, 18);
-          const iconByRoute: Record<string, keyof typeof Ionicons.glyphMap> = {
-            Bots: focused ? 'grid' : 'grid-outline',
-            Research: focused ? 'search' : 'search-outline',
-            Leaderboard: focused ? 'trophy' : 'trophy-outline',
-            Community: focused ? 'people' : 'people-outline',
-          };
-          return (
-            <View
-              style={{
-                width: 36,
-                height: 30,
-                borderRadius: 9,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: focused ? '#d6eefb' : 'transparent',
-                borderWidth: focused ? 1 : 0,
-                borderColor: lightTheme.colors.cardBorder,
-              }}
-            >
-              <Ionicons name={iconByRoute[route.name] || 'ellipse'} size={iconSize} color={color} />
-            </View>
-          );
-        },
-        tabBarItemStyle: {
-          borderRadius: 10,
-          marginHorizontal: 4,
-          marginVertical: 5,
-          paddingVertical: 0,
-        },
-        tabBarStyle: {
-          backgroundColor: lightTheme.colors.background,
-          borderTopWidth: 0,
-          height: 48,
-          paddingHorizontal: 6,
-          paddingBottom: 4,
-          paddingTop: 2,
-        },
-      })}
+      }}
     >
       <Tab.Screen name="Bots" component={HomeOverviewScreen} />
       <Tab.Screen name="Research" component={ResearchScreen} />
