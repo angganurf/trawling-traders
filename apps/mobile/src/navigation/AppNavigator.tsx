@@ -28,7 +28,7 @@ import { ResearchScreen } from '../screens/ResearchScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
 
-const SHIP_LOCKER_BG = require('../../../../assets/branding/tt-ship-locker.png');
+const SHIP_LOCKER_BG = require('../../../../assets/branding/tt-panel.png');
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -308,6 +308,11 @@ function DrawerLabelButton({
       onPress={onPress}
       activeOpacity={0.8}
     >
+      {active ? <View style={styles.drawerActiveMarker} /> : null}
+      <View style={[styles.drawerRivet, styles.drawerRivetTopLeft]} />
+      <View style={[styles.drawerRivet, styles.drawerRivetTopRight]} />
+      <View style={[styles.drawerRivet, styles.drawerRivetBottomLeft]} />
+      <View style={[styles.drawerRivet, styles.drawerRivetBottomRight]} />
       <Text style={[styles.drawerLabelText, active ? styles.drawerLabelTextActive : undefined]}>
         {label}
       </Text>
@@ -348,30 +353,76 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   drawerItemsWrap: {
-    gap: 10,
+    gap: 14,
     paddingBottom: 20,
   },
   drawerLabel: {
-    marginHorizontal: 14,
+    marginHorizontal: 18,
     borderWidth: 1,
-    borderColor: 'rgba(171, 211, 241, 0.45)',
-    borderRadius: 12,
-    backgroundColor: 'rgba(8, 31, 56, 0.42)',
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+    borderColor: 'rgba(156, 184, 217, 0.42)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(63, 95, 138, 0.42)',
+    paddingVertical: 18,
+    paddingHorizontal: 26,
+    shadowColor: '#081526',
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+    position: 'relative',
+    overflow: 'hidden',
   },
   drawerLabelActive: {
-    borderColor: 'rgba(187, 227, 255, 0.8)',
-    backgroundColor: 'rgba(24, 84, 132, 0.58)',
+    borderColor: 'rgba(219, 235, 255, 0.7)',
+    backgroundColor: 'rgba(84, 115, 155, 0.6)',
   },
   drawerLabelText: {
-    color: '#eaf5ff',
-    fontSize: 16,
+    color: '#eef6ff',
+    fontSize: 22,
     fontWeight: '700',
     textAlign: 'left',
-    letterSpacing: 0.2,
+    letterSpacing: 0.4,
   },
   drawerLabelTextActive: {
     color: '#ffffff',
+  },
+  drawerActiveMarker: {
+    position: 'absolute',
+    left: 8,
+    top: '50%',
+    marginTop: -18,
+    width: 12,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#ffc53d',
+    shadowColor: '#ffca45',
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  drawerRivet: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(17, 27, 42, 0.65)',
+    backgroundColor: 'rgba(126, 152, 184, 0.65)',
+  },
+  drawerRivetTopLeft: {
+    left: 8,
+    top: 8,
+  },
+  drawerRivetTopRight: {
+    right: 8,
+    top: 8,
+  },
+  drawerRivetBottomLeft: {
+    left: 8,
+    bottom: 8,
+  },
+  drawerRivetBottomRight: {
+    right: 8,
+    bottom: 8,
   },
 });
