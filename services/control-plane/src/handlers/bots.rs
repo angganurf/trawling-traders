@@ -233,12 +233,7 @@ pub async fn create_bot(
     req.risk_caps
         .validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid risk caps: {}", e)))?;
-    validate_selected_assets(
-        &state.db,
-        req.asset_focus,
-        req.custom_assets.as_deref(),
-    )
-    .await?;
+    validate_selected_assets(&state.db, req.asset_focus, req.custom_assets.as_deref()).await?;
 
     // Use transaction to prevent race condition between count check and insert
     let mut tx = state
