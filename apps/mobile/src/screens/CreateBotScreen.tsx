@@ -168,12 +168,6 @@ const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }
   { value: 'memes', label: 'Meme Coins (High Risk)' },
 ];
 
-const ALGORITHMS: { value: AlgorithmMode; label: string; description: string; recommended?: boolean }[] = [
-  { value: 'trend', label: 'Trend', description: 'Follows sustained momentum moves.', recommended: true },
-  { value: 'mean-reversion', label: 'Mean Reversion', description: 'Looks for pullbacks and snap-backs.' },
-  { value: 'breakout', label: 'Breakout', description: 'Enters on range breaks with confirmation.' },
-];
-
 const STRICTNESS_OPTIONS: { value: Strictness; label: string }[] = [
   { value: 'high', label: 'High (Recommended)' },
   { value: 'medium', label: 'Medium' },
@@ -448,7 +442,6 @@ export function CreateBotScreen() {
             assetChoices={ASSET_CHOICES}
             assetFocus={assetFocus}
             setAssetFocus={setAssetFocus}
-            algorithms={ALGORITHMS}
             algorithmMode={algorithmMode}
             setAlgorithmMode={setAlgorithmMode}
             strictnessOptions={STRICTNESS_OPTIONS}
