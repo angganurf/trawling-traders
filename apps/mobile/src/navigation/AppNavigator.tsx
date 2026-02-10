@@ -168,7 +168,7 @@ function MainDrawerContent(props: any) {
       contentContainerStyle={styles.drawerScroll}
     >
       <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
-        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 18 }]}>
+        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 74 }]}>
           {items.map((item) => (
             <DrawerLabelButton
               key={item.key}
@@ -279,7 +279,7 @@ function ProfileDrawerContent(props: any) {
       contentContainerStyle={styles.drawerScroll}
     >
       <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
-        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 18 }]}>
+        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 74 }]}>
           {items.map((item) => (
             <DrawerLabelButton
               key={item.key}
@@ -309,10 +309,6 @@ function DrawerLabelButton({
       activeOpacity={0.8}
     >
       {active ? <View style={styles.drawerActiveMarker} /> : null}
-      <View style={[styles.drawerRivet, styles.drawerRivetTopLeft]} />
-      <View style={[styles.drawerRivet, styles.drawerRivetTopRight]} />
-      <View style={[styles.drawerRivet, styles.drawerRivetBottomLeft]} />
-      <View style={[styles.drawerRivet, styles.drawerRivetBottomRight]} />
       <Text style={[styles.drawerLabelText, active ? styles.drawerLabelTextActive : undefined]}>
         {label}
       </Text>
@@ -353,76 +349,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   drawerItemsWrap: {
-    gap: 14,
+    gap: 12,
     paddingBottom: 20,
   },
   drawerLabel: {
     marginHorizontal: 18,
     borderWidth: 1,
-    borderColor: 'rgba(156, 184, 217, 0.42)',
-    borderRadius: 18,
-    backgroundColor: 'rgba(63, 95, 138, 0.42)',
-    paddingVertical: 18,
-    paddingHorizontal: 26,
+    borderColor: 'rgba(116, 150, 184, 0.38)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(48, 78, 112, 0.5)',
+    paddingVertical: 13,
+    paddingHorizontal: 20,
     shadowColor: '#081526',
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
     position: 'relative',
     overflow: 'hidden',
   },
   drawerLabelActive: {
-    borderColor: 'rgba(219, 235, 255, 0.7)',
-    backgroundColor: 'rgba(84, 115, 155, 0.6)',
+    borderColor: 'rgba(202, 224, 246, 0.62)',
+    backgroundColor: 'rgba(60, 95, 132, 0.62)',
   },
   drawerLabelText: {
-    color: '#eef6ff',
-    fontSize: 22,
+    color: '#e7f1fb',
+    fontSize: 15,
     fontWeight: '700',
     textAlign: 'left',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   drawerLabelTextActive: {
     color: '#ffffff',
   },
   drawerActiveMarker: {
     position: 'absolute',
-    left: 8,
+    left: 6,
     top: '50%',
-    marginTop: -18,
-    width: 12,
-    height: 36,
-    borderRadius: 10,
+    marginTop: -14,
+    width: 8,
+    height: 28,
+    borderRadius: 8,
     backgroundColor: '#ffc53d',
     shadowColor: '#ffca45',
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
+    shadowOpacity: 0.45,
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
-  },
-  drawerRivet: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(17, 27, 42, 0.65)',
-    backgroundColor: 'rgba(126, 152, 184, 0.65)',
-  },
-  drawerRivetTopLeft: {
-    left: 8,
-    top: 8,
-  },
-  drawerRivetTopRight: {
-    right: 8,
-    top: 8,
-  },
-  drawerRivetBottomLeft: {
-    left: 8,
-    bottom: 8,
-  },
-  drawerRivetBottomRight: {
-    right: 8,
-    bottom: 8,
   },
 });
