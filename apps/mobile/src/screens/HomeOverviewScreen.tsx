@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,8 @@ import type { Bot, BotEvent, MetricPoint } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { AuthExpiredError, NetworkError, ServerError } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
+
+const NO_BOTS_BG = require('../../../../assets/branding/no-bots-background.PNG');
 import { useBotAction } from '../hooks/useBots';
 import { lightTheme, colors, spacing } from '../theme';
 import { KpiStrip } from './home/KpiStrip';
@@ -140,6 +143,23 @@ export function HomeOverviewScreen() {
     );
   }
 
+  if (!hasActiveBots) {
+    return (
+      <ImageBackground source={NO_BOTS_BG} style={styles.bgFill} resizeMode="cover">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+          }
+        >
+          {error && <Text style={styles.errorText}>{error}</Text>}
+          <OnboardingSection hasBots={false} hasFundedBot={false} />
+        </ScrollView>
+      </ImageBackground>
+    );
+  }
+
   return (
     <OceanBackground>
       <ScrollView
@@ -155,39 +175,34 @@ export function HomeOverviewScreen() {
       >
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {hasActiveBots && (
-          <>
-            <KpiStrip
-              bots={bots}
-              openTrades={stats.openTrades}
-              totalTrades={stats.totalTrades}
-            />
+        <KpiStrip
+          bots={bots}
+          openTrades={stats.openTrades}
+          totalTrades={stats.totalTrades}
+        />
 
-            <TodayInsights bots={bots} allMetrics={allMetrics} />
+        <TodayInsights bots={bots} allMetrics={allMetrics} />
 
-            <Text style={styles.sectionTitle}>Your Fleet</Text>
-            {bots.map((bot, index) => (
-              <BotFleetCard
-                key={bot.id}
-                bot={bot}
-                index={index}
-                onPauseResume={handlePauseResume}
-              />
-            ))}
+        <Text style={styles.sectionTitle}>Your Fleet</Text>
+        {bots.map((bot, index) => (
+          <BotFleetCard
+            key={bot.id}
+            bot={bot}
+            index={index}
+            onPauseResume={handlePauseResume}
+          />
+        ))}
 
-            <AlertsPanel events={allEvents} />
-          </>
-        )}
-
-        {!hasActiveBots && (
-          <OnboardingSection hasBots={false} hasFundedBot={false} />
-        )}
+        <AlertsPanel events={allEvents} />
       </ScrollView>
     </OceanBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: spacing.md,
     paddingBottom: 36,
