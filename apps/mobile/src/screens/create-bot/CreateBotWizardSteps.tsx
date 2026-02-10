@@ -315,72 +315,22 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   }
 
   if (step === 3) {
-    return (
-      <View>
-        <Text style={styles.sectionLabel}>Risk Caps</Text>
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={maxPositionSize}
-              onChangeText={setMaxPositionSize}
-              keyboardType="numeric"
-              placeholder="Max Position %"
-            />
-            <Text style={styles.helperText}>Default: 5%</Text>
-          </View>
-          <View style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={maxTradesPerDay}
-              onChangeText={setMaxTradesPerDay}
-              keyboardType="numeric"
-              placeholder="Max Trades/Day"
-            />
-            <Text style={styles.helperText}>Default: 5</Text>
+    if (strategyType !== 'macro') {
+      return (
+        <View>
+          <View style={styles.instructionBox}>
+            <Text style={styles.instructionTitle}>Coming Soon</Text>
+            <Text style={styles.instructionStep}>
+              Algorithm customization for {strategyType} is coming soon.
+            </Text>
+            <Text style={styles.instructionStep}>
+              We are shipping Macro end-to-end first, then enabling full controls for other strategies.
+            </Text>
           </View>
         </View>
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={maxDailyLoss}
-              onChangeText={setMaxDailyLoss}
-              keyboardType="numeric"
-              placeholder="Daily Loss USD"
-            />
-            <Text style={styles.helperText}>Default: $50</Text>
-          </View>
-          <View style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={maxDrawdown}
-              onChangeText={setMaxDrawdown}
-              keyboardType="numeric"
-              placeholder="Max Drawdown %"
-            />
-            <Text style={styles.helperText}>Default: 10%</Text>
-          </View>
-        </View>
-        <Text style={styles.sectionLabel}>Strictness</Text>
-        {renderChip(strictnessOptions, strictness, setStrictness)}
-        <View style={styles.instructionBox}>
-          <Text style={styles.instructionTitle}>How Strictness Works</Text>
-          <Text style={styles.instructionStep}>
-            Strictness works with your risk caps and other execution thresholds to control how much confirmation is required before a trade.
-          </Text>
-          <Text style={styles.instructionStep}>
-            Example: a conservative setup can wait for signal stability over a longer look-back window (such as ~15 minutes) instead of trading the first second RSI flips.
-          </Text>
-          <Text style={styles.instructionStep}>
-            Your parameters are always respected. Strictness changes confidence requirements and stability checks, not whether your bot ignores your settings.
-          </Text>
-        </View>
-      </View>
-    );
-  }
+      );
+    }
 
-  if (step === 4) {
     const coefficientSum = algorithmFactors.reduce((sum, factor) => sum + factor.weight, 0);
     const canAddAnother = algorithmFactors.length < factorCatalog.length;
 
@@ -524,6 +474,72 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             {canAddAnother ? 'Add Another Factor' : 'All Factors Added'}
           </Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (step === 4) {
+    return (
+      <View>
+        <Text style={styles.sectionLabel}>Risk Caps</Text>
+        <View style={styles.row}>
+          <View style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={maxPositionSize}
+              onChangeText={setMaxPositionSize}
+              keyboardType="numeric"
+              placeholder="Max Position %"
+            />
+            <Text style={styles.helperText}>Default: 5%</Text>
+          </View>
+          <View style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={maxTradesPerDay}
+              onChangeText={setMaxTradesPerDay}
+              keyboardType="numeric"
+              placeholder="Max Trades/Day"
+            />
+            <Text style={styles.helperText}>Default: 5</Text>
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={maxDailyLoss}
+              onChangeText={setMaxDailyLoss}
+              keyboardType="numeric"
+              placeholder="Daily Loss USD"
+            />
+            <Text style={styles.helperText}>Default: $50</Text>
+          </View>
+          <View style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={maxDrawdown}
+              onChangeText={setMaxDrawdown}
+              keyboardType="numeric"
+              placeholder="Max Drawdown %"
+            />
+            <Text style={styles.helperText}>Default: 10%</Text>
+          </View>
+        </View>
+        <Text style={styles.sectionLabel}>Strictness</Text>
+        {renderChip(strictnessOptions, strictness, setStrictness)}
+        <View style={styles.instructionBox}>
+          <Text style={styles.instructionTitle}>How Strictness Works</Text>
+          <Text style={styles.instructionStep}>
+            Strictness works with your risk caps and other execution thresholds to control how much confirmation is required before a trade.
+          </Text>
+          <Text style={styles.instructionStep}>
+            Example: a conservative setup can wait for signal stability over a longer look-back window (such as ~15 minutes) instead of trading the first second RSI flips.
+          </Text>
+          <Text style={styles.instructionStep}>
+            Your parameters are always respected. Strictness changes confidence requirements and stability checks, not whether your bot ignores your settings.
+          </Text>
+        </View>
       </View>
     );
   }

@@ -36,8 +36,8 @@ const STEP_META = [
   { title: 'Basics', description: 'Name your bot, choose your style, and decide if you want paper-only testing.' },
   { title: 'Specialty', description: 'Pick a category, then choose the exact assets this bot is allowed to trade.' },
   { title: 'Strategy', description: 'Choose the trading style this bot should apply to your selected assets.' },
+  { title: 'Algorithm', description: 'Build your signal formula. Full controls are currently available for Macro strategy.' },
   { title: 'Risk', description: 'Set caps and strictness for how cautiously signals are executed.' },
-  { title: 'Algorithm', description: 'Build a weighted factor formula for this bot.' },
   { title: 'AI', description: 'Connect the LLM provider and model your bot will use.' },
   { title: 'Telegram', description: 'Optional chat channel for commands, alerts, and pairing.' },
   { title: 'Review', description: 'Double-check configuration and deploy.' },
@@ -378,7 +378,7 @@ export function CreateBotScreen() {
       if (assetsLoading) return 'Loading assets for this category. Please wait a moment.';
       if (selectedAssets.length === 0) return 'Select at least one asset to trade.';
     }
-    if (step === 3) {
+    if (step === 4) {
       const checks = [
         parseNumberField(maxPositionSize, 'Max position %', 1, 50),
         parseNumberField(maxDailyLoss, 'Max daily loss', 1, 100000),
@@ -388,7 +388,7 @@ export function CreateBotScreen() {
       const failed = checks.find((check) => check.error);
       if (failed?.error) return failed.error;
     }
-    if (step === 4 && algorithmFactors.length === 0) {
+    if (step === 3 && strategyType === 'macro' && algorithmFactors.length === 0) {
       return 'Add at least one algorithm factor.';
     }
     if (step === 5) {
