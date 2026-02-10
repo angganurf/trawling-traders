@@ -49,6 +49,51 @@ const FACTOR_CATALOG = [
   { key: 'news_sentiment', label: 'News Sentiment' },
 ] as const;
 
+const NAME_ADJECTIVES = [
+  'fast',
+  'steady',
+  'deep',
+  'lucky',
+  'silent',
+  'rugged',
+  'swift',
+  'keen',
+  'mighty',
+  'bright',
+  'bold',
+  'northbound',
+];
+
+const NAME_WATERS = [
+  'atlantic',
+  'pacific',
+  'river',
+  'harbor',
+  'delta',
+  'inlet',
+  'bay',
+  'sound',
+  'estuary',
+  'strait',
+  'lagoon',
+  'channel',
+];
+
+const NAME_BOATS = [
+  'trawler',
+  'skiff',
+  'schooner',
+  'drifter',
+  'paddleboat',
+  'longliner',
+  'cutter',
+  'seiner',
+  'clipper',
+  'raft',
+  'dinghy',
+  'ferry',
+];
+
 const PERSONAS: { value: Persona; label: string; description: string; recommended?: boolean }[] = [
   { value: 'beginner', label: 'Set & Forget', description: 'Balanced defaults for most traders.', recommended: true },
   { value: 'tweaker', label: 'Hands-on', description: 'More tuning and intervention options.' },
@@ -134,6 +179,13 @@ export function CreateBotScreen() {
 
   const modelsForProvider = useMemo(() => LLM_MODELS[llmProvider], [llmProvider]);
 
+  const generateFishingName = () => {
+    const adjective = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
+    const water = NAME_WATERS[Math.floor(Math.random() * NAME_WATERS.length)];
+    const boat = NAME_BOATS[Math.floor(Math.random() * NAME_BOATS.length)];
+    return `${adjective}-${water}-${boat}`;
+  };
+
   useEffect(() => {
     let cancelled = false;
     if (name.trim().length > 0) {
@@ -141,14 +193,28 @@ export function CreateBotScreen() {
     }
     const generateDefault = async () => {
       try {
-        const response = await api.bot.checkNameAvailability('Trawler');
-        if (cancelled) return;
-        const defaultName = response.available ? response.normalizedName : response.suggestedName || 'Trawler 2';
-        setName(defaultName);
-        setNameAvailability(response);
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          const candidate = generateFishingName();
+          const response = await api.bot.checkNameAvailability(candidate);
+          if (cancelled) return;
+
+          if (response.available) {
+            setName(response.normalizedName);
+            setNameAvailability(response);
+            return;
+          }
+
+          if (response.suggestedName) {
+            setName(response.suggestedName);
+            setNameAvailability(response);
+            return;
+          }
+        }
+        const fallback = generateFishingName();
+        setName(fallback);
       } catch {
         if (!cancelled) {
-          setName('Trawler');
+          setName(generateFishingName());
         }
       }
     };
