@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     minHeight: 72,
     paddingVertical: 14,
-    paddingHorizontal: 48,
+    paddingHorizontal: 62,
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'center',
