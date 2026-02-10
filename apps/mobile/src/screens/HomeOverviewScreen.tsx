@@ -13,6 +13,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Bot, MetricPoint } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
+import { AuthExpiredError, NetworkError, ServerError } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
 import { PnlHistoryChart } from '../components/PnlHistoryChart';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -91,7 +92,20 @@ export function HomeOverviewScreen() {
         netPnl,
       });
     } catch (loadErr) {
-      setError(loadErr instanceof Error ? loadErr.message : 'Failed to load overview');
+      if (__DEV__) {
+        console.error('Overview load failed:', loadErr);
+      }
+
+      if (loadErr instanceof AuthExpiredError) {
+        setError('Session expired. Please log in again.');
+      } else if (loadErr instanceof NetworkError) {
+        setError('You appear offline. Pull to refresh.');
+      } else if (loadErr instanceof ServerError) {
+        // Keep empty state clean when backend is temporarily unavailable.
+        setError(null);
+      } else {
+        setError('Unable to refresh overview right now.');
+      }
     } finally {
       setIsLoading(false);
       setRefreshing(false);

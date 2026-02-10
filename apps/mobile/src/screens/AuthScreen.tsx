@@ -1,50 +1,74 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
-  View,
-  Text,
-  StyleSheet,
   ActivityIndicator,
+  Alert,
   Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
   ScrollView,
-  Animated,
-  Dimensions,
+  Text,
+  TextInput,
+  useColorScheme,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { OceanBackground } from '../components/OceanBackground';
-import { lightTheme } from '../theme';
-import {
-  useCedrosLogin,
-  EmailLoginForm,
-  EmailRegisterForm,
-  GoogleLoginButton,
-} from '@cedros/login-react-native';
+import { useCedrosLogin, useEmailAuth, GoogleLoginButton } from '@cedros/login-react-native';
 import { api } from '@trawling-traders/api-client';
+import { authScreenStyles as styles } from './auth/AuthScreen.styles';
 
-const { width } = Dimensions.get('window');
-
-// LOB Avatar - our lobster mascot
 const LOB_AVATAR = require('../../assets/lob-avatar.png');
+const OCEAN_LIGHT = require('../../../../assets/branding/bg-ocean-light.png');
+const OCEAN_DARK = require('../../../../assets/branding/bg-ocean-dark.png');
 
 type AuthScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Auth'>;
+type AuthMode = 'login' | 'register';
+type LoginStep = 'email' | 'password';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AuthScreen() {
   const navigation = useNavigation<AuthScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading: authLoading } = useCedrosLogin();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const { login, register, isLoading: emailAuthLoading, error, clearError } = useEmailAuth();
+  const isDark = colorScheme === 'dark';
+  const backgroundAsset = isDark ? OCEAN_DARK : OCEAN_LIGHT;
 
-  // Animation values
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(50)).current;
-  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
-  const featureAnim = React.useRef(new Animated.Value(0)).current;
+  const [mode, setMode] = useState<AuthMode>('login');
+  const [loginStep, setLoginStep] = useState<LoginStep>('email');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [emailError, setEmailError] = useState<string | undefined>();
+  const [passwordError, setPasswordError] = useState<string | undefined>();
+  const [displayNameError, setDisplayNameError] = useState<string | undefined>();
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
-  // Track if navigation is in progress to prevent race condition
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const nameRef = useRef<TextInput>(null);
   const isNavigatingRef = useRef(false);
+
+  const trimmedEmail = email.trim();
+  const emailIsValid = useMemo(() => EMAIL_REGEX.test(trimmedEmail), [trimmedEmail]);
+  const canContinueEmail = trimmedEmail.length > 0 && emailIsValid;
+  const canSubmitLogin = canContinueEmail && password.length >= 8 && !emailAuthLoading;
+  const canSubmitRegister =
+    canContinueEmail && password.length >= 8 && displayName.trim().length >= 2 && !emailAuthLoading;
+
+  const resetErrors = useCallback(() => {
+    setEmailError(undefined);
+    setPasswordError(undefined);
+    setDisplayNameError(undefined);
+    clearError();
+  }, [clearError]);
 
   const routeAfterAuth = useCallback(() => {
     if (isNavigatingRef.current) {
@@ -52,8 +76,6 @@ export function AuthScreen() {
     }
     isNavigatingRef.current = true;
 
-    // Do not block on network before entering the app shell.
-    // We route immediately, then optionally redirect to Subscribe.
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
 
     const timeoutMs = 1500;
@@ -79,9 +101,9 @@ export function AuthScreen() {
           navigation.reset({ index: 0, routes: [{ name: 'Subscribe' }] });
         }
       })
-      .catch((error) => {
+      .catch((checkError) => {
         if (__DEV__) {
-          console.warn('Skipping blocking subscription check:', error);
+          console.warn('Skipping blocking subscription check:', checkError);
         }
       })
       .finally(() => {
@@ -89,7 +111,6 @@ export function AuthScreen() {
       });
   }, [navigation]);
 
-  // Navigate when authenticated, even if user profile hydration lags.
   useEffect(() => {
     if (isAuthenticated) {
       routeAfterAuth();
@@ -97,370 +118,341 @@ export function AuthScreen() {
   }, [isAuthenticated, routeAfterAuth]);
 
   useEffect(() => {
-    // Start entrance animations
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 6,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(featureAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    emailRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (mode === 'login' && loginStep === 'password') {
+      passwordRef.current?.focus();
+    }
+  }, [mode, loginStep]);
+
+  useEffect(() => {
+    if (mode === 'register') {
+      nameRef.current?.focus();
+    }
+  }, [mode]);
+
+  const handleContinueToPassword = useCallback(() => {
+    resetErrors();
+    if (!trimmedEmail) {
+      setEmailError('Email is required');
+      return;
+    }
+    if (!emailIsValid) {
+      setEmailError('Enter a valid email address');
+      return;
+    }
+    setLoginStep('password');
+  }, [emailIsValid, resetErrors, trimmedEmail]);
+
+  const handleLogin = useCallback(async () => {
+    resetErrors();
+    if (!canContinueEmail) {
+      setEmailError('Enter a valid email address');
+      return;
+    }
+    if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      await login(trimmedEmail, password);
+      routeAfterAuth();
+    } catch {
+      // Hook error is rendered inline
+    }
+  }, [canContinueEmail, login, password, resetErrors, routeAfterAuth, trimmedEmail]);
+
+  const handleRegister = useCallback(async () => {
+    resetErrors();
+    const nameValue = displayName.trim();
+    if (nameValue.length < 2) {
+      setDisplayNameError('Display name must be at least 2 characters');
+      return;
+    }
+    if (!canContinueEmail) {
+      setEmailError('Enter a valid email address');
+      return;
+    }
+    if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      await register(trimmedEmail, password, nameValue);
+      routeAfterAuth();
+    } catch {
+      // Hook error is rendered inline
+    }
+  }, [canContinueEmail, displayName, password, register, resetErrors, routeAfterAuth, trimmedEmail]);
+
+  const handleSwitchMode = useCallback((nextMode: AuthMode) => {
+    setMode(nextMode);
+    setLoginStep('email');
+    setPassword('');
+    resetErrors();
+  }, [resetErrors]);
+
+  const formError = error?.message;
 
   if (authLoading) {
     return (
-      <OceanBackground>
-        <View style={styles.loadingContainer}>
-          <Animated.Image
-            source={LOB_AVATAR}
-            style={[
-              styles.loadingAvatar,
-              {
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}
-          />
-          <View style={styles.loadingTextContainer}>
-            <Text style={styles.loadingText}>Trawling Traders</Text>
-            <ActivityIndicator
-              size="small"
-              color={lightTheme.colors.primary[700]}
-              style={styles.loadingIndicator}
-            />
-          </View>
-        </View>
-      </OceanBackground>
+      <View style={styles.loadingContainer}>
+        <Image source={LOB_AVATAR} style={styles.loadingAvatar} />
+        <Text style={styles.loadingText}>Preparing secure trading console...</Text>
+        <ActivityIndicator size="small" color="#0c64b5" style={styles.loadingSpinner} />
+      </View>
     );
   }
 
   return (
-    <OceanBackground>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+    <ImageBackground source={backgroundAsset} style={styles.screen} resizeMode="cover">
+      <View style={styles.overlay} />
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-              paddingTop: insets.top + 24,
-            },
-          ]}
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 12 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* LOB Mascot */}
-          <View style={styles.mascotContainer}>
-            <Image source={LOB_AVATAR} style={styles.avatar} />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>#4821</Text>
+          <View style={styles.heroSection}>
+            <View style={styles.brandRow}>
+              <Image source={LOB_AVATAR} style={styles.brandMark} />
+              <Text style={styles.brandTitle}>Trawling Traders</Text>
             </View>
-            <View style={styles.statusIndicator} />
           </View>
 
-          <Text style={styles.greeting}>Ahoy, Trader! 🦞</Text>
-          <Text style={styles.title}>Trawling Traders</Text>
-          <Text style={styles.subtitle}>
-            Deploy AI-powered trading bots that trawl the markets 24/7
-          </Text>
-
-          {/* Feature highlights */}
-          <Animated.View
-            style={[
-              styles.features,
-              { opacity: featureAnim },
-            ]}
-          >
-            <View style={styles.feature}>
-              <View style={[styles.featureIcon, { backgroundColor: lightTheme.colors.bullish[100] }]}>
-                <Text style={[styles.featureEmoji, { color: lightTheme.colors.bullish[600] }]}>🤖</Text>
-              </View>
-              <Text style={styles.featureText}>Up to 4 bots</Text>
+          <View style={styles.sheet}>
+            <View style={styles.modeRow}>
+              <Pressable
+                style={[styles.modePill, mode === 'login' ? styles.modePillActive : undefined]}
+                onPress={() => handleSwitchMode('login')}
+              >
+                <Text style={[styles.modePillText, mode === 'login' ? styles.modePillTextActive : undefined]}>
+                  Sign in
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modePill, mode === 'register' ? styles.modePillActive : undefined]}
+                onPress={() => handleSwitchMode('register')}
+              >
+                <Text style={[styles.modePillText, mode === 'register' ? styles.modePillTextActive : undefined]}>
+                  Sign up
+                </Text>
+              </Pressable>
             </View>
 
-            <View style={styles.feature}>
-              <View style={[styles.featureIcon, { backgroundColor: lightTheme.colors.primary[100] }]}>
-                <Text style={[styles.featureEmoji, { color: lightTheme.colors.primary[600] }]}>📈</Text>
-              </View>
-              <Text style={styles.featureText}>xStocks & crypto</Text>
-            </View>
-
-            <View style={styles.feature}>
-              <View style={[styles.featureIcon, { backgroundColor: lightTheme.colors.lobster[100] }]}>
-                <Text style={[styles.featureEmoji, { color: lightTheme.colors.lobster[600] }]}>🔒</Text>
-              </View>
-              <Text style={styles.featureText}>Your own VPS</Text>
-            </View>
-          </Animated.View>
-
-          {/* Cedros Login Form */}
-          <Animated.View style={[styles.authContainer, { opacity: featureAnim }]}>
             {mode === 'login' ? (
-              <EmailLoginForm
-                onSuccess={() => {
-                  if (__DEV__) {
-                    console.log('Email login success');
-                  }
-                  routeAfterAuth();
-                }}
-                onRegisterPress={() => setMode('register')}
-              />
+              <View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Email</Text>
+                  <TextInput
+                    ref={emailRef}
+                    value={email}
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      setEmailError(undefined);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                    autoFocus={loginStep === 'email'}
+                    returnKeyType={loginStep === 'email' ? 'next' : 'done'}
+                    onSubmitEditing={() => {
+                      if (loginStep === 'email') {
+                        handleContinueToPassword();
+                      } else {
+                        handleLogin();
+                      }
+                    }}
+                    placeholder="you@company.com"
+                    placeholderTextColor="#6d86a6"
+                    style={styles.input}
+                  />
+                  {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
+                </View>
+
+                {loginStep === 'password' ? (
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.fieldLabel}>Password</Text>
+                    <TextInput
+                      ref={passwordRef}
+                      value={password}
+                      onChangeText={(value) => {
+                        setPassword(value);
+                        setPasswordError(undefined);
+                      }}
+                      secureTextEntry={!showLoginPassword}
+                      textContentType="password"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="go"
+                      onSubmitEditing={handleLogin}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#6d86a6"
+                      style={styles.input}
+                    />
+                    <Pressable style={styles.passwordToggle} onPress={() => setShowLoginPassword((prev) => !prev)}>
+                      <Text style={styles.passwordToggleText}>{showLoginPassword ? 'Hide' : 'Show'}</Text>
+                    </Pressable>
+                    {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
+                  </View>
+                ) : null}
+
+                {formError ? <Text style={styles.fieldError}>{formError}</Text> : null}
+
+                <Pressable
+                  style={[
+                    styles.primaryButton,
+                    (loginStep === 'email' ? !canContinueEmail : !canSubmitLogin) ? styles.primaryButtonDisabled : undefined,
+                  ]}
+                  onPress={loginStep === 'email' ? handleContinueToPassword : handleLogin}
+                  disabled={loginStep === 'email' ? !canContinueEmail : !canSubmitLogin}
+                >
+                  <Text style={styles.primaryButtonText}>
+                    {emailAuthLoading ? 'Working...' : loginStep === 'email' ? 'Continue' : 'Sign in'}
+                  </Text>
+                </Pressable>
+
+                {loginStep === 'password' ? (
+                  <Pressable
+                    style={styles.inlineLink}
+                    onPress={() =>
+                      Alert.alert('Reset Password', 'Password reset flow can be added to your Cedros login config.')
+                    }
+                  >
+                    <Text style={styles.inlineLinkText}>Forgot password?</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             ) : (
-              <EmailRegisterForm
-                onSuccess={() => {
-                  if (__DEV__) {
-                    console.log('Registration success');
-                  }
-                  routeAfterAuth();
-                }}
-                onLoginPress={() => setMode('login')}
-              />
+              <View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Display Name</Text>
+                  <TextInput
+                    ref={nameRef}
+                    value={displayName}
+                    onChangeText={(value) => {
+                      setDisplayName(value);
+                      setDisplayNameError(undefined);
+                    }}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailRef.current?.focus()}
+                    placeholder="Your name"
+                    placeholderTextColor="#6d86a6"
+                    style={styles.input}
+                  />
+                  {displayNameError ? <Text style={styles.fieldError}>{displayNameError}</Text> : null}
+                </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Email</Text>
+                  <TextInput
+                    ref={emailRef}
+                    value={email}
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      setEmailError(undefined);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    placeholder="you@company.com"
+                    placeholderTextColor="#6d86a6"
+                    style={styles.input}
+                  />
+                  {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
+                </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Password</Text>
+                  <TextInput
+                    ref={passwordRef}
+                    value={password}
+                    onChangeText={(value) => {
+                      setPassword(value);
+                      setPasswordError(undefined);
+                    }}
+                    secureTextEntry={!showRegisterPassword}
+                    textContentType="newPassword"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="go"
+                    onSubmitEditing={handleRegister}
+                    placeholder="At least 8 characters"
+                    placeholderTextColor="#6d86a6"
+                    style={styles.input}
+                  />
+                  <Pressable style={styles.passwordToggle} onPress={() => setShowRegisterPassword((prev) => !prev)}>
+                    <Text style={styles.passwordToggleText}>{showRegisterPassword ? 'Hide' : 'Show'}</Text>
+                  </Pressable>
+                  {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
+                </View>
+
+                {formError ? <Text style={styles.fieldError}>{formError}</Text> : null}
+
+                <Pressable
+                  style={[styles.primaryButton, !canSubmitRegister ? styles.primaryButtonDisabled : undefined]}
+                  onPress={handleRegister}
+                  disabled={!canSubmitRegister}
+                >
+                  <Text style={styles.primaryButtonText}>{emailAuthLoading ? 'Working...' : 'Create account'}</Text>
+                </Pressable>
+              </View>
             )}
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>or</Text>
+              <View style={styles.orLine} />
             </View>
 
             <GoogleLoginButton
               onRequestToken={async () => {
                 Alert.alert(
                   'Google Sign-In',
-                  'Google native sign-in is not configured in this build yet. Use email login/register for now.'
+                  'Google native sign-in is not configured in this build yet. Use email sign-in for now.'
                 );
                 throw new Error('Google sign-in unavailable in this build');
               }}
-              onSuccess={() => {
-                if (__DEV__) {
-                  console.log('Google login success');
-                }
-                routeAfterAuth();
-              }}
-              onError={(error) => {
-                if (__DEV__) {
-                  console.error('Google login error:', error);
-                }
-              }}
+              onSuccess={routeAfterAuth}
               style={styles.googleButton}
             />
-          </Animated.View>
 
-          <Text style={styles.hint}>Secure authentication powered by Cedros</Text>
+            <View style={styles.proofRow}>
+              <Text style={styles.proofItem}>🤖 Up to 4 bots</Text>
+              <Text style={styles.proofDot}>•</Text>
+              <Text style={styles.proofItem}>📈 Stocks + crypto</Text>
+              <Text style={styles.proofDot}>•</Text>
+              <Text style={styles.proofItem}>🖥️ Your VPS</Text>
+            </View>
 
-          {/* Lobster footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Meet LOB — your trading companion</Text>
-            <Text style={styles.footerSub}>Always trawling, never sleeping</Text>
+            <Text style={styles.reassurance}>Your bots run on your infrastructure. We don&apos;t touch your keys.</Text>
+
+            <View style={styles.metaLinksRow}>
+              <Pressable onPress={() => Alert.alert('Terms', 'Terms page wiring can be attached here.')}>
+                <Text style={styles.metaLink}>Terms</Text>
+              </Pressable>
+              <Text style={styles.metaDivider}>•</Text>
+              <Pressable onPress={() => Alert.alert('Privacy', 'Privacy page wiring can be attached here.')}>
+                <Text style={styles.metaLink}>Privacy</Text>
+              </Pressable>
+              <Text style={styles.metaDivider}>•</Text>
+              <Pressable onPress={() => Alert.alert('Security', 'Security page wiring can be attached here.')}>
+                <Text style={styles.metaLink}>Security</Text>
+              </Pressable>
+            </View>
           </View>
-        </Animated.View>
-      </ScrollView>
-    </OceanBackground>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingAvatar: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 4,
-    borderColor: lightTheme.colors.cardBorder,
-  },
-  loadingTextContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: lightTheme.typography.families.display,
-    color: lightTheme.colors.wave[800],
-    marginBottom: 12,
-  },
-  loadingIndicator: {
-    marginTop: 8,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    paddingBottom: 40,
-  },
-  mascotContainer: {
-    position: 'relative',
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 4,
-    borderColor: lightTheme.colors.cardBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  badge: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: lightTheme.colors.bullish[500],
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  statusIndicator: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: lightTheme.colors.bullish[500],
-    borderWidth: 3,
-    borderColor: '#fff',
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: lightTheme.typography.families.display,
-    color: lightTheme.colors.accent,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    fontFamily: lightTheme.typography.families.display,
-    color: lightTheme.colors.wave[900],
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: lightTheme.colors.wave[600],
-    textAlign: 'center',
-    marginBottom: 32,
-    maxWidth: 320,
-    lineHeight: 22,
-  },
-  features: {
-    flexDirection: 'row',
-    marginBottom: 32,
-    gap: 16,
-  },
-  feature: {
-    alignItems: 'center',
-    backgroundColor: lightTheme.colors.surface,
-    padding: 16,
-    borderRadius: 20,
-    minWidth: 90,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  featureEmoji: {
-    fontSize: 24,
-  },
-  featureText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: lightTheme.colors.wave[700],
-  },
-  authContainer: {
-    width: '100%',
-    maxWidth: 340,
-    marginBottom: 16,
-  },
-  hint: {
-    fontSize: 13,
-    color: lightTheme.colors.wave[500],
-    marginBottom: 40,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: lightTheme.colors.wave[300],
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    fontSize: 14,
-    color: lightTheme.colors.wave[500],
-  },
-  googleButton: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 20,
-  },
-  footerText: {
-    fontSize: 14,
-    color: lightTheme.colors.wave[600],
-    fontStyle: 'italic',
-  },
-  footerSub: {
-    fontSize: 12,
-    color: lightTheme.colors.wave[400],
-    marginTop: 4,
-  },
-});

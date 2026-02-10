@@ -117,8 +117,13 @@ mobile-liveapi: ## Start mobile app pointing at production API
 			sleep 1; \
 		fi; \
 	fi
-	@echo "$(YELLOW)Clearing Expo cache and starting Metro from apps/mobile...$(RESET)"
-	cd apps/mobile && EXPO_PUBLIC_API_URL=https://api.trawlingtraders.com npx expo start --clear
+	@if command -v adb >/dev/null 2>&1; then \
+		echo "$(YELLOW)Configuring adb reverse for emulator/device (tcp:8081)...$(RESET)"; \
+		adb reverse --remove-all >/dev/null 2>&1 || true; \
+		adb reverse tcp:8081 tcp:8081 >/dev/null 2>&1 || true; \
+	fi
+	@echo "$(YELLOW)Clearing Expo cache and starting Metro in localhost mode from apps/mobile...$(RESET)"
+	cd apps/mobile && EXPO_PUBLIC_API_URL=https://api.trawlingtraders.com npx expo start --clear --localhost --android
 
 bot-runner: ## Run bot-runner locally for testing
 	@echo "$(GREEN)🤖 Starting Bot Runner...$(RESET)"

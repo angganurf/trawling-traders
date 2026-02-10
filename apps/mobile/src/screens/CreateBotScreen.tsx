@@ -1,175 +1,177 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Switch,
   ActivityIndicator,
   Alert,
-  Animated,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import type { Persona, AlgorithmMode, AssetFocus, TradingMode, Strictness, LlmProvider, LlmModel } from '@trawling-traders/types';
+import type { AlgorithmMode, AssetFocus, LlmModel, LlmProvider, Persona, Strictness, TradingMode } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
-import { lightTheme } from '../theme';
-
-// Validation helper for numeric inputs
-function validateNumericInput(
-  value: string,
-  fieldName: string,
-  min: number,
-  max: number
-): { valid: boolean; value: number; error?: string } {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return { valid: false, value: 0, error: `${fieldName} is required` };
-  }
-  const num = parseInt(trimmed, 10);
-  if (isNaN(num)) {
-    return { valid: false, value: 0, error: `${fieldName} must be a number` };
-  }
-  if (num < min || num > max) {
-    return { valid: false, value: num, error: `${fieldName} must be between ${min} and ${max}` };
-  }
-  return { valid: true, value: num };
-}
+import { CreateBotWizardSteps } from './create-bot/CreateBotWizardSteps';
+import { createBotWizardStyles as styles } from './create-bot/CreateBotWizard.styles';
 
 type CreateBotScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateBot'>;
+type WizardStep = 0 | 1 | 2 | 3 | 4 | 5;
 
-const PERSONAS: { value: Persona; label: string; description: string }[] = [
-  { value: 'beginner', label: 'Set & Forget', description: 'Blue-chip crypto + xStocks/metals, strict safety' },
-  { value: 'tweaker', label: 'Hands-on', description: 'Tune assets, risk controls, see trade reasons' },
-  { value: 'quant-lite', label: 'Power User', description: 'Signal knobs, custom baskets, full control' },
+const STEP_META = [
+  { title: 'Basics', description: 'Name your bot and choose your operating style.' },
+  { title: 'Strategy', description: 'Pick market focus and behavior profile.' },
+  { title: 'Risk', description: 'Set practical limits before deploying.' },
+  { title: 'AI', description: 'Connect the LLM provider and model your bot will use.' },
+  { title: 'Telegram', description: 'Optional chat channel for commands, alerts, and pairing.' },
+  { title: 'Review', description: 'Double-check configuration and deploy.' },
+] as const;
+
+const PERSONAS: { value: Persona; label: string; description: string; recommended?: boolean }[] = [
+  { value: 'beginner', label: 'Set & Forget', description: 'Balanced defaults for most traders.', recommended: true },
+  { value: 'tweaker', label: 'Hands-on', description: 'More tuning and intervention options.' },
+  { value: 'quant-lite', label: 'Power User', description: 'Advanced style with tighter control.' },
 ];
 
-const ALGORITHMS: { value: AlgorithmMode; label: string; description: string }[] = [
-  { value: 'trend', label: 'Trend', description: 'Ride momentum with confirmations' },
-  { value: 'mean-reversion', label: 'Mean Reversion', description: 'Fade extremes, frequent trades' },
-  { value: 'breakout', label: 'Breakout', description: 'Trade breakouts with volume' },
+const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }[] = [
+  { value: 'tokenized-equities', label: 'xStocks (Recommended)', recommended: true },
+  { value: 'majors', label: 'Crypto Majors' },
+  { value: 'tokenized-metals', label: 'Metals' },
+  { value: 'custom', label: 'Custom Basket' },
+  { value: 'memes', label: 'Meme Coins (High Risk)' },
 ];
 
-const ASSET_FOCUSES: { value: AssetFocus; label: string; description: string; tier: 'core' | 'quality' | 'speculative' }[] = [
-  { value: 'majors', label: 'Crypto Majors', description: 'BTC, ETH, SOL', tier: 'core' },
-  { value: 'tokenized-equities', label: 'xStocks', description: 'AAPL, TSLA, SPY on Solana', tier: 'quality' },
-  { value: 'tokenized-metals', label: 'Metals', description: 'Gold, silver (ORO)', tier: 'quality' },
-  { value: 'custom', label: 'Custom', description: 'Build your own basket', tier: 'quality' },
-  { value: 'memes', label: 'Memes ⚠️', description: 'High risk', tier: 'speculative' },
+const ALGORITHMS: { value: AlgorithmMode; label: string; description: string; recommended?: boolean }[] = [
+  { value: 'trend', label: 'Trend', description: 'Follows sustained momentum moves.', recommended: true },
+  { value: 'mean-reversion', label: 'Mean Reversion', description: 'Looks for pullbacks and snap-backs.' },
+  { value: 'breakout', label: 'Breakout', description: 'Enters on range breaks with confirmation.' },
 ];
 
-// LLM Models by provider
+const STRICTNESS_OPTIONS: { value: Strictness; label: string }[] = [
+  { value: 'high', label: 'High (Recommended)' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+];
+
 const LLM_MODELS: Record<LlmProvider, { value: LlmModel; label: string }[]> = {
   openai: [
     { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Faster)' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
     { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
   ],
   anthropic: [
     { value: 'claude-3-5-sonnet', label: 'Claude 3.5 Sonnet (Recommended)' },
-    { value: 'claude-3-opus', label: 'Claude 3 Opus (Best)' },
-    { value: 'claude-3-haiku', label: 'Claude 3 Haiku (Fastest)' },
+    { value: 'claude-3-opus', label: 'Claude 3 Opus' },
+    { value: 'claude-3-haiku', label: 'Claude 3 Haiku' },
   ],
-  venice: [
-    { value: 'llama-3.1-405b', label: 'Llama 3.1 405B' },
-  ],
-  openrouter: [
-    { value: 'auto', label: 'Auto (Best Available)' },
-  ],
+  venice: [{ value: 'llama-3.1-405b', label: 'Llama 3.1 405B' }],
+  openrouter: [{ value: 'auto', label: 'Auto (Best Available)' }],
 };
+
+function parseNumberField(value: string, label: string, min: number, max: number): { value: number; error?: string } {
+  const trimmed = value.trim();
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!trimmed) return { value: 0, error: `${label} is required.` };
+  if (Number.isNaN(parsed)) return { value: 0, error: `${label} must be a number.` };
+  if (parsed < min || parsed > max) return { value: parsed, error: `${label} must be ${min}-${max}.` };
+  return { value: parsed };
+}
 
 export function CreateBotScreen() {
   const navigation = useNavigation<CreateBotScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Animation
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
+  const [step, setStep] = useState<WizardStep>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  // Form state
   const [name, setName] = useState('');
   const [persona, setPersona] = useState<Persona>('beginner');
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
   const [algorithmMode, setAlgorithmMode] = useState<AlgorithmMode>('trend');
   const [strictness, setStrictness] = useState<Strictness>('high');
   const [tradingMode, setTradingMode] = useState<TradingMode>('paper');
+  const [maxPositionSize, setMaxPositionSize] = useState('5');
+  const [maxDailyLoss, setMaxDailyLoss] = useState('50');
+  const [maxDrawdown, setMaxDrawdown] = useState('10');
+  const [maxTradesPerDay, setMaxTradesPerDay] = useState('5');
   const [llmProvider, setLlmProvider] = useState<LlmProvider>('openai');
   const [llmModel, setLlmModel] = useState<LlmModel>('gpt-4o');
   const [llmApiKey, setLlmApiKey] = useState('');
   const [telegramEnabled, setTelegramEnabled] = useState(false);
   const [telegramBotToken, setTelegramBotToken] = useState('');
-  const [maxPositionSize, setMaxPositionSize] = useState('5');
-  const [maxDailyLoss, setMaxDailyLoss] = useState('50');
-  const [maxDrawdown, setMaxDrawdown] = useState('10');
-  const [maxTradesPerDay, setMaxTradesPerDay] = useState('5');
-  const [volumeConfirmation, setVolumeConfirmation] = useState(true);
-  const [volatilityBrake, setVolatilityBrake] = useState(true);
-  const [liquidityFilter, setLiquidityFilter] = useState<'low' | 'medium' | 'high'>('high');
-  const [correlationBrake, setCorrelationBrake] = useState(true);
+  const [telegramUserId, setTelegramUserId] = useState('');
+  const [telegramPairingCode, setTelegramPairingCode] = useState('');
 
-  // Update model when provider changes
-  useEffect(() => {
-    const models = LLM_MODELS[llmProvider];
-    if (models && models.length > 0) {
-      setLlmModel(models[0].value);
+  const modelsForProvider = useMemo(() => LLM_MODELS[llmProvider], [llmProvider]);
+
+  const validateCurrentStep = () => {
+    if (step === 0 && !name.trim()) {
+      return 'Please give this bot a name.';
     }
-  }, [llmProvider]);
+    if (step === 2) {
+      const checks = [
+        parseNumberField(maxPositionSize, 'Max position %', 1, 50),
+        parseNumberField(maxDailyLoss, 'Max daily loss', 1, 100000),
+        parseNumberField(maxDrawdown, 'Max drawdown %', 1, 50),
+        parseNumberField(maxTradesPerDay, 'Max trades/day', 1, 100),
+      ];
+      const failed = checks.find((check) => check.error);
+      if (failed?.error) return failed.error;
+    }
+    if (step === 3) {
+      if (!llmApiKey.trim()) return 'Enter your LLM API key to continue.';
+    }
+    if (step === 4) {
+      if (telegramEnabled && !telegramBotToken.trim()) return 'Enter a Telegram token or disable Telegram.';
+      if (telegramEnabled && !telegramUserId.trim()) return 'Enter your Telegram user ID.';
+      if (telegramEnabled && !telegramPairingCode.trim()) return 'Enter your Telegram pairing code.';
+    }
+    return null;
+  };
 
-  const handleCreate = async () => {
-    if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a bot name');
+  const onNext = () => {
+    setInlineError(null);
+    const error = validateCurrentStep();
+    if (error) {
+      setInlineError(error);
       return;
     }
-    if (!llmApiKey.trim()) {
-      Alert.alert('Error', 'Please enter your LLM API key');
+    if (step < 5) {
+      setStep((prev) => (prev + 1) as WizardStep);
+    }
+  };
+
+  const onBack = () => {
+    setInlineError(null);
+    if (step > 0) {
+      setStep((prev) => (prev - 1) as WizardStep);
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const deployBot = async () => {
+    setInlineError(null);
+    const error = validateCurrentStep();
+    if (error) {
+      setInlineError(error);
       return;
     }
 
-    // Validate numeric inputs
-    const positionValidation = validateNumericInput(maxPositionSize, 'Max Position Size', 1, 50);
-    if (!positionValidation.valid) {
-      Alert.alert('Validation Error', positionValidation.error);
+    const position = parseNumberField(maxPositionSize, 'Max position %', 1, 50);
+    const dailyLoss = parseNumberField(maxDailyLoss, 'Max daily loss', 1, 100000);
+    const drawdown = parseNumberField(maxDrawdown, 'Max drawdown %', 1, 50);
+    const trades = parseNumberField(maxTradesPerDay, 'Max trades/day', 1, 100);
+
+    if (position.error || dailyLoss.error || drawdown.error || trades.error) {
+      setInlineError(position.error || dailyLoss.error || drawdown.error || trades.error || null);
       return;
     }
 
-    const dailyLossValidation = validateNumericInput(maxDailyLoss, 'Max Daily Loss', 1, 100000);
-    if (!dailyLossValidation.valid) {
-      Alert.alert('Validation Error', dailyLossValidation.error);
-      return;
-    }
-
-    const drawdownValidation = validateNumericInput(maxDrawdown, 'Max Drawdown', 1, 50);
-    if (!drawdownValidation.valid) {
-      Alert.alert('Validation Error', drawdownValidation.error);
-      return;
-    }
-
-    const tradesValidation = validateNumericInput(maxTradesPerDay, 'Max Trades Per Day', 1, 100);
-    if (!tradesValidation.valid) {
-      Alert.alert('Validation Error', tradesValidation.error);
-      return;
-    }
-
-    // Validate Telegram token if enabled
-    if (telegramEnabled && !telegramBotToken.trim()) {
-      Alert.alert('Error', 'Please enter your Telegram bot token or disable Telegram integration');
-      return;
-    }
-
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       await api.bot.createBot({
         name: name.trim(),
@@ -177,553 +179,120 @@ export function CreateBotScreen() {
         assetFocus,
         algorithmMode,
         strictness,
-        riskCaps: {
-          maxPositionSizePercent: positionValidation.value,
-          maxDailyLossUsd: dailyLossValidation.value,
-          maxDrawdownPercent: drawdownValidation.value,
-          maxTradesPerDay: tradesValidation.value,
-        },
         tradingMode,
         llmProvider,
         llmModel,
         llmApiKey: llmApiKey.trim(),
         telegramEnabled,
         telegramBotToken: telegramEnabled ? telegramBotToken.trim() : undefined,
+        riskCaps: {
+          maxPositionSizePercent: position.value,
+          maxDailyLossUsd: dailyLoss.value,
+          maxDrawdownPercent: drawdown.value,
+          maxTradesPerDay: trades.value,
+        },
       });
-      Alert.alert('Success', 'Trawler deployed!');
-      // Clear sensitive data from state immediately after successful submission
       setLlmApiKey('');
       setTelegramBotToken('');
-      // Small delay to ensure server has committed the new bot before navigating
-      // This prevents the race condition where BotsList fetches before commit
-      await new Promise(resolve => setTimeout(resolve, 300));
-      // Use goBack() to return to the previous screen (Main/Bots tab)
-      // This triggers useFocusEffect in BotsListScreen to refresh the list
+      setTelegramUserId('');
+      setTelegramPairingCode('');
+      Alert.alert('Bot deployed', 'Your trawler is being provisioned now.');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to deploy trawler');
+      const message = error instanceof Error ? error.message : 'Failed to deploy bot.';
+      setInlineError(message);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const renderSection = (title: string, children: React.ReactNode) => (
-    <View style={styles.card}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-
   return (
     <OceanBackground>
-      <Animated.ScrollView
-        style={[styles.container, { opacity: fadeAnim }]}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-          <Text style={styles.headerTitle}>Deploy New Trawler</Text>
-          <Text style={styles.headerSubtitle}>Configure your LOB trading agent</Text>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Create Bot</Text>
+          <Text style={styles.headerSubtitle}>Guided setup for a safer, clearer launch.</Text>
+          <View style={styles.progressRow}>
+            {STEP_META.map((_, index) => (
+              <View key={index} style={[styles.progressDot, index <= step && styles.progressDotActive]} />
+            ))}
+          </View>
         </View>
 
-        {renderSection('Identity',
-          <>
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g., Trend Hunter #1"
-              placeholderTextColor={lightTheme.colors.wave[400]}
-            />
-          </>
-        )}
-
-        {renderSection('Trading Persona',
-          <>
-            {PERSONAS.map((p) => (
-              <TouchableOpacity
-                key={p.value}
-                style={[styles.optionCard, persona === p.value && styles.selectedCard]}
-                onPress={() => setPersona(p.value)}
-              >
-                <Text style={styles.optionTitle}>{p.label}</Text>
-                <Text style={styles.optionDescription}>{p.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-
-        {renderSection('Asset Focus',
-          <>
-            <View style={styles.assetGrid}>
-              {ASSET_FOCUSES.filter(a => a.tier !== 'speculative').map((af) => (
-                <TouchableOpacity
-                  key={af.value}
-                  style={[
-                    styles.assetChip,
-                    assetFocus === af.value && styles.assetChipSelected,
-                    { borderColor: af.tier === 'quality' ? lightTheme.colors.bullish[500] : lightTheme.colors.primary[500] },
-                  ]}
-                  onPress={() => setAssetFocus(af.value)}
-                >
-                  <Text style={[styles.assetChipText, assetFocus === af.value && styles.assetChipTextSelected]}>
-                    {af.label}
-                  </Text>
-                  <Text style={styles.assetChipSub}>{af.description}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.speculativeSection}>
-              <Text style={styles.speculativeLabel}>⚠️ Speculative (Not Recommended)</Text>
-              <TouchableOpacity
-                style={[styles.assetChip, assetFocus === 'memes' && styles.assetChipSpecSelected]}
-                onPress={() => setAssetFocus('memes')}
-              >
-                <Text style={styles.assetChipText}>Meme Coins</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {renderSection('Algorithm',
-          <>
-            {ALGORITHMS.map((alg) => (
-              <TouchableOpacity
-                key={alg.value}
-                style={[styles.optionCard, algorithmMode === alg.value && styles.selectedCard]}
-                onPress={() => setAlgorithmMode(alg.value)}
-              >
-                <Text style={styles.optionTitle}>{alg.label}</Text>
-                <Text style={styles.optionDescription}>{alg.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-
-        {renderSection('Risk Management',
-          <>
-            <View style={styles.inputRow}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Max Position %</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={maxPositionSize}
-                  onChangeText={setMaxPositionSize}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Daily Loss ($)</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={maxDailyLoss}
-                  onChangeText={setMaxDailyLoss}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-            <View style={styles.inputRow}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Max Drawdown %</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={maxDrawdown}
-                  onChangeText={setMaxDrawdown}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Trades/Day</Text>
-                <TextInput
-                  style={styles.smallInput}
-                  value={maxTradesPerDay}
-                  onChangeText={setMaxTradesPerDay}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-          </>
-        )}
-
-        {renderSection('Trading Mode',
-          <>
-            <View style={styles.switchRow}>
-              <View>
-                <Text style={styles.switchLabel}>
-                  {tradingMode === 'paper' ? '📄 Paper Trading' : '💰 Live Trading'}
-                </Text>
-                <Text style={styles.switchSub}>
-                  {tradingMode === 'paper' ? 'Test with fake money' : 'Real funds at risk'}
-                </Text>
-              </View>
-              <Switch
-                value={tradingMode === 'live'}
-                onValueChange={(v) => setTradingMode(v ? 'live' : 'paper')}
-                trackColor={{ false: lightTheme.colors.wave[300], true: lightTheme.colors.lobster[400] }}
-                thumbColor={tradingMode === 'live' ? lightTheme.colors.lobster[600] : '#fff'}
-              />
-            </View>
-            
-            {tradingMode === 'live' && (
-              <View style={styles.warningBox}>
-                <Text style={styles.warningText}>⚠️ Live trading uses real funds. Start with paper first.</Text>
-              </View>
-            )}
-          </>
-        )}
-
-        {renderSection('LLM Configuration',
-          <>
-            <Text style={styles.label}>Provider</Text>
-            <View style={styles.providerRow}>
-              {(['openai', 'anthropic', 'venice', 'openrouter'] as LlmProvider[]).map((provider) => (
-                <TouchableOpacity
-                  key={provider}
-                  style={[styles.providerChip, llmProvider === provider && styles.providerChipSelected]}
-                  onPress={() => setLlmProvider(provider)}
-                >
-                  <Text style={[styles.providerText, llmProvider === provider && styles.providerTextSelected]}>
-                    {provider}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.label, { marginTop: 16 }]}>Model</Text>
-            <View style={styles.providerRow}>
-              {LLM_MODELS[llmProvider].map((model) => (
-                <TouchableOpacity
-                  key={model.value}
-                  style={[styles.providerChip, llmModel === model.value && styles.providerChipSelected]}
-                  onPress={() => setLlmModel(model.value)}
-                >
-                  <Text style={[styles.providerText, llmModel === model.value && styles.providerTextSelected]}>
-                    {model.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.label, { marginTop: 16 }]}>API Key</Text>
-            <TextInput
-              style={styles.input}
-              value={llmApiKey}
-              onChangeText={setLlmApiKey}
-              placeholder="sk-..."
-              placeholderTextColor={lightTheme.colors.wave[400]}
-              secureTextEntry
-            />
-          </>
-        )}
-
-        {renderSection('Telegram Integration',
-          <>
-            <View style={styles.switchRow}>
-              <View>
-                <Text style={styles.switchLabel}>Enable Telegram</Text>
-                <Text style={styles.switchSub}>Chat with your bot via Telegram</Text>
-              </View>
-              <Switch
-                value={telegramEnabled}
-                onValueChange={setTelegramEnabled}
-                trackColor={{ false: lightTheme.colors.wave[300], true: lightTheme.colors.primary[400] }}
-                thumbColor={telegramEnabled ? lightTheme.colors.primary[600] : '#fff'}
-              />
-            </View>
-
-            {telegramEnabled && (
-              <>
-                <Text style={styles.label}>Bot Token</Text>
-                <TextInput
-                  style={styles.input}
-                  value={telegramBotToken}
-                  onChangeText={setTelegramBotToken}
-                  placeholder="123456789:ABCdefGHI..."
-                  placeholderTextColor={lightTheme.colors.wave[400]}
-                  secureTextEntry
-                />
-                <Text style={styles.helperText}>
-                  Get your token from @BotFather on Telegram
-                </Text>
-              </>
-            )}
-          </>
-        )}
-
-        {persona === 'quant-lite' && renderSection('Signal Knobs',
-          <>
-            {[
-              { label: 'Volume Confirmation', value: volumeConfirmation, setter: setVolumeConfirmation },
-              { label: 'Volatility Brake', value: volatilityBrake, setter: setVolatilityBrake },
-              { label: 'Correlation Brake', value: correlationBrake, setter: setCorrelationBrake },
-            ].map((knob) => (
-              <View key={knob.label} style={styles.switchRow}>
-                <Text style={styles.switchLabel}>{knob.label}</Text>
-                <Switch
-                  value={knob.value}
-                  onValueChange={knob.setter}
-                  trackColor={{ false: lightTheme.colors.wave[300], true: lightTheme.colors.bullish[400] }}
-                />
-              </View>
-            ))}
-            
-            <Text style={styles.label}>Liquidity Filter</Text>
-            <View style={styles.providerRow}>
-              {(['low', 'medium', 'high'] as const).map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={[styles.providerChip, liquidityFilter === level && styles.providerChipSelected]}
-                  onPress={() => setLiquidityFilter(level)}
-                >
-                  <Text style={[styles.providerText, liquidityFilter === level && styles.providerTextSelected]}>
-                    {level}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Deploy Button */}
         <View style={styles.card}>
-          {isLoading ? (
-            <ActivityIndicator size="large" color={lightTheme.colors.primary[700]} />
-          ) : (
-            <TouchableOpacity
-              style={styles.deployButton}
-              onPress={handleCreate}
-              disabled={!name.trim() || !llmApiKey.trim()}
-            >
-              <Text style={styles.deployButtonText}>🚀 Deploy Trawler</Text>
+          <Text style={styles.stepLabel}>
+            Step {step + 1} of {STEP_META.length}
+          </Text>
+          <Text style={styles.stepTitle}>{STEP_META[step].title}</Text>
+          <Text style={styles.stepDescription}>{STEP_META[step].description}</Text>
+          {inlineError ? <Text style={styles.inlineError}>{inlineError}</Text> : null}
+          <CreateBotWizardSteps
+            step={step}
+            personas={PERSONAS}
+            persona={persona}
+            setPersona={setPersona}
+            name={name}
+            setName={setName}
+            assetChoices={ASSET_CHOICES}
+            assetFocus={assetFocus}
+            setAssetFocus={setAssetFocus}
+            algorithms={ALGORITHMS}
+            algorithmMode={algorithmMode}
+            setAlgorithmMode={setAlgorithmMode}
+            strictnessOptions={STRICTNESS_OPTIONS}
+            strictness={strictness}
+            setStrictness={setStrictness}
+            tradingMode={tradingMode}
+            setTradingMode={setTradingMode}
+            maxPositionSize={maxPositionSize}
+            setMaxPositionSize={setMaxPositionSize}
+            maxTradesPerDay={maxTradesPerDay}
+            setMaxTradesPerDay={setMaxTradesPerDay}
+            maxDailyLoss={maxDailyLoss}
+            setMaxDailyLoss={setMaxDailyLoss}
+            maxDrawdown={maxDrawdown}
+            setMaxDrawdown={setMaxDrawdown}
+            llmProvider={llmProvider}
+            setLlmProvider={setLlmProvider}
+            llmModel={llmModel}
+            setLlmModel={setLlmModel}
+            llmApiKey={llmApiKey}
+            setLlmApiKey={setLlmApiKey}
+            modelsForProvider={modelsForProvider}
+            llmModels={LLM_MODELS}
+            telegramEnabled={telegramEnabled}
+            setTelegramEnabled={setTelegramEnabled}
+            telegramBotToken={telegramBotToken}
+            setTelegramBotToken={setTelegramBotToken}
+            telegramUserId={telegramUserId}
+            setTelegramUserId={setTelegramUserId}
+            telegramPairingCode={telegramPairingCode}
+            setTelegramPairingCode={setTelegramPairingCode}
+          />
+          <View style={styles.footerRow}>
+            <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isSubmitting}>
+              <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
             </TouchableOpacity>
-          )}
+            {step < 5 ? (
+              <TouchableOpacity style={styles.nextButton} onPress={onNext} disabled={isSubmitting}>
+                <Text style={styles.nextButtonText}>Next</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.nextButton, isSubmitting && styles.nextButtonDisabled]}
+                onPress={deployBot}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.nextButtonText}>Deploy Bot</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
     </OceanBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    padding: 20,
-    backgroundColor: lightTheme.colors.surface,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    borderBottomWidth: 2,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: lightTheme.typography.families.display,
-    color: lightTheme.colors.wave[900],
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: lightTheme.colors.wave[500],
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: lightTheme.colors.surface,
-    margin: 16,
-    marginBottom: 8,
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: lightTheme.colors.wave[900],
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: lightTheme.colors.wave[700],
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: lightTheme.colors.wave[200],
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: lightTheme.colors.wave[50],
-    color: lightTheme.colors.wave[900],
-  },
-  smallInput: {
-    borderWidth: 1,
-    borderColor: lightTheme.colors.wave[200],
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: lightTheme.colors.wave[50],
-    width: 100,
-    color: lightTheme.colors.wave[900],
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  optionCard: {
-    borderWidth: 2,
-    borderColor: lightTheme.colors.wave[200],
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    backgroundColor: lightTheme.colors.wave[50],
-  },
-  selectedCard: {
-    borderColor: lightTheme.colors.primary[600],
-    backgroundColor: lightTheme.colors.primary[50],
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: lightTheme.colors.wave[900],
-    marginBottom: 4,
-  },
-  optionDescription: {
-    fontSize: 13,
-    color: lightTheme.colors.wave[500],
-  },
-  assetGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  assetChip: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 12,
-    minWidth: '30%',
-    backgroundColor: lightTheme.colors.wave[50],
-  },
-  assetChipSelected: {
-    backgroundColor: lightTheme.colors.bullish[50],
-  },
-  assetChipSpecSelected: {
-    backgroundColor: lightTheme.colors.lobster[50],
-    borderColor: lightTheme.colors.lobster[400],
-  },
-  assetChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: lightTheme.colors.wave[800],
-  },
-  assetChipTextSelected: {
-    color: lightTheme.colors.bullish[700],
-  },
-  assetChipSub: {
-    fontSize: 11,
-    color: lightTheme.colors.wave[500],
-    marginTop: 2,
-  },
-  speculativeSection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: lightTheme.colors.wave[200],
-  },
-  speculativeLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: lightTheme.colors.lobster[600],
-    marginBottom: 10,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  switchLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: lightTheme.colors.wave[900],
-  },
-  switchSub: {
-    fontSize: 13,
-    color: lightTheme.colors.wave[500],
-    marginTop: 2,
-  },
-  warningBox: {
-    backgroundColor: lightTheme.colors.lobster[100],
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 8,
-  },
-  warningText: {
-    color: lightTheme.colors.lobster[700],
-    fontSize: 13,
-  },
-  providerRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  providerChip: {
-    borderWidth: 1,
-    borderColor: lightTheme.colors.wave[300],
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: lightTheme.colors.wave[50],
-  },
-  providerChipSelected: {
-    backgroundColor: lightTheme.colors.primary[600],
-    borderColor: lightTheme.colors.primary[600],
-  },
-  providerText: {
-    fontSize: 14,
-    color: lightTheme.colors.wave[700],
-  },
-  providerTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  helperText: {
-    fontSize: 12,
-    color: lightTheme.colors.wave[500],
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  deployButton: {
-    backgroundColor: lightTheme.colors.accent,
-    paddingVertical: 16,
-    borderRadius: 20,
-    alignItems: 'center',
-    shadowColor: lightTheme.colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  deployButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
