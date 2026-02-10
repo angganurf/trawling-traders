@@ -1,9 +1,11 @@
 import React from 'react';
 import { Alert, Image, Text, TouchableOpacity } from 'react-native';
+import { DrawerActions } from '@react-navigation/native';
 import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { lightTheme } from '../theme';
 
 import { AuthScreen } from '../screens/AuthScreen';
@@ -52,15 +54,43 @@ const LOB_AVATAR = require('../../assets/lob-avatar.png');
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: lightTheme.colors.primary[700],
+        tabBarActiveTintColor: lightTheme.colors.primary[900],
         tabBarInactiveTintColor: lightTheme.colors.wave[500],
+        tabBarActiveBackgroundColor: '#d6eefb',
+        tabBarIcon: ({ color, focused, size }) => {
+          const iconSize = focused ? size + 2 : size;
+          const iconByRoute: Record<string, keyof typeof Ionicons.glyphMap> = {
+            Bots: focused ? 'grid' : 'grid-outline',
+            Research: focused ? 'search' : 'search-outline',
+            Leaderboard: focused ? 'trophy' : 'trophy-outline',
+            Community: focused ? 'people' : 'people-outline',
+          };
+          return <Ionicons name={iconByRoute[route.name] || 'ellipse'} size={iconSize} color={color} />;
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: -1,
+          marginBottom: 2,
+        },
+        tabBarItemStyle: {
+          borderRadius: 12,
+          marginHorizontal: 4,
+          marginVertical: 8,
+          paddingVertical: 2,
+        },
         tabBarStyle: {
           backgroundColor: lightTheme.colors.surface,
           borderTopColor: lightTheme.colors.cardBorder,
+          borderTopWidth: 1,
+          height: 74,
+          paddingHorizontal: 8,
+          paddingBottom: 8,
+          paddingTop: 4,
         },
-      }}
+      })}
     >
       <Tab.Screen name="Bots" component={HomeOverviewScreen} />
       <Tab.Screen name="Research" component={ResearchScreen} />
@@ -75,14 +105,32 @@ function MainDrawer() {
     <Drawer.Navigator
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
-        headerStyle: { backgroundColor: lightTheme.colors.primary[900] },
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary[900],
+          height: 58,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
         headerTintColor: '#fff',
-        headerTitleStyle: { fontFamily: lightTheme.typography.families.display },
+        headerTitleStyle: {
+          fontFamily: lightTheme.typography.families.display,
+          fontSize: 22,
+        },
+        headerStatusBarHeight: 0,
         drawerActiveTintColor: lightTheme.colors.primary[700],
         headerTitle:
           route.name === 'Home'
             ? getFocusedRouteNameFromRoute(route) || 'Bots'
             : route.name,
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+            style={{ marginLeft: 12, paddingHorizontal: 8, paddingVertical: 6 }}
+            accessibilityLabel="Open menu"
+          >
+            <Ionicons name="menu" size={24} color="#fff" />
+          </TouchableOpacity>
+        ),
         headerRight: () => (
           <TouchableOpacity
             onPress={() =>
@@ -93,11 +141,11 @@ function MainDrawer() {
                 () => navigation.getParent()?.navigate('Auth')
               )
             }
-            style={{ marginRight: 12 }}
+            style={{ marginRight: 12, paddingHorizontal: 2 }}
           >
             <Image
               source={LOB_AVATAR}
-              style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#fff' }}
+              style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#fff' }}
             />
           </TouchableOpacity>
         ),
