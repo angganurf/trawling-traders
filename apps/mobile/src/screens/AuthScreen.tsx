@@ -37,7 +37,7 @@ export function AuthScreen() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading: authLoading } = useCedrosLogin();
   const { login, register, isLoading: emailAuthLoading, error, clearError } = useEmailAuth();
-  const { activeOrg } = useOrgs();
+  const { activeOrg, isLoading: orgsLoading } = useOrgs();
   const isDark = colorScheme === 'dark';
   const backgroundAsset = isDark ? OCEAN_DARK : OCEAN_LIGHT;
 
@@ -76,43 +76,44 @@ export function AuthScreen() {
       return;
     }
     isNavigatingRef.current = true;
-
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-
-    // Admin/owner org members skip subscription checks entirely
-    const orgRole = activeOrg?.membership?.role;
-    if (orgRole === 'owner' || orgRole === 'admin') {
-      isNavigatingRef.current = false;
-      return;
-    }
-
-    const timeoutMs = 1500;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('subscription-check-timeout')), timeoutMs);
-    });
-
-    Promise.race([api.user.getBillingSummary(), timeoutPromise])
-      .then((billing) => {
-        const isActive = String((billing as { status?: string }).status || '').toLowerCase() === 'active';
-        if (!isActive) {
-          navigation.reset({ index: 0, routes: [{ name: 'Subscribe' }] });
-        }
-      })
-      .catch((checkError) => {
-        if (__DEV__) {
-          console.warn('Skipping blocking subscription check:', checkError);
-        }
-      })
-      .finally(() => {
-        isNavigatingRef.current = false;
-      });
-  }, [navigation, activeOrg]);
+    isNavigatingRef.current = false;
+  }, [navigation]);
 
   useEffect(() => {
     if (isAuthenticated) {
       routeAfterAuth();
     }
   }, [isAuthenticated, routeAfterAuth]);
+
+  // Subscription gating: runs once org data is loaded after auth
+  const subscriptionCheckedRef = useRef(false);
+  useEffect(() => {
+    if (!isAuthenticated || orgsLoading || subscriptionCheckedRef.current) {
+      return;
+    }
+    subscriptionCheckedRef.current = true;
+
+    // Admin/owner org members skip subscription checks entirely
+    const orgRole = activeOrg?.membership?.role;
+    if (orgRole === 'owner' || orgRole === 'admin') {
+      return;
+    }
+
+    api.user
+      .getBillingSummary()
+      .then((billing) => {
+        const status = String((billing as { status?: string }).status || '').toLowerCase();
+        if (status !== 'active') {
+          navigation.reset({ index: 0, routes: [{ name: 'Subscribe' }] });
+        }
+      })
+      .catch((err) => {
+        if (__DEV__) {
+          console.warn('Subscription check failed:', err);
+        }
+      });
+  }, [isAuthenticated, orgsLoading, activeOrg, navigation]);
 
   useEffect(() => {
     emailRef.current?.focus();

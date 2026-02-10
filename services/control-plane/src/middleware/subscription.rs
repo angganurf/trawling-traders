@@ -101,7 +101,7 @@ pub async fn subscription_middleware(
             LEFT JOIN bots b ON b.user_id = s.user_id::uuid AND b.status != 'destroying'
             WHERE s.user_id = $1
             AND s.current_period_end > NOW()
-            GROUP BY s.id
+            GROUP BY s.id, s.status, s.product_id, s.current_period_end
             "#,
     )
     .bind(user_id.to_string())
