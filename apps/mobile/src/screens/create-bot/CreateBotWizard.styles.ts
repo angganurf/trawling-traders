@@ -236,37 +236,19 @@ export const createBotWizardStyles = StyleSheet.create({
     marginTop: 6,
   },
   boatCarousel: {
-    paddingBottom: 4,
+    paddingBottom: 6,
   },
-  boatCard: {
-    width: 280,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.wave[300],
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    padding: 10,
-    marginRight: 12,
+  boatModeVisual: {
+    marginTop: 6,
+    marginBottom: 12,
   },
-  boatCardActive: {
-    borderColor: lightTheme.colors.primary[700],
-    backgroundColor: lightTheme.colors.primary[50],
+  boatSlide: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   boatImage: {
-    width: '100%',
+    width: '96%',
     height: 150,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  boatName: {
-    color: lightTheme.colors.wave[900],
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  boatDescription: {
-    color: lightTheme.colors.wave[600],
-    fontSize: 13,
-    marginTop: 6,
-    lineHeight: 18,
   },
   captainCarousel: {
     paddingBottom: 4,

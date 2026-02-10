@@ -207,7 +207,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const disabledCustodians = useSettingsStore((s) => s.disabledCustodians);
   const [activeDropdownRow, setActiveDropdownRow] = useState<number | null>(null);
   const [captainCardWidth, setCaptainCardWidth] = useState(280);
-  const [boatCardWidth, setBoatCardWidth] = useState(280);
+  const [boatViewportWidth, setBoatViewportWidth] = useState(280);
   const boatScrollRef = useRef<ScrollView | null>(null);
 
   const usedFactorSet = useMemo(
@@ -216,19 +216,19 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   );
 
   useEffect(() => {
-    if (step !== 0 || !boatScrollRef.current || boatCardWidth <= 0) {
+    if (step !== 0 || !boatScrollRef.current || boatViewportWidth <= 0) {
       return;
     }
-    const x = tradingMode === 'live' ? 0 : boatCardWidth;
+    const x = tradingMode === 'live' ? 0 : boatViewportWidth;
     boatScrollRef.current.scrollTo({ x, animated: true });
-  }, [boatCardWidth, step, tradingMode]);
+  }, [boatViewportWidth, step, tradingMode]);
 
   if (step === 0) {
     const handleBoatSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (boatCardWidth <= 0) {
+      if (boatViewportWidth <= 0) {
         return;
       }
-      const index = Math.round(event.nativeEvent.contentOffset.x / boatCardWidth);
+      const index = Math.round(event.nativeEvent.contentOffset.x / boatViewportWidth);
       setTradingMode(index <= 0 ? 'live' : 'paper');
     };
 
@@ -260,43 +260,6 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             </View>
           )
         ) : null}
-        <Text style={styles.sectionLabel}>Vessel</Text>
-        <Text style={styles.helperText}>Swipe to pick your vessel. Real boat is live mode, toy boat is paper mode.</Text>
-        <ScrollView
-          ref={boatScrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleBoatSwipeEnd}
-          snapToInterval={boatCardWidth}
-          decelerationRate="fast"
-          contentContainerStyle={styles.boatCarousel}
-        >
-          <TouchableOpacity
-            style={[styles.boatCard, tradingMode === 'live' ? styles.boatCardActive : undefined]}
-            onPress={() => setTradingMode('live')}
-            onLayout={(event) => {
-              const width = Math.floor(event.nativeEvent.layout.width);
-              if (width > 0 && width !== boatCardWidth) {
-                setBoatCardWidth(width);
-              }
-            }}
-            activeOpacity={0.9}
-          >
-            <Image source={BOAT_IMAGES.live} style={styles.boatImage} resizeMode="cover" />
-            <Text style={styles.boatName}>Live Vessel</Text>
-            <Text style={styles.boatDescription}>Trades with real funds and real market exposure.</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.boatCard, tradingMode === 'paper' ? styles.boatCardActive : undefined]}
-            onPress={() => setTradingMode('paper')}
-            activeOpacity={0.9}
-          >
-            <Image source={BOAT_IMAGES.paper} style={styles.boatImage} resizeMode="cover" />
-            <Text style={styles.boatName}>Toy Vessel</Text>
-            <Text style={styles.boatDescription}>Paper testing only, no real funds at risk.</Text>
-          </TouchableOpacity>
-        </ScrollView>
         <Text style={styles.sectionLabel}>Trading Mode</Text>
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
@@ -317,6 +280,41 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
               true: lightTheme.colors.lobster[400],
             }}
           />
+        </View>
+        <View
+          style={styles.boatModeVisual}
+          onLayout={(event) => {
+            const width = Math.floor(event.nativeEvent.layout.width);
+            if (width > 0 && width !== boatViewportWidth) {
+              setBoatViewportWidth(width);
+            }
+          }}
+        >
+          <ScrollView
+            ref={boatScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleBoatSwipeEnd}
+            snapToInterval={boatViewportWidth}
+            decelerationRate="fast"
+            contentContainerStyle={styles.boatCarousel}
+          >
+            <TouchableOpacity
+              style={[styles.boatSlide, { width: boatViewportWidth }]}
+              onPress={() => setTradingMode('live')}
+              activeOpacity={0.9}
+            >
+              <Image source={BOAT_IMAGES.live} style={styles.boatImage} resizeMode="contain" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.boatSlide, { width: boatViewportWidth }]}
+              onPress={() => setTradingMode('paper')}
+              activeOpacity={0.9}
+            >
+              <Image source={BOAT_IMAGES.paper} style={styles.boatImage} resizeMode="contain" />
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     );
