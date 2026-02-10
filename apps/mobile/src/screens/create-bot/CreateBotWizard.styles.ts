@@ -74,6 +74,20 @@ export const createBotWizardStyles = StyleSheet.create({
     color: lightTheme.colors.wave[900],
     marginBottom: 12,
   },
+  nameInputRow: {
+    position: 'relative',
+  },
+  nameInput: {
+    paddingRight: 38,
+    marginBottom: 8,
+  },
+  nameStatusIconWrap: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   optionCard: {
     borderWidth: 1,
     borderColor: lightTheme.colors.wave[300],
@@ -261,15 +275,15 @@ export const createBotWizardStyles = StyleSheet.create({
   },
   captainImageFrame: {
     width: '100%',
-    height: 290,
+    height: 272,
     borderRadius: 10,
     marginBottom: 10,
     overflow: 'hidden',
   },
   captainImage: {
     width: '100%',
-    height: 340,
-    transform: [{ translateY: 18 }],
+    height: 320,
+    transform: [{ translateY: 8 }],
   },
   captainName: {
     color: lightTheme.colors.wave[900],

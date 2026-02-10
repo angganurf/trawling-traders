@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   Switch,
@@ -10,6 +11,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type {
   AlgorithmFactor,
   AlgorithmMode,
@@ -260,30 +262,32 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     return (
       <View>
         <Text style={styles.sectionLabel}>Boat Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="e.g. Bright Atlantic Trawler"
-          placeholderTextColor={lightTheme.colors.wave[400]}
-        />
-        {nameCheckLoading ? (
-          <Text style={styles.helperText}>Checking availability...</Text>
-        ) : nameAvailability ? (
-          nameAvailability.available ? (
-            <Text style={styles.availableText}>Name available</Text>
-          ) : (
-            <View style={styles.nameUnavailableRow}>
-              <Text style={styles.inlineError}>Name already used.</Text>
-              {nameAvailability.suggestedName ? (
-                <TouchableOpacity onPress={() => setName(displayBoatName(nameAvailability.suggestedName || name))}>
-                  <Text style={styles.useSuggestionText}>
-                    Use "{displayBoatName(nameAvailability.suggestedName)}"
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          )
+        <View style={styles.nameInputRow}>
+          <TextInput
+            style={[styles.input, styles.nameInput]}
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Bright Atlantic Trawler"
+            placeholderTextColor={lightTheme.colors.wave[400]}
+          />
+          <View style={styles.nameStatusIconWrap}>
+            {nameCheckLoading ? (
+              <ActivityIndicator size="small" color={lightTheme.colors.wave[500]} />
+            ) : nameAvailability ? (
+              <Ionicons
+                name={nameAvailability.available ? 'checkmark-circle' : 'close-circle'}
+                size={20}
+                color={nameAvailability.available ? lightTheme.colors.bullish[600] : lightTheme.colors.lobster[600]}
+              />
+            ) : null}
+          </View>
+        </View>
+        {!nameCheckLoading && nameAvailability && !nameAvailability.available && nameAvailability.suggestedName ? (
+          <TouchableOpacity onPress={() => setName(displayBoatName(nameAvailability.suggestedName || name))}>
+            <Text style={styles.useSuggestionText}>
+              Use "{displayBoatName(nameAvailability.suggestedName)}"
+            </Text>
+          </TouchableOpacity>
         ) : null}
         <Text style={styles.sectionLabel}>Trading Mode</Text>
         <View style={styles.switchRow}>
