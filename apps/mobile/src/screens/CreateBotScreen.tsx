@@ -158,7 +158,7 @@ const NAME_BOATS = [
 
 const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }[] = [
   { value: 'tokenized-equities', label: 'Stocks' },
-  { value: 'tokenized-metals', label: 'Metals' },
+  { value: 'tokenized-metals', label: 'Commodities' },
   { value: 'majors', label: 'Crypto Majors' },
   { value: 'finance-2', label: 'Finance 2.0' },
   { value: 'memes', label: 'Meme Coins' },

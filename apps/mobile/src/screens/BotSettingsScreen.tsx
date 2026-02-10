@@ -38,7 +38,7 @@ const ALGORITHMS: { value: AlgorithmMode; label: string; description: string }[]
 const ASSET_FOCUSES: { value: AssetFocus; label: string; description: string; tier: 'core' | 'quality' | 'speculative' }[] = [
   { value: 'majors', label: 'Crypto Majors', description: 'BTC, ETH, SOL', tier: 'core' },
   { value: 'tokenized-equities', label: 'xStocks', description: 'AAPL, TSLA, SPY', tier: 'quality' },
-  { value: 'tokenized-metals', label: 'Metals', description: 'Gold, silver', tier: 'quality' },
+  { value: 'tokenized-metals', label: 'Commodities', description: 'Gold, silver, and more', tier: 'quality' },
   { value: 'custom', label: 'Custom', description: 'Your basket', tier: 'quality' },
   { value: 'memes', label: 'Memes ⚠️', description: 'High risk', tier: 'speculative' },
 ];
