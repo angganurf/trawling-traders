@@ -799,6 +799,7 @@ pub async fn get_current_user(
     let user = User {
         id: user_id,
         email: auth.email.clone(),
+        is_admin: auth.is_admin,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };

@@ -1,12 +1,13 @@
 import React from 'react';
-import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
-import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { lightTheme } from '../theme';
+import { AppHeader } from '../components/AppHeader';
 
 import { AuthScreen } from '../screens/AuthScreen';
 import { SubscribeScreen } from '../screens/SubscribeScreen';
@@ -49,7 +50,6 @@ export type MainDrawerParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
 const Tab = createBottomTabNavigator();
-const LOB_AVATAR = require('../../assets/lob-avatar.png');
 
 function MainTabs() {
   return (
@@ -111,58 +111,23 @@ function MainTabs() {
 function MainDrawer() {
   return (
     <Drawer.Navigator
-      screenOptions={({ navigation, route }) => ({
+      screenOptions={({ navigation }) => ({
         headerShown: true,
         drawerActiveTintColor: lightTheme.colors.primary[700],
-        header: () => {
-          const _activeRoute = route.name === 'Home' ? getFocusedRouteNameFromRoute(route) || 'Bots' : route.name;
-          return (
-            <View
-              style={{
-                height: 56,
-                backgroundColor: lightTheme.colors.background,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 10,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-                style={{ paddingHorizontal: 8, paddingVertical: 6 }}
-                accessibilityLabel="Open menu"
-              >
-                <Ionicons name="menu" size={24} color={lightTheme.colors.wave[800]} />
-              </TouchableOpacity>
-              <Text
-                style={{
-                  color: lightTheme.colors.wave[900],
-                  fontSize: 20,
-                  fontFamily: lightTheme.typography.families.display,
-                  fontWeight: '700',
-                }}
-              >
-                Trawling Traders
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  profileMenu(
-                    () => navigation.getParent()?.navigate('Profile'),
-                    () => navigation.getParent()?.navigate('Billing'),
-                    () => navigation.getParent()?.navigate('Settings'),
-                    () => navigation.getParent()?.navigate('Auth')
-                  )
-                }
-                style={{ paddingHorizontal: 2 }}
-              >
-                <Image
-                  source={LOB_AVATAR}
-                  style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: lightTheme.colors.cardBorder }}
-                />
-              </TouchableOpacity>
-            </View>
-          );
-        },
+        header: () => (
+          <AppHeader
+            title="Trawling Traders"
+            onMenu={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+            onProfile={() =>
+              profileMenu(
+                () => navigation.getParent()?.navigate('Profile'),
+                () => navigation.getParent()?.navigate('Billing'),
+                () => navigation.getParent()?.navigate('Settings'),
+                () => navigation.getParent()?.navigate('Auth')
+              )
+            }
+          />
+        ),
       })}
     >
       <Drawer.Screen name="Home" component={MainTabs} />
@@ -193,13 +158,14 @@ export function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Auth"
-        screenOptions={({ navigation }) => ({
-          headerStyle: { backgroundColor: lightTheme.colors.primary[900] },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '600', fontFamily: lightTheme.typography.families.display },
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() =>
+        screenOptions={{
+          header: ({ navigation, route, options, back }) => (
+            <AppHeader
+              title={typeof options.title === 'string' ? options.title : route.name}
+              showBack={!!back}
+              onBack={back ? navigation.goBack : undefined}
+              onMenu={back ? undefined : () => navigation.dispatch(DrawerActions.toggleDrawer())}
+              onProfile={() =>
                 profileMenu(
                   () => navigation.navigate('Profile'),
                   () => navigation.navigate('Billing'),
@@ -207,12 +173,9 @@ export function AppNavigator() {
                   () => navigation.navigate('Auth')
                 )
               }
-              style={{ paddingHorizontal: 10, paddingVertical: 6 }}
-            >
-              <Text style={{ fontSize: 18, color: '#fff' }}>👤</Text>
-            </TouchableOpacity>
+            />
           ),
-        })}
+        }}
       >
         <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Subscribe" component={SubscribeScreen} options={{ title: 'Subscribe', headerRight: () => null }} />

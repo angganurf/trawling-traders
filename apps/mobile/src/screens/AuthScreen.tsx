@@ -52,22 +52,37 @@ export function AuthScreen() {
     }
     isNavigatingRef.current = true;
 
-    api.user
-      .getCurrentUser()
-      .then((userData) => {
-        const subscription = userData.subscription;
-        const isActive = subscription?.status === 'active';
-        if (isActive) {
-          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-        } else {
+    // Do not block on network before entering the app shell.
+    // We route immediately, then optionally redirect to Subscribe.
+    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+
+    const timeoutMs = 1500;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('subscription-check-timeout')), timeoutMs);
+    });
+
+    Promise.race([api.user.getCurrentUser(), timeoutPromise])
+      .then(async (userData) => {
+        const user = userData as Awaited<ReturnType<typeof api.user.getCurrentUser>> & {
+          is_admin?: boolean;
+          isAdmin?: boolean;
+        };
+
+        const isAdmin = Boolean(user.isAdmin ?? user.is_admin);
+        if (isAdmin) {
+          return;
+        }
+
+        const billing = await Promise.race([api.user.getBillingSummary(), timeoutPromise]);
+        const isActive = String((billing as { status?: string }).status || '').toLowerCase() === 'active';
+        if (!isActive) {
           navigation.reset({ index: 0, routes: [{ name: 'Subscribe' }] });
         }
       })
       .catch((error) => {
         if (__DEV__) {
-          console.error('Failed to check subscription status:', error);
+          console.warn('Skipping blocking subscription check:', error);
         }
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       })
       .finally(() => {
         isNavigatingRef.current = false;
