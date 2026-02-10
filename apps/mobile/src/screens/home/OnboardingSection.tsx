@@ -27,21 +27,21 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
   const steps: Step[] = [
     {
       label: 'Create your account',
-      description: 'Set your identity and profile details before launching.',
+      description: 'You are in. Welcome to the Trawling League and trading community.',
       emoji: '🎣',
       done: true,
       onPress: () => navigation.navigate('Profile'),
     },
     {
       label: 'Create your first boat',
-      description: 'Pick your vessel setup and captain personality.',
+      description: 'Launch an always-on automated trader that trawls markets around the clock for opportunities.',
       emoji: '🛥️',
       done: hasBots,
       onPress: () => navigation.navigate('CreateBot'),
     },
     {
       label: 'Fuel your fleet',
-      description: 'Add credits so your boats can operate continuously.',
+      description: 'Deposit funds into your fleet so your boats can begin placing live trades.',
       emoji: '⛽',
       done: hasFundedBot,
       onPress: () => navigation.navigate('Deposit'),
