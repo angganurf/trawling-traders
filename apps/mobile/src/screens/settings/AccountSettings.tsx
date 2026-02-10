@@ -7,15 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { Persona, UserSettings } from '@trawling-traders/types';
+import type { UserSettings } from '@trawling-traders/types';
 import { API_URL } from '../../config/api';
 import { lightTheme } from '../../theme';
-
-const ASSISTANT_STYLE_OPTIONS: { value: Persona; label: string; description: string }[] = [
-  { value: 'beginner', label: 'Clear Guide', description: 'Friendly and plain-language explanations.' },
-  { value: 'tweaker', label: 'Pro Operator', description: 'Direct and professional output style.' },
-  { value: 'quant-lite', label: 'Quant Analyst', description: 'Technical and data-heavy communication.' },
-];
 
 async function requestPasswordReset(email: string): Promise<void> {
   const response = await fetch(`${API_URL}/v1/auth/forgot-password`, {
@@ -42,14 +36,11 @@ function AuthMethodPill({ label, connected }: { label: string; connected: boolea
 
 type AccountSettingsProps = {
   settings: UserSettings | null;
-  onSave: (updates: { displayName?: string; defaultAssistantStyle?: Persona }) => Promise<void>;
+  onSave: (updates: { displayName?: string }) => Promise<void>;
 };
 
 export function AccountSettings({ settings, onSave }: AccountSettingsProps) {
   const [displayNameDraft, setDisplayNameDraft] = useState(settings?.displayName ?? '');
-  const [assistantStyleDraft, setAssistantStyleDraft] = useState<Persona>(
-    settings?.defaultAssistantStyle ?? 'beginner'
-  );
   const [isSaving, setIsSaving] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -57,14 +48,12 @@ export function AccountSettings({ settings, onSave }: AccountSettingsProps) {
   // Sync drafts when settings change from parent refresh
   React.useEffect(() => {
     setDisplayNameDraft(settings?.displayName ?? '');
-    setAssistantStyleDraft(settings?.defaultAssistantStyle ?? 'beginner');
-  }, [settings?.displayName, settings?.defaultAssistantStyle]);
+  }, [settings?.displayName]);
 
   const hasUnsavedSettings = useMemo(() => {
     const saved = settings?.displayName?.trim() ?? '';
-    const savedStyle = settings?.defaultAssistantStyle ?? 'beginner';
-    return displayNameDraft.trim() !== saved || assistantStyleDraft !== savedStyle;
-  }, [assistantStyleDraft, displayNameDraft, settings?.defaultAssistantStyle, settings?.displayName]);
+    return displayNameDraft.trim() !== saved;
+  }, [displayNameDraft, settings?.displayName]);
 
   const saveChanges = async () => {
     if (!hasUnsavedSettings || isSaving) return;
@@ -72,7 +61,6 @@ export function AccountSettings({ settings, onSave }: AccountSettingsProps) {
     try {
       await onSave({
         displayName: displayNameDraft.trim() || undefined,
-        defaultAssistantStyle: assistantStyleDraft,
       });
       Alert.alert('Saved', 'Settings updated.');
     } catch (err) {
@@ -126,25 +114,6 @@ export function AccountSettings({ settings, onSave }: AccountSettingsProps) {
           placeholderTextColor={lightTheme.colors.wave[400]}
           maxLength={80}
         />
-
-        <Text style={[styles.inputLabel, { marginTop: 14 }]}>Assistant Style</Text>
-        {ASSISTANT_STYLE_OPTIONS.map((option) => {
-          const selected = assistantStyleDraft === option.value;
-          return (
-            <TouchableOpacity
-              key={option.value}
-              style={[styles.methodPill, selected ? styles.methodPillOn : styles.methodPillOff, { marginBottom: 8 }]}
-              onPress={() => setAssistantStyleDraft(option.value)}
-            >
-              <Text style={[styles.methodPillText, selected ? styles.methodPillTextOn : styles.methodPillTextOff]}>
-                {option.label}
-              </Text>
-              <Text style={[styles.helper, { marginTop: 4, marginBottom: 0 }]}>
-                {option.description}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
 
         <Text style={[styles.inputLabel, { marginTop: 14 }]}>Email</Text>
         <View style={styles.readonlyBox}>

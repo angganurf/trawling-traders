@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Persona, UserSettings } from '@trawling-traders/types';
+import type { UserSettings } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { lightTheme } from '../theme';
 import { AccountSettings } from './settings/AccountSettings';
@@ -59,7 +59,7 @@ export function SettingsScreen() {
     await loadSettings();
   };
 
-  const handleSave = async (updates: { displayName?: string; defaultAssistantStyle?: Persona }) => {
+  const handleSave = async (updates: { displayName?: string }) => {
     const response = await api.user.updateSettings(updates);
     setSettings(response);
   };
