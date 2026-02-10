@@ -240,7 +240,7 @@ export function CreateBotScreen() {
     { factor: 'volatility_regime', weight: 0.35 },
   ]);
   const [strictness, setStrictness] = useState<Strictness>('high');
-  const [tradingMode, setTradingMode] = useState<TradingMode>('paper');
+  const [tradingMode, setTradingMode] = useState<TradingMode>('live');
   const [tradeableAssets, setTradeableAssets] = useState<TradeableAsset[]>([]);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [assetsLoading, setAssetsLoading] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   ScrollView,
@@ -140,6 +140,11 @@ const CAPTAIN_IMAGES = {
   rocky: require('../../../../../assets/branding/tt-rocky-captain.png'),
 } as const;
 
+const BOAT_IMAGES = {
+  live: require('../../../../../assets/branding/tt-boat-side.png'),
+  paper: require('../../../../../assets/branding/tt-toy-side.png'),
+} as const;
+
 function imageForCaptainKey(imageKey: string) {
   return CAPTAIN_IMAGES[imageKey as keyof typeof CAPTAIN_IMAGES] ?? CAPTAIN_IMAGES.trader;
 }
@@ -202,13 +207,31 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const disabledCustodians = useSettingsStore((s) => s.disabledCustodians);
   const [activeDropdownRow, setActiveDropdownRow] = useState<number | null>(null);
   const [captainCardWidth, setCaptainCardWidth] = useState(280);
+  const [boatCardWidth, setBoatCardWidth] = useState(280);
+  const boatScrollRef = useRef<ScrollView | null>(null);
 
   const usedFactorSet = useMemo(
     () => new Set(algorithmFactors.map((factor) => factor.factor)),
     [algorithmFactors]
   );
 
+  useEffect(() => {
+    if (step !== 0 || !boatScrollRef.current || boatCardWidth <= 0) {
+      return;
+    }
+    const x = tradingMode === 'live' ? 0 : boatCardWidth;
+    boatScrollRef.current.scrollTo({ x, animated: true });
+  }, [boatCardWidth, step, tradingMode]);
+
   if (step === 0) {
+    const handleBoatSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (boatCardWidth <= 0) {
+        return;
+      }
+      const index = Math.round(event.nativeEvent.contentOffset.x / boatCardWidth);
+      setTradingMode(index <= 0 ? 'live' : 'paper');
+    };
+
     return (
       <View>
         <Text style={styles.sectionLabel}>Boat Name</Text>
@@ -237,6 +260,43 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             </View>
           )
         ) : null}
+        <Text style={styles.sectionLabel}>Vessel</Text>
+        <Text style={styles.helperText}>Swipe to pick your vessel. Real boat is live mode, toy boat is paper mode.</Text>
+        <ScrollView
+          ref={boatScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleBoatSwipeEnd}
+          snapToInterval={boatCardWidth}
+          decelerationRate="fast"
+          contentContainerStyle={styles.boatCarousel}
+        >
+          <TouchableOpacity
+            style={[styles.boatCard, tradingMode === 'live' ? styles.boatCardActive : undefined]}
+            onPress={() => setTradingMode('live')}
+            onLayout={(event) => {
+              const width = Math.floor(event.nativeEvent.layout.width);
+              if (width > 0 && width !== boatCardWidth) {
+                setBoatCardWidth(width);
+              }
+            }}
+            activeOpacity={0.9}
+          >
+            <Image source={BOAT_IMAGES.live} style={styles.boatImage} resizeMode="cover" />
+            <Text style={styles.boatName}>Live Vessel</Text>
+            <Text style={styles.boatDescription}>Trades with real funds and real market exposure.</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.boatCard, tradingMode === 'paper' ? styles.boatCardActive : undefined]}
+            onPress={() => setTradingMode('paper')}
+            activeOpacity={0.9}
+          >
+            <Image source={BOAT_IMAGES.paper} style={styles.boatImage} resizeMode="cover" />
+            <Text style={styles.boatName}>Toy Vessel</Text>
+            <Text style={styles.boatDescription}>Paper testing only, no real funds at risk.</Text>
+          </TouchableOpacity>
+        </ScrollView>
         <Text style={styles.sectionLabel}>Trading Mode</Text>
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
