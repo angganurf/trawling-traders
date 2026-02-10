@@ -206,7 +206,8 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   } = props;
   const disabledCustodians = useSettingsStore((s) => s.disabledCustodians);
   const [activeDropdownRow, setActiveDropdownRow] = useState<number | null>(null);
-  const [captainCardWidth, setCaptainCardWidth] = useState(280);
+  const [captainViewportWidth, setCaptainViewportWidth] = useState(280);
+  const captainScrollRef = useRef<ScrollView | null>(null);
   const [boatViewportWidth, setBoatViewportWidth] = useState(280);
   const boatScrollRef = useRef<ScrollView | null>(null);
 
@@ -214,6 +215,22 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     () => new Set(algorithmFactors.map((factor) => factor.factor)),
     [algorithmFactors]
   );
+
+  useEffect(() => {
+    if (
+      step !== 1 ||
+      !captainScrollRef.current ||
+      captainViewportWidth <= 0 ||
+      assistantOptions.length === 0
+    ) {
+      return;
+    }
+    const selectedIndex = Math.max(
+      0,
+      assistantOptions.findIndex((option) => option.assistantStyle === assistantStyle)
+    );
+    captainScrollRef.current.scrollTo({ x: selectedIndex * captainViewportWidth, animated: true });
+  }, [assistantOptions, assistantStyle, captainViewportWidth, step]);
 
   useEffect(() => {
     if (step !== 0 || !boatScrollRef.current || boatViewportWidth <= 0) {
@@ -342,10 +359,10 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     }
 
     const handleCaptainSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (captainCardWidth <= 0) {
+      if (captainViewportWidth <= 0) {
         return;
       }
-      const index = Math.round(event.nativeEvent.contentOffset.x / captainCardWidth);
+      const index = Math.round(event.nativeEvent.contentOffset.x / captainViewportWidth);
       const selectedOption = assistantOptions[Math.max(0, Math.min(index, assistantOptions.length - 1))];
       if (selectedOption) {
         setAssistantStyle(selectedOption.assistantStyle);
@@ -355,28 +372,30 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     return (
       <View>
         <Text style={styles.helperText}>Swipe to browse captains, then tap to confirm your choice.</Text>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleCaptainSwipeEnd}
-          snapToInterval={captainCardWidth}
-          decelerationRate="fast"
-          contentContainerStyle={styles.captainCarousel}
+        <View
+          style={styles.captainModeVisual}
+          onLayout={(event) => {
+            const width = Math.floor(event.nativeEvent.layout.width);
+            if (width > 0 && width !== captainViewportWidth) {
+              setCaptainViewportWidth(width);
+            }
+          }}
         >
-          {assistantOptions.map((option) => {
-            const selected = option.assistantStyle === assistantStyle;
-            return (
+          <ScrollView
+            ref={captainScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleCaptainSwipeEnd}
+            snapToInterval={captainViewportWidth}
+            decelerationRate="fast"
+            contentContainerStyle={styles.captainCarousel}
+          >
+            {assistantOptions.map((option) => (
               <TouchableOpacity
                 key={option.id}
-                style={[styles.captainCard, selected ? styles.captainCardActive : undefined]}
+                style={[styles.captainSlide, { width: captainViewportWidth }]}
                 onPress={() => setAssistantStyle(option.assistantStyle)}
-                onLayout={(event) => {
-                  const width = Math.floor(event.nativeEvent.layout.width);
-                  if (width > 0 && width !== captainCardWidth) {
-                    setCaptainCardWidth(width);
-                  }
-                }}
                 activeOpacity={0.9}
               >
                 <View style={styles.captainImageFrame}>
@@ -389,9 +408,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                 <Text style={styles.captainName}>{option.captainName}</Text>
                 <Text style={styles.captainDescription}>{option.personalityDescription}</Text>
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </View>
       </View>
     );
   }

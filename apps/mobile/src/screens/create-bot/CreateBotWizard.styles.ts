@@ -253,18 +253,11 @@ export const createBotWizardStyles = StyleSheet.create({
   captainCarousel: {
     paddingBottom: 4,
   },
-  captainCard: {
-    width: 280,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.wave[300],
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    padding: 10,
-    marginRight: 12,
+  captainModeVisual: {
+    marginBottom: 4,
   },
-  captainCardActive: {
-    borderColor: lightTheme.colors.primary[700],
-    backgroundColor: lightTheme.colors.primary[50],
+  captainSlide: {
+    paddingHorizontal: 4,
   },
   captainImageFrame: {
     width: '100%',
