@@ -29,9 +29,9 @@ import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
 
 const SHIP_LOCKER_BG = require('../../../../assets/branding/tt-panel.png');
-const PANEL_BUTTON_OFF = require('../../../../assets/branding/tt-panel-button-off.png');
-const PANEL_BUTTON_HOVER = require('../../../../assets/branding/tt-panel-button-hover.png');
-const PANEL_BUTTON_ON = require('../../../../assets/branding/tt-panel-button-on.png');
+const PANEL_BUTTON_OFF = require('../../../../assets/branding/tt-panel-button-off-cropped.png');
+const PANEL_BUTTON_HOVER = require('../../../../assets/branding/tt-panel-button-hover-cropped.png');
+const PANEL_BUTTON_ON = require('../../../../assets/branding/tt-panel-button-on-cropped.png');
 
 export type RootStackParamList = {
   Auth: undefined;
