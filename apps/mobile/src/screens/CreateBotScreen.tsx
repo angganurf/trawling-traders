@@ -160,7 +160,7 @@ const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }
   { value: 'tokenized-metals', label: 'Commodities' },
   { value: 'majors', label: 'Crypto Majors' },
   { value: 'finance-2', label: 'Finance 2.0' },
-  { value: 'memes', label: 'Meme coins' },
+  { value: 'memes', label: 'Memecoins' },
 ];
 
 const STRICTNESS_OPTIONS: { value: Strictness; label: string }[] = [
