@@ -9,28 +9,16 @@ export const createBotWizardStyles = StyleSheet.create({
     padding: 16,
     paddingBottom: 44,
   },
-  header: {
-    backgroundColor: lightTheme.colors.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    padding: 16,
-    marginBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 26,
-    color: lightTheme.colors.wave[900],
-    fontFamily: lightTheme.typography.families.display,
-  },
   headerSubtitle: {
-    marginTop: 4,
     color: lightTheme.colors.wave[600],
     fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   progressRow: {
     flexDirection: 'row',
     gap: 6,
-    marginTop: 12,
+    marginBottom: 12,
   },
   progressDot: {
     flex: 1,
