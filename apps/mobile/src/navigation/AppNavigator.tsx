@@ -322,7 +322,7 @@ function DrawerLabelButton({
             source={getButtonSource(pressed)}
             style={styles.drawerLabelBg}
             imageStyle={styles.drawerLabelBgImage}
-            resizeMode="cover"
+            resizeMode="stretch"
           />
           <Text style={styles.drawerLabelText}>{label}</Text>
         </>
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   drawerLabel: {
-    marginHorizontal: 0,
+    marginHorizontal: 3,
     borderRadius: 16,
     minHeight: 72,
     paddingVertical: 14,
@@ -382,7 +382,6 @@ const styles = StyleSheet.create({
   },
   drawerLabelBgImage: {
     borderRadius: 16,
-    transform: [{ scaleX: 2.35 }, { scaleY: 1.42 }],
   },
   drawerLabelText: {
     color: '#eef6ff',
