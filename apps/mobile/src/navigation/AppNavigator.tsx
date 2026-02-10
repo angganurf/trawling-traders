@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Image, Text, TouchableOpacity } from 'react-native';
+import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -102,50 +102,58 @@ function MainDrawer() {
     <Drawer.Navigator
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
-        headerStyle: {
-          backgroundColor: lightTheme.colors.primary[900],
-          height: 58,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontFamily: lightTheme.typography.families.display,
-          fontSize: 22,
-        },
-        headerStatusBarHeight: 0,
         drawerActiveTintColor: lightTheme.colors.primary[700],
-        headerTitle:
-          route.name === 'Home'
-            ? getFocusedRouteNameFromRoute(route) || 'Bots'
-            : route.name,
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-            style={{ marginLeft: 12, paddingHorizontal: 8, paddingVertical: 6 }}
-            accessibilityLabel="Open menu"
-          >
-            <Ionicons name="menu" size={24} color="#fff" />
-          </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() =>
-              profileMenu(
-                () => navigation.getParent()?.navigate('Profile'),
-                () => navigation.getParent()?.navigate('Billing'),
-                () => navigation.getParent()?.navigate('Settings'),
-                () => navigation.getParent()?.navigate('Auth')
-              )
-            }
-            style={{ marginRight: 12, paddingHorizontal: 2 }}
-          >
-            <Image
-              source={LOB_AVATAR}
-              style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#fff' }}
-            />
-          </TouchableOpacity>
-        ),
+        header: () => {
+          const title = route.name === 'Home' ? getFocusedRouteNameFromRoute(route) || 'Bots' : route.name;
+          return (
+            <View
+              style={{
+                height: 56,
+                backgroundColor: lightTheme.colors.primary[900],
+                borderBottomWidth: 1,
+                borderBottomColor: '#0b3554',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 10,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+                style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+                accessibilityLabel="Open menu"
+              >
+                <Ionicons name="menu" size={24} color="#fff" />
+              </TouchableOpacity>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 22,
+                  fontFamily: lightTheme.typography.families.display,
+                  fontWeight: '700',
+                }}
+              >
+                {title}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  profileMenu(
+                    () => navigation.getParent()?.navigate('Profile'),
+                    () => navigation.getParent()?.navigate('Billing'),
+                    () => navigation.getParent()?.navigate('Settings'),
+                    () => navigation.getParent()?.navigate('Auth')
+                  )
+                }
+                style={{ paddingHorizontal: 2 }}
+              >
+                <Image
+                  source={LOB_AVATAR}
+                  style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#fff' }}
+                />
+              </TouchableOpacity>
+            </View>
+          );
+        },
       })}
     >
       <Drawer.Screen name="Home" component={MainTabs} />
