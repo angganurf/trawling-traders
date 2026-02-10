@@ -9,7 +9,7 @@ export type AlgorithmMode = 'trend' | 'mean-reversion' | 'breakout';
 
 // Asset focus options - FOCUSED ON QUALITY ASSETS (xStocks, metals)
 // NOT memes by default - Solana execution for serious assets
-export type AssetFocus = 'majors' | 'tokenized-equities' | 'tokenized-metals' | 'memes' | 'custom';
+export type AssetFocus = 'majors' | 'tokenized-equities' | 'tokenized-metals' | 'finance-2' | 'memes' | 'custom';
 
 // Paper vs Live trading
 export type TradingMode = 'paper' | 'live';

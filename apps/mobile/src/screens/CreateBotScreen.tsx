@@ -163,8 +163,9 @@ const PERSONAS: { value: Persona; label: string; description: string; recommende
 
 const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }[] = [
   { value: 'tokenized-equities', label: 'Stocks' },
-  { value: 'majors', label: 'Crypto Majors' },
   { value: 'tokenized-metals', label: 'Metals' },
+  { value: 'majors', label: 'Crypto Majors' },
+  { value: 'finance-2', label: 'Finance 2.0' },
   { value: 'memes', label: 'Meme Coins' },
 ];
 

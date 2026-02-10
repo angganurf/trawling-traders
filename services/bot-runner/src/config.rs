@@ -224,6 +224,7 @@ pub enum AssetFocus {
     Majors,
     TokenizedEquities,
     TokenizedMetals,
+    Finance2,
     Memes,
     Custom,
 }

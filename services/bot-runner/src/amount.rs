@@ -132,6 +132,10 @@ pub fn get_tokens_for_focus(focus: &crate::config::AssetFocus) -> Vec<TokenInfo>
             get_token_info("SOL").unwrap(),
         ],
         crate::config::AssetFocus::TokenizedMetals => vec![get_token_info("SOL").unwrap()],
+        crate::config::AssetFocus::Finance2 => vec![
+            // For now, use majors as fallback
+            get_token_info("SOL").unwrap(),
+        ],
         crate::config::AssetFocus::Memes => vec![
             get_token_info("BONK").unwrap(),
             get_token_info("WIF").unwrap(),
