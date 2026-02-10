@@ -309,7 +309,12 @@ function DrawerLabelButton({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <ImageBackground source={PANEL_BUTTON_OFF} style={styles.drawerLabelBg} resizeMode="stretch" />
+      <ImageBackground
+        source={PANEL_BUTTON_OFF}
+        style={styles.drawerLabelBg}
+        imageStyle={styles.drawerLabelBgImage}
+        resizeMode="cover"
+      />
       {active ? <View style={styles.drawerActiveMarker} /> : null}
       <Text style={[styles.drawerLabelText, active ? styles.drawerLabelTextActive : undefined]}>
         {label}
@@ -357,13 +362,18 @@ const styles = StyleSheet.create({
   drawerLabel: {
     marginHorizontal: 18,
     borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
+    minHeight: 72,
+    paddingVertical: 14,
+    paddingHorizontal: 26,
     position: 'relative',
     overflow: 'hidden',
+    justifyContent: 'center',
   },
   drawerLabelBg: {
     ...StyleSheet.absoluteFillObject,
+  },
+  drawerLabelBgImage: {
+    borderRadius: 16,
   },
   drawerLabelActive: {
     shadowColor: '#0a1a2d',
@@ -374,7 +384,7 @@ const styles = StyleSheet.create({
   },
   drawerLabelText: {
     color: '#eef6ff',
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     textAlign: 'left',
     letterSpacing: 0.25,
