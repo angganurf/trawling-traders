@@ -13,7 +13,7 @@ use std::sync::Arc;
 /// Mounted under /v1/pay/ for payment processing.
 ///
 /// Stripe/X402 configuration is managed through cedros-pay's admin dashboard
-/// at /v1/pay/admin/config. Server URL is derived from platform_config.
+/// at /admin/config/stripe. Server URL is derived from platform_config.
 pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
     let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
         "postgres://postgres:postgres@localhost:5432/trawling_traders".to_string()
@@ -29,12 +29,31 @@ pub async fn full_router(pool: PgPool) -> anyhow::Result<Router> {
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| "https://api.trawlingtraders.com".to_string());
 
-    // Start with default config - Stripe/X402 settings come from cedros-pay admin dashboard
-    let mut cfg = cedros_pay::config::Config::default();
-
     // Server config - derived from our platform settings
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
-    cfg.server.address = format!("0.0.0.0:{}", port);
+
+    // Load runtime config from cedros-pay's database-backed admin config.
+    // If not initialized yet, fall back to defaults so the API still boots.
+    let server_addr = format!("0.0.0.0:{}", port);
+    let mut cfg = {
+        let config_repo = cedros_pay::config::PostgresConfigRepository::new(pool.clone());
+        match cedros_pay::config::Config::load_from_db(
+            &config_repo,
+            "default",
+            &database_url,
+            &server_addr,
+        )
+        .await
+        {
+            Ok(loaded) => loaded,
+            Err(err) => {
+                tracing::warn!("Cedros Pay DB config load failed ({}), using defaults", err);
+                cedros_pay::config::Config::default()
+            }
+        }
+    };
+
+    cfg.server.address = server_addr;
     cfg.server.public_url = public_url;
     cfg.server.route_prefix = "".to_string(); // Empty - nesting at /v1/pay handles the prefix
     cfg.server.cors_disabled = true; // Host app manages CORS for all routes
