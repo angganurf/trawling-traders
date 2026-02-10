@@ -24,10 +24,10 @@ export const createBotWizardStyles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 999,
-    backgroundColor: lightTheme.colors.wave[200],
+    backgroundColor: lightTheme.colors.wave[400],
   },
   progressDotActive: {
-    backgroundColor: lightTheme.colors.primary[600],
+    backgroundColor: lightTheme.colors.primary[700],
   },
   card: {
     backgroundColor: lightTheme.colors.surface,
