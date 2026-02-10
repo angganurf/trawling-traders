@@ -155,6 +155,10 @@ async fn build_router(
             get(control_plane::handlers::bots::list_tradeable_assets),
         )
         .route(
+            "/bots/assistant-options",
+            get(control_plane::handlers::bots::list_ai_assistant_options),
+        )
+        .route(
             "/bots/name-availability",
             get(control_plane::handlers::bots::check_bot_name_availability),
         )

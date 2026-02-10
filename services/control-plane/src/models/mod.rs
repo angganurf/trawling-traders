@@ -486,6 +486,25 @@ pub struct ListTradeableAssetsResponse {
     pub assets: Vec<TradeableAsset>,
 }
 
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct AIAssistantOption {
+    pub id: Uuid,
+    pub assistant_style: Persona,
+    pub captain_name: String,
+    pub personality_description: String,
+    pub image_key: String,
+    pub image_path: String,
+    pub sort_order: i32,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ListAIAssistantOptionsResponse {
+    pub options: Vec<AIAssistantOption>,
+}
+
 // Request types for API
 
 #[derive(Debug, Deserialize, validator::Validate)]

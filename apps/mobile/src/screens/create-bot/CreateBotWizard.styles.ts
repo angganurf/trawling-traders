@@ -235,6 +235,39 @@ export const createBotWizardStyles = StyleSheet.create({
     fontSize: 10,
     marginTop: 6,
   },
+  captainCarousel: {
+    paddingBottom: 4,
+  },
+  captainCard: {
+    width: 280,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[300],
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    padding: 10,
+    marginRight: 12,
+  },
+  captainCardActive: {
+    borderColor: lightTheme.colors.primary[700],
+    backgroundColor: lightTheme.colors.primary[50],
+  },
+  captainImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  captainName: {
+    color: lightTheme.colors.wave[900],
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  captainDescription: {
+    color: lightTheme.colors.wave[600],
+    fontSize: 13,
+    marginTop: 6,
+    lineHeight: 18,
+  },
   factorRow: {
     flexDirection: 'row',
     alignItems: 'center',

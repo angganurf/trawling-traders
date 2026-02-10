@@ -167,6 +167,25 @@ pub async fn list_tradeable_assets(
     Ok(Json(ListTradeableAssetsResponse { assets }))
 }
 
+/// GET /bots/assistant-options - List selectable AI assistant personas for onboarding
+pub async fn list_ai_assistant_options(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<ListAIAssistantOptionsResponse>, (StatusCode, String)> {
+    let options = sqlx::query_as::<_, AIAssistantOption>(
+        r#"
+        SELECT *
+        FROM ai_assistant_options
+        WHERE is_active = TRUE
+        ORDER BY sort_order ASC, captain_name ASC
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(ListAIAssistantOptionsResponse { options }))
+}
+
 async fn validate_selected_assets(
     db: &sqlx::PgPool,
     asset_focus: AssetFocus,

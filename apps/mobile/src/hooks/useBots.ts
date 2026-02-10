@@ -184,7 +184,7 @@ export function useCreateBot() {
       setError(null);
       return bot;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create bot'));
+      setError(err instanceof Error ? err : new Error('Failed to create boat'));
       throw err;
     } finally {
       setLoading(false);

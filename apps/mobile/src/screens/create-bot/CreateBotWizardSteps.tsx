@@ -1,12 +1,24 @@
 import React, { useMemo, useState } from 'react';
-import { Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+} from 'react-native';
 import type {
   AlgorithmFactor,
   AlgorithmMode,
+  AIAssistantOption,
   AssetFocus,
   LlmModel,
   LlmProvider,
   NameAvailability,
+  Persona,
   Strictness,
   TradeableAsset,
   TradingMode,
@@ -15,7 +27,7 @@ import { useSettingsStore } from '../../store';
 import { lightTheme } from '../../theme';
 import { createBotWizardStyles as styles } from './CreateBotWizard.styles';
 
-export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type StrategyType = 'macro' | 'event-driven' | 'smart-money' | 'range';
 
 type Option<T extends string> = {
@@ -31,6 +43,10 @@ type CreateBotWizardStepsProps = {
   setName: (value: string) => void;
   nameAvailability: NameAvailability | null;
   nameCheckLoading: boolean;
+  assistantStyle: Persona;
+  setAssistantStyle: (value: Persona) => void;
+  assistantOptions: AIAssistantOption[];
+  assistantOptionsLoading: boolean;
   assetFocus: AssetFocus;
   setAssetFocus: (value: AssetFocus) => void;
   tradeableAssets: TradeableAsset[];
@@ -118,6 +134,16 @@ function renderChip<T extends string>(
   );
 }
 
+const CAPTAIN_IMAGES = {
+  trader: require('../../../../../assets/branding/tt-trader-captain.png'),
+  sea: require('../../../../../assets/branding/tt-sea-captain.png'),
+  rocky: require('../../../../../assets/branding/tt-rocky-captain.png'),
+} as const;
+
+function imageForCaptainKey(imageKey: string) {
+  return CAPTAIN_IMAGES[imageKey as keyof typeof CAPTAIN_IMAGES] ?? CAPTAIN_IMAGES.trader;
+}
+
 export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const {
     step,
@@ -125,6 +151,10 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     setName,
     nameAvailability,
     nameCheckLoading,
+    assistantStyle,
+    setAssistantStyle,
+    assistantOptions,
+    assistantOptionsLoading,
     assetChoices,
     assetFocus,
     setAssetFocus,
@@ -171,6 +201,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   } = props;
   const disabledCustodians = useSettingsStore((s) => s.disabledCustodians);
   const [activeDropdownRow, setActiveDropdownRow] = useState<number | null>(null);
+  const [captainCardWidth, setCaptainCardWidth] = useState(280);
 
   const usedFactorSet = useMemo(
     () => new Set(algorithmFactors.map((factor) => factor.factor)),
@@ -180,7 +211,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   if (step === 0) {
     return (
       <View>
-        <Text style={styles.sectionLabel}>Bot Name</Text>
+        <Text style={styles.sectionLabel}>Boat Name</Text>
         <TextInput
           style={styles.input}
           value={name}
@@ -232,6 +263,74 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   }
 
   if (step === 1) {
+    if (assistantOptionsLoading) {
+      return (
+        <View>
+          <Text style={styles.helperText}>Loading captains...</Text>
+        </View>
+      );
+    }
+
+    if (assistantOptions.length === 0) {
+      return (
+        <View>
+          <Text style={styles.helperText}>
+            Captain options are temporarily unavailable. You can continue with the default captain.
+          </Text>
+        </View>
+      );
+    }
+
+    const handleCaptainSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (captainCardWidth <= 0) {
+        return;
+      }
+      const index = Math.round(event.nativeEvent.contentOffset.x / captainCardWidth);
+      const selectedOption = assistantOptions[Math.max(0, Math.min(index, assistantOptions.length - 1))];
+      if (selectedOption) {
+        setAssistantStyle(selectedOption.assistantStyle);
+      }
+    };
+
+    return (
+      <View>
+        <Text style={styles.helperText}>Swipe to browse captains, then tap to confirm your choice.</Text>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleCaptainSwipeEnd}
+          snapToInterval={captainCardWidth}
+          decelerationRate="fast"
+          contentContainerStyle={styles.captainCarousel}
+        >
+          {assistantOptions.map((option) => {
+            const selected = option.assistantStyle === assistantStyle;
+            return (
+              <TouchableOpacity
+                key={option.id}
+                style={[styles.captainCard, selected ? styles.captainCardActive : undefined]}
+                onPress={() => setAssistantStyle(option.assistantStyle)}
+                onLayout={(event) => {
+                  const width = Math.floor(event.nativeEvent.layout.width);
+                  if (width > 0 && width !== captainCardWidth) {
+                    setCaptainCardWidth(width);
+                  }
+                }}
+                activeOpacity={0.9}
+              >
+                <Image source={imageForCaptainKey(option.imageKey)} style={styles.captainImage} resizeMode="cover" />
+                <Text style={styles.captainName}>{option.captainName}</Text>
+                <Text style={styles.captainDescription}>{option.personalityDescription}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (step === 2) {
     const assetsForFocus = tradeableAssets.filter(
       (asset) => asset.assetFocus === assetFocus && !disabledCustodians.includes(asset.custodian)
     );
@@ -255,7 +354,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
         ) : (
           <>
             <Text style={styles.helperText}>
-              Select the exact assets this bot can trade. It will only trade from this list.
+              Select the exact assets this boat can trade. It will only trade from this list.
             </Text>
             {assetsForFocus.map((asset) => {
               const selected = selectedAssets.includes(asset.tokenAddress);
@@ -283,7 +382,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 2) {
+  if (step === 3) {
     return (
       <View>
         <Text style={styles.sectionLabel}>Strategy Type</Text>
@@ -295,7 +394,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 3) {
+  if (step === 4) {
     if (strategyType !== 'macro') {
       return (
         <View>
@@ -459,7 +558,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 4) {
+  if (step === 5) {
     return (
       <View>
         <Text style={styles.sectionLabel}>Risk Caps</Text>
@@ -525,7 +624,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 5) {
+  if (step === 6) {
     return (
       <View>
         <Text style={styles.sectionLabel}>LLM Provider</Text>
@@ -553,13 +652,13 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
           secureTextEntry
         />
         <Text style={styles.helperText}>
-          Stored securely and only used for this bot.
+          Stored securely and only used for this boat.
         </Text>
       </View>
     );
   }
 
-  if (step === 6) {
+  if (step === 7) {
     return (
       <View>
         <View style={styles.instructionBox}>
@@ -647,8 +746,14 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   return (
     <View>
       <View style={styles.summaryRow}>
-        <Text style={styles.summaryLabel}>Bot</Text>
+        <Text style={styles.summaryLabel}>Boat</Text>
         <Text style={styles.summaryValue}>{name || 'Unnamed'}</Text>
+      </View>
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryLabel}>Captain</Text>
+        <Text style={styles.summaryValue}>
+          {assistantOptions.find((option) => option.assistantStyle === assistantStyle)?.captainName ?? assistantStyle}
+        </Text>
       </View>
       <View style={styles.summaryRow}>
         <Text style={styles.summaryLabel}>Persona / Strategy</Text>

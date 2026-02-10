@@ -166,11 +166,11 @@ export function AppNavigator() {
           name="CreateBot"
           component={CreateBotScreen}
           options={({ navigation }) => ({
-            title: 'Create Bot',
+            title: 'Create Boat',
             headerTransparent: true,
             header: () => (
               <AppHeader
-                title="Create Bot"
+                title="Create Boat"
                 showBack
                 transparent
                 onBack={navigation.goBack}

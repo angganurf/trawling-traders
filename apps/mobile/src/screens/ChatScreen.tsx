@@ -164,7 +164,7 @@ export function ChatScreen() {
           ) : !selectedBotId ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No bot selected</Text>
-              <Text style={styles.emptyText}>Create a bot first, then choose it from the dropdown above.</Text>
+              <Text style={styles.emptyText}>Create a boat first, then choose it from the dropdown above.</Text>
             </View>
           ) : messages.length === 0 ? (
             <View style={styles.emptyState}>

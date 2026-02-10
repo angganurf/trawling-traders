@@ -35,6 +35,17 @@ export interface TradeableAsset {
   updatedAt: string;
 }
 
+export interface AIAssistantOption {
+  id: string;
+  assistantStyle: Persona;
+  captainName: string;
+  personalityDescription: string;
+  imageKey: string;
+  imagePath: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 // LLM providers
 export type LlmProvider = 'openai' | 'anthropic' | 'venice' | 'openrouter';
 

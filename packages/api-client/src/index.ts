@@ -29,6 +29,7 @@ import type {
   BotActionRequest,
   User,
   UserSettings,
+  AIAssistantOption,
   TradeableAsset,
 } from '@trawling-traders/types';
 
@@ -265,6 +266,21 @@ export const botApi = {
       isActive: Boolean(asset.isActive ?? asset.is_active),
       createdAt: asset.createdAt ?? asset.created_at,
       updatedAt: asset.updatedAt ?? asset.updated_at,
+    }));
+  },
+
+  async listAssistantOptions(): Promise<AIAssistantOption[]> {
+    const response = await fetchApi('/bots/assistant-options');
+    return (response.options || []).map((option: any) => ({
+      id: option.id,
+      assistantStyle: option.assistantStyle ?? option.assistant_style,
+      captainName: option.captainName ?? option.captain_name,
+      personalityDescription:
+        option.personalityDescription ?? option.personality_description,
+      imageKey: option.imageKey ?? option.image_key,
+      imagePath: option.imagePath ?? option.image_path,
+      sortOrder: Number(option.sortOrder ?? option.sort_order ?? 0),
+      isActive: Boolean(option.isActive ?? option.is_active),
     }));
   },
 

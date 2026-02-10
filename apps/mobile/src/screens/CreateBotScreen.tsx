@@ -18,8 +18,10 @@ import type {
   AlgorithmFactor,
   AlgorithmMode,
   AssetFocus,
+  AIAssistantOption,
   LlmModel,
   LlmProvider,
+  Persona,
   Strictness,
   TradeableAsset,
   TradingMode,
@@ -32,16 +34,17 @@ const SKY_LIGHT = require('../../../../assets/branding/tt-sky-light.png');
 const SKY_DARK = require('../../../../assets/branding/tt-sky-dark.png');
 
 type CreateBotScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateBot'>;
-type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type StrategyType = 'macro' | 'event-driven' | 'smart-money' | 'range';
 
 const STEP_META = [
-  { title: 'Basics', description: 'Name your bot and decide if you want paper-only testing.' },
-  { title: 'Specialty', description: 'Pick a category, then choose the exact assets this bot is allowed to trade.' },
-  { title: 'Strategy', description: 'Choose the trading style this bot should apply to your selected assets.' },
+  { title: 'Basics', description: 'Name your boat and decide if you want paper-only testing.' },
+  { title: 'Choose your captain', description: 'Pick the AI captain personality that will command this vessel.' },
+  { title: 'Specialty', description: 'Pick a category, then choose the exact assets this boat is allowed to trade.' },
+  { title: 'Strategy', description: 'Choose the trading style this boat should apply to your selected assets.' },
   { title: 'Algorithm', description: 'Build your signal formula. Full controls are currently available for Macro strategy.' },
   { title: 'Risk', description: 'Set caps and strictness for how cautiously signals are executed.' },
-  { title: 'AI', description: 'Connect the LLM provider and model your bot will use.' },
+  { title: 'AI', description: 'Connect the LLM provider and model your boat will use.' },
   { title: 'Telegram', description: 'Optional chat channel for commands, alerts, and pairing.' },
   { title: 'Review', description: 'Double-check configuration and deploy.' },
 ] as const;
@@ -228,6 +231,9 @@ export function CreateBotScreen() {
   const [name, setName] = useState(generateFishingName);
   const userEditedName = useRef(false);
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
+  const [assistantStyle, setAssistantStyle] = useState<Persona>('beginner');
+  const [assistantOptions, setAssistantOptions] = useState<AIAssistantOption[]>([]);
+  const [assistantOptionsLoading, setAssistantOptionsLoading] = useState(false);
   const [algorithmFactors, setAlgorithmFactors] = useState<AlgorithmFactor[]>([
     { factor: 'price_momentum', weight: 0.4 },
     { factor: 'volume_confirmation', weight: 0.25 },
@@ -275,25 +281,35 @@ export function CreateBotScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    const loadTradeableAssets = async () => {
+    const loadSetupOptions = async () => {
       setAssetsLoading(true);
+      setAssistantOptionsLoading(true);
       try {
-        const assets = await api.bot.listTradeableAssets();
+        const [assets, options] = await Promise.all([
+          api.bot.listTradeableAssets(),
+          api.bot.listAssistantOptions(),
+        ]);
         if (!cancelled) {
           setTradeableAssets(assets);
+          setAssistantOptions(options);
+          if (options.length > 0) {
+            setAssistantStyle(options[0].assistantStyle);
+          }
         }
       } catch {
         if (!cancelled) {
           setTradeableAssets([]);
+          setAssistantOptions([]);
         }
       } finally {
         if (!cancelled) {
           setAssetsLoading(false);
+          setAssistantOptionsLoading(false);
         }
       }
     };
 
-    loadTradeableAssets();
+    loadSetupOptions();
     return () => {
       cancelled = true;
     };
@@ -344,13 +360,13 @@ export function CreateBotScreen() {
 
   const validateCurrentStep = () => {
     if (step === 0 && !name.trim()) {
-      return 'Please give this bot a name.';
+      return 'Please give this boat a name.';
     }
-    if (step === 1) {
+    if (step === 2) {
       if (assetsLoading) return 'Loading assets for this category. Please wait a moment.';
       if (selectedAssets.length === 0) return 'Select at least one asset to trade.';
     }
-    if (step === 4) {
+    if (step === 5) {
       const checks = [
         parseNumberField(maxPositionSize, 'Max position %', 1, 50),
         parseNumberField(maxDailyLoss, 'Max daily loss', 1, 100000),
@@ -360,13 +376,13 @@ export function CreateBotScreen() {
       const failed = checks.find((check) => check.error);
       if (failed?.error) return failed.error;
     }
-    if (step === 3 && strategyType === 'macro' && algorithmFactors.length === 0) {
+    if (step === 4 && strategyType === 'macro' && algorithmFactors.length === 0) {
       return 'Add at least one algorithm factor.';
     }
-    if (step === 5) {
+    if (step === 6) {
       if (!llmApiKey.trim()) return 'Enter your LLM API key to continue.';
     }
-    if (step === 6) {
+    if (step === 7) {
       if (telegramEnabled && !telegramBotToken.trim()) return 'Enter a Telegram token or disable Telegram.';
       if (telegramEnabled && !telegramUserId.trim()) return 'Enter your Telegram user ID.';
       if (telegramEnabled && !telegramPairingCode.trim()) return 'Enter your Telegram pairing code.';
@@ -381,7 +397,7 @@ export function CreateBotScreen() {
       setInlineError(error);
       return;
     }
-    if (step < 7) {
+    if (step < 8) {
       setStep((prev) => (prev + 1) as WizardStep);
     }
   };
@@ -417,6 +433,7 @@ export function CreateBotScreen() {
     try {
       await api.bot.createBot({
         name: name.trim(),
+        assistantStyle,
         assetFocus,
         customAssets: selectedAssets,
         algorithmMode,
@@ -439,10 +456,10 @@ export function CreateBotScreen() {
       setTelegramBotToken('');
       setTelegramUserId('');
       setTelegramPairingCode('');
-      Alert.alert('Bot deployed', 'Your trawler is being provisioned now.');
+      Alert.alert('Boat deployed', 'Your trawler is being provisioned now.');
       navigation.goBack();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to deploy bot.';
+      const message = error instanceof Error ? error.message : 'Failed to deploy boat.';
       setInlineError(message);
     } finally {
       setIsSubmitting(false);
@@ -472,6 +489,10 @@ export function CreateBotScreen() {
             setName={(v: string) => { userEditedName.current = true; setName(v); }}
             nameAvailability={nameAvailability}
             nameCheckLoading={nameCheckLoading}
+            assistantStyle={assistantStyle}
+            setAssistantStyle={setAssistantStyle}
+            assistantOptions={assistantOptions}
+            assistantOptionsLoading={assistantOptionsLoading}
             assetChoices={ASSET_CHOICES}
             assetFocus={assetFocus}
             setAssetFocus={setAssetFocus}
@@ -520,7 +541,7 @@ export function CreateBotScreen() {
             <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isSubmitting}>
               <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
             </TouchableOpacity>
-            {step < 7 ? (
+            {step < 8 ? (
               <TouchableOpacity style={styles.nextButton} onPress={onNext} disabled={isSubmitting}>
                 <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>
@@ -533,7 +554,7 @@ export function CreateBotScreen() {
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.nextButtonText}>Deploy Bot</Text>
+                  <Text style={styles.nextButtonText}>Deploy Boat</Text>
                 )}
               </TouchableOpacity>
             )}
