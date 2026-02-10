@@ -26,6 +26,7 @@ export function AppHeader({
   onProfile,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
+  const useLightContent = lightContent || transparent;
 
   return (
     <View
@@ -51,13 +52,13 @@ export function AppHeader({
         <Ionicons
           name={showBack ? 'arrow-back' : 'menu'}
           size={24}
-          color={lightContent ? '#ffffff' : lightTheme.colors.wave[800]}
+          color={useLightContent ? '#ffffff' : lightTheme.colors.wave[800]}
         />
       </TouchableOpacity>
 
       <Text
         style={{
-          color: lightContent ? '#ffffff' : lightTheme.colors.wave[900],
+          color: useLightContent ? '#ffffff' : lightTheme.colors.wave[900],
           fontSize: 20,
           fontFamily: lightTheme.typography.families.display,
         }}

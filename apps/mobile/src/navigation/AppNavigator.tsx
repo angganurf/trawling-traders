@@ -173,7 +173,6 @@ export function AppNavigator() {
                 title="Create Boat"
                 showBack
                 transparent
-                lightContent
                 onBack={navigation.goBack}
                 onProfile={() =>
                   profileMenu(
