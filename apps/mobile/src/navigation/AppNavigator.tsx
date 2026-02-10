@@ -58,7 +58,6 @@ function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: lightTheme.colors.primary[900],
         tabBarInactiveTintColor: lightTheme.colors.wave[500],
-        tabBarActiveBackgroundColor: '#d6eefb',
         tabBarShowLabel: false,
         tabBarIcon: ({ color, focused, size }) => {
           const iconSize = focused ? size : Math.max(size - 1, 18);
@@ -68,22 +67,34 @@ function MainTabs() {
             Leaderboard: focused ? 'trophy' : 'trophy-outline',
             Community: focused ? 'people' : 'people-outline',
           };
-          return <Ionicons name={iconByRoute[route.name] || 'ellipse'} size={iconSize} color={color} />;
+          return (
+            <View
+              style={{
+                width: 36,
+                height: 30,
+                borderRadius: 9,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: focused ? '#d6eefb' : 'transparent',
+                borderWidth: focused ? 1 : 0,
+                borderColor: lightTheme.colors.cardBorder,
+              }}
+            >
+              <Ionicons name={iconByRoute[route.name] || 'ellipse'} size={iconSize} color={color} />
+            </View>
+          );
         },
         tabBarItemStyle: {
-          borderRadius: 8,
-          marginHorizontal: 0,
-          marginVertical: 6,
+          borderRadius: 10,
+          marginHorizontal: 4,
+          marginVertical: 5,
           paddingVertical: 0,
-          borderRightWidth: route.name === 'Community' ? 0 : 1,
-          borderRightColor: lightTheme.colors.cardBorder,
         },
         tabBarStyle: {
-          backgroundColor: lightTheme.colors.surface,
-          borderTopColor: lightTheme.colors.cardBorder,
-          borderTopWidth: 1,
-          height: 50,
-          paddingHorizontal: 0,
+          backgroundColor: lightTheme.colors.background,
+          borderTopWidth: 0,
+          height: 48,
+          paddingHorizontal: 6,
           paddingBottom: 4,
           paddingTop: 2,
         },
@@ -109,9 +120,7 @@ function MainDrawer() {
             <View
               style={{
                 height: 56,
-                backgroundColor: lightTheme.colors.primary[900],
-                borderBottomWidth: 1,
-                borderBottomColor: '#0b3554',
+                backgroundColor: lightTheme.colors.background,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -123,11 +132,11 @@ function MainDrawer() {
                 style={{ paddingHorizontal: 8, paddingVertical: 6 }}
                 accessibilityLabel="Open menu"
               >
-                <Ionicons name="menu" size={24} color="#fff" />
+                <Ionicons name="menu" size={24} color={lightTheme.colors.wave[800]} />
               </TouchableOpacity>
               <Text
                 style={{
-                  color: '#fff',
+                  color: lightTheme.colors.wave[900],
                   fontSize: 20,
                   fontFamily: lightTheme.typography.families.display,
                   fontWeight: '700',
@@ -148,7 +157,7 @@ function MainDrawer() {
               >
                 <Image
                   source={LOB_AVATAR}
-                  style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#fff' }}
+                  style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: lightTheme.colors.cardBorder }}
                 />
               </TouchableOpacity>
             </View>
