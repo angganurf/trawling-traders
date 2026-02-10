@@ -261,15 +261,15 @@ export const createBotWizardStyles = StyleSheet.create({
   },
   captainImageFrame: {
     width: '100%',
-    height: 260,
+    height: 290,
     borderRadius: 10,
     marginBottom: 10,
     overflow: 'hidden',
   },
   captainImage: {
     width: '100%',
-    height: 300,
-    transform: [{ translateY: -10 }],
+    height: 340,
+    transform: [{ translateY: 18 }],
   },
   captainName: {
     color: lightTheme.colors.wave[900],
