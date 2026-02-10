@@ -22,6 +22,7 @@ import { ReportsScreen } from '../screens/ReportsScreen';
 import { DocsScreen } from '../screens/DocsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { BillingScreen } from '../screens/BillingScreen';
+import { DepositScreen } from '../screens/DepositScreen';
 import { ResearchScreen } from '../screens/ResearchScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   Profile: undefined;
   Settings: undefined;
   Billing: undefined;
+  Deposit: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -89,7 +91,28 @@ function MainDrawer() {
         ),
       })}
     >
-      <Drawer.Screen name="Home" component={MainTabs} />
+      <Drawer.Screen
+        name="Home"
+        component={MainTabs}
+        options={({ navigation }) => ({
+          headerTransparent: true,
+          header: () => (
+            <AppHeader
+              title="Trawling Traders"
+              transparent
+              onMenu={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+              onProfile={() =>
+                profileMenu(
+                  () => navigation.getParent()?.navigate('Profile'),
+                  () => navigation.getParent()?.navigate('Billing'),
+                  () => navigation.getParent()?.navigate('Settings'),
+                  () => navigation.getParent()?.navigate('Auth')
+                )
+              }
+            />
+          ),
+        })}
+      />
       <Drawer.Screen name="Docs" component={DocsScreen} />
       <Drawer.Screen name="Reports" component={ReportsScreen} />
       <Drawer.Screen name="Chat" component={ChatScreen} />
@@ -139,13 +162,37 @@ export function AppNavigator() {
         <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Subscribe" component={SubscribeScreen} options={{ title: 'Subscribe', headerRight: () => null }} />
         <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
-        <Stack.Screen name="CreateBot" component={CreateBotScreen} options={{ title: 'Create Bot' }} />
+        <Stack.Screen
+          name="CreateBot"
+          component={CreateBotScreen}
+          options={({ navigation }) => ({
+            title: 'Create Bot',
+            headerTransparent: true,
+            header: () => (
+              <AppHeader
+                title="Create Bot"
+                showBack
+                transparent
+                onBack={navigation.goBack}
+                onProfile={() =>
+                  profileMenu(
+                    () => navigation.navigate('Profile'),
+                    () => navigation.navigate('Billing'),
+                    () => navigation.navigate('Settings'),
+                    () => navigation.navigate('Auth')
+                  )
+                }
+              />
+            ),
+          })}
+        />
         <Stack.Screen name="BotDetail" component={BotDetailScreen} options={{ title: 'Bot Details' }} />
         <Stack.Screen name="BotStrategyConfig" component={BotStrategyConfigScreen} options={{ title: 'Strategy Config' }} />
         <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
+        <Stack.Screen name="Deposit" component={DepositScreen} options={{ title: 'Deposit' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

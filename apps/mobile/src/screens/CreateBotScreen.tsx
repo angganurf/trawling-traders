@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import type {
@@ -213,8 +214,10 @@ function parseNumberField(value: string, label: string, min: number, max: number
 
 export function CreateBotScreen() {
   const navigation = useNavigation<CreateBotScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const skyBg = colorScheme === 'dark' ? SKY_DARK : SKY_LIGHT;
+  const headerOffset = insets.top + 56;
 
   const [step, setStep] = useState<WizardStep>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -448,7 +451,7 @@ export function CreateBotScreen() {
 
   return (
     <ImageBackground source={skyBg} style={styles.container} resizeMode="cover">
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: headerOffset }]}>
         <Text style={styles.headerSubtitle}>Guided setup for a safer, clearer launch.</Text>
         <View style={styles.progressRow}>
           {STEP_META.map((_, index) => (
