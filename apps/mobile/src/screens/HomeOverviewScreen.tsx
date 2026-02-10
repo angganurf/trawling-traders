@@ -147,14 +147,6 @@ export function HomeOverviewScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <>
-            <View style={styles.header}>
-              <Image source={LOB_AVATAR} style={styles.headerAvatar} />
-              <View>
-                <Text style={styles.title}>Overview</Text>
-                <Text style={styles.subtitle}>Live bot performance snapshot</Text>
-              </View>
-            </View>
-
             <View style={styles.statsGrid}>
               {statTiles.map((tile) => (
                 <View key={tile.label} style={styles.statTile}>
@@ -244,25 +236,25 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     marginBottom: 12,
-    gap: 10,
+    gap: 6,
   },
   statTile: {
-    width: '48%',
+    flex: 1,
     backgroundColor: lightTheme.colors.surface,
     borderWidth: 1,
     borderColor: lightTheme.colors.cardBorder,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 12,
+    padding: 8,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: lightTheme.colors.wave[500],
   },
   statValue: {
-    marginTop: 6,
-    fontSize: 20,
+    marginTop: 4,
+    fontSize: 14,
     fontWeight: '700',
     color: lightTheme.colors.wave[900],
   },

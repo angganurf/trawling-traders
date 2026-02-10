@@ -104,7 +104,7 @@ function MainDrawer() {
         headerShown: true,
         drawerActiveTintColor: lightTheme.colors.primary[700],
         header: () => {
-          const title = route.name === 'Home' ? getFocusedRouteNameFromRoute(route) || 'Bots' : route.name;
+          const _activeRoute = route.name === 'Home' ? getFocusedRouteNameFromRoute(route) || 'Bots' : route.name;
           return (
             <View
               style={{
@@ -128,12 +128,12 @@ function MainDrawer() {
               <Text
                 style={{
                   color: '#fff',
-                  fontSize: 22,
+                  fontSize: 20,
                   fontFamily: lightTheme.typography.families.display,
                   fontWeight: '700',
                 }}
               >
-                {title}
+                Trawling Traders
               </Text>
               <TouchableOpacity
                 onPress={() =>

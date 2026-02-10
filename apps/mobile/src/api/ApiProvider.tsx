@@ -11,6 +11,19 @@ export function ApiProvider({ children }: ApiProviderProps) {
   const { getAccessToken, logout } = useCedrosLogin();
 
   React.useEffect(() => {
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const waitForToken = async (attempts: number, delayMs: number): Promise<string | null> => {
+      for (let i = 0; i < attempts; i += 1) {
+        const token = getAccessToken();
+        if (token) {
+          return token;
+        }
+        await sleep(delayMs);
+      }
+      return null;
+    };
+
     configureApi({
       baseUrl: API_URL,
       dataApiUrl: API_URL.replace(':3000', ':8080'),
@@ -19,9 +32,12 @@ export function ApiProvider({ children }: ApiProviderProps) {
     });
 
     setAuthProvider({
-      getToken: async () => getAccessToken(),
+      getToken: async () => waitForToken(4, 120),
+      // SDK token manager refreshes internally; this retries token acquisition
+      // across short post-login races before surfacing auth-expired errors.
+      refreshToken: async () => waitForToken(8, 150),
       clearAuth: async () => {
-        logout();
+        await logout();
       },
     });
   }, [getAccessToken, logout]);
