@@ -108,7 +108,21 @@ function MainDrawer() {
         })}
       />
       <Drawer.Screen name="Docs" component={DocsScreen} />
-      <Drawer.Screen name="Reports" component={ReportsScreen} />
+      <Drawer.Screen
+        name="Reports"
+        component={ReportsScreen}
+        options={({ navigation }) => ({
+          headerTransparent: true,
+          header: () => (
+            <AppHeader
+              title="Reports"
+              transparent
+              onMenu={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+              onProfile={() => navigation.getParent()?.getParent()?.dispatch(DrawerActions.toggleDrawer())}
+            />
+          ),
+        })}
+      />
       <Drawer.Screen name="Chat" component={ChatScreen} />
     </Drawer.Navigator>
   );

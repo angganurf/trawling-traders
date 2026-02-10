@@ -10,10 +10,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { EmailCsvReportRequest } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { lightTheme } from '../theme';
 const CLIP_BOARD_BG = require('../../../../assets/branding/tt-clip-board.png');
+const HEADER_HEIGHT = 56;
 
 const REPORT_KINDS: Array<{ label: string; value: EmailCsvReportRequest['reportKind']; description: string }> = [
   { label: 'Tax Report', value: 'tax', description: 'Trade opens/closes formatted for tax workflows.' },
@@ -29,6 +31,8 @@ const TIMEFRAMES: Array<{ label: string; value: EmailCsvReportRequest['timeframe
 ];
 
 export function ReportsScreen() {
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
   const [reportKind, setReportKind] = useState<EmailCsvReportRequest['reportKind']>('tax');
   const [timeframe, setTimeframe] = useState<EmailCsvReportRequest['timeframe']>('90d');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,10 +71,7 @@ export function ReportsScreen() {
 
   return (
     <ImageBackground source={CLIP_BOARD_BG} style={styles.bgFill} resizeMode="cover">
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Reports</Text>
-        <Text style={styles.subtitle}>Request a CSV report by email for taxes or record-keeping.</Text>
-
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: contentTopPadding }]}>
         <View style={styles.card}>
           <Text style={styles.label}>Report Type</Text>
           <TouchableOpacity style={styles.selectButton} onPress={() => openPicker('reportKind')}>
@@ -136,19 +137,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 28,
   },
-  title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: lightTheme.colors.wave[900],
-    fontFamily: lightTheme.typography.families.display,
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    color: lightTheme.colors.wave[600],
-  },
   card: {
-    marginTop: 14,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: lightTheme.colors.cardBorder,
