@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Bot, User, BotConfig } from '@trawling-traders/types';
+import type { Bot, User, BotConfig, LlmProvider, LlmModel } from '@trawling-traders/types';
 
 interface BotsState {
   bots: Bot[];
@@ -106,6 +106,46 @@ export const usePricesStore = create<PricesState>()((set, get) => ({
     return Date.now() - lastUpdate > maxAgeMs;
   },
 }));
+
+interface SettingsState {
+  apiKeys: Partial<Record<LlmProvider, string>>;
+  preferredModels: Partial<Record<LlmProvider, LlmModel>>;
+  disabledCustodians: string[];
+  setApiKey: (provider: LlmProvider, key: string) => void;
+  removeApiKey: (provider: LlmProvider) => void;
+  setPreferredModel: (provider: LlmProvider, model: LlmModel) => void;
+  toggleCustodian: (custodian: string) => void;
+}
+
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      apiKeys: {},
+      preferredModels: {},
+      disabledCustodians: [],
+      setApiKey: (provider, key) =>
+        set((state) => ({ apiKeys: { ...state.apiKeys, [provider]: key } })),
+      removeApiKey: (provider) =>
+        set((state) => {
+          const next = { ...state.apiKeys };
+          delete next[provider];
+          return { apiKeys: next };
+        }),
+      setPreferredModel: (provider, model) =>
+        set((state) => ({ preferredModels: { ...state.preferredModels, [provider]: model } })),
+      toggleCustodian: (custodian) =>
+        set((state) => ({
+          disabledCustodians: state.disabledCustodians.includes(custodian)
+            ? state.disabledCustodians.filter((c) => c !== custodian)
+            : [...state.disabledCustodians, custodian],
+        })),
+    }),
+    {
+      name: 'settings-preferences',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);
 
 interface AppState {
   isOnline: boolean;

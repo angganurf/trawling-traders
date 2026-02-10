@@ -1,0 +1,246 @@
+import React, { useState } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import type { LlmModel, LlmProvider } from '@trawling-traders/types';
+import { useSettingsStore } from '../../store';
+import { lightTheme } from '../../theme';
+
+const LLM_MODELS: Record<LlmProvider, { value: LlmModel; label: string }[]> = {
+  openai: [
+    { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  ],
+  anthropic: [
+    { value: 'claude-3-5-sonnet', label: 'Claude 3.5 Sonnet (Recommended)' },
+    { value: 'claude-3-opus', label: 'Claude 3 Opus' },
+    { value: 'claude-3-haiku', label: 'Claude 3 Haiku' },
+  ],
+  venice: [{ value: 'llama-3.1-405b', label: 'Llama 3.1 405B' }],
+  openrouter: [{ value: 'auto', label: 'Auto (Best Available)' }],
+};
+
+const PROVIDERS: { key: LlmProvider; label: string }[] = [
+  { key: 'openai', label: 'OpenAI' },
+  { key: 'anthropic', label: 'Anthropic' },
+  { key: 'venice', label: 'Venice' },
+  { key: 'openrouter', label: 'OpenRouter' },
+];
+
+function ProviderCard({ provider }: { provider: { key: LlmProvider; label: string } }) {
+  const apiKeys = useSettingsStore((s) => s.apiKeys);
+  const preferredModels = useSettingsStore((s) => s.preferredModels);
+  const setApiKey = useSettingsStore((s) => s.setApiKey);
+  const removeApiKey = useSettingsStore((s) => s.removeApiKey);
+  const setPreferredModel = useSettingsStore((s) => s.setPreferredModel);
+
+  const [keyDraft, setKeyDraft] = useState(apiKeys[provider.key] ?? '');
+  const [showKey, setShowKey] = useState(false);
+
+  const storedKey = apiKeys[provider.key] ?? '';
+  const selectedModel = preferredModels[provider.key];
+  const models = LLM_MODELS[provider.key];
+  const hasUnsavedKey = keyDraft.trim() !== storedKey;
+
+  const saveKey = () => {
+    const trimmed = keyDraft.trim();
+    if (trimmed) {
+      setApiKey(provider.key, trimmed);
+    }
+  };
+
+  const clearKey = () => {
+    removeApiKey(provider.key);
+    setKeyDraft('');
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>{provider.label}</Text>
+
+      <Text style={styles.inputLabel}>API Key</Text>
+      <View style={styles.keyRow}>
+        <TextInput
+          style={[styles.input, styles.keyInput]}
+          value={keyDraft}
+          onChangeText={setKeyDraft}
+          placeholder="sk-..."
+          placeholderTextColor={lightTheme.colors.wave[400]}
+          secureTextEntry={!showKey}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Pressable style={styles.toggleButton} onPress={() => setShowKey((v) => !v)}>
+          <Text style={styles.toggleButtonText}>{showKey ? 'Hide' : 'Show'}</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.keyActions}>
+        <TouchableOpacity
+          style={[styles.saveKeyButton, !hasUnsavedKey && styles.saveKeyButtonDisabled]}
+          onPress={saveKey}
+          disabled={!hasUnsavedKey}
+        >
+          <Text style={styles.saveKeyButtonText}>Save Key</Text>
+        </TouchableOpacity>
+        {storedKey ? (
+          <TouchableOpacity style={styles.clearKeyButton} onPress={clearKey}>
+            <Text style={styles.clearKeyButtonText}>Clear</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      <Text style={[styles.inputLabel, { marginTop: 14 }]}>Preferred Model</Text>
+      <View style={styles.chipRow}>
+        {models.map((m) => {
+          const active = selectedModel === m.value;
+          return (
+            <TouchableOpacity
+              key={m.value}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => setPreferredModel(provider.key, m.value)}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{m.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export function AiProviderSettings() {
+  return (
+    <View>
+      <Text style={styles.helper}>Default keys pre-fill when creating new bots.</Text>
+      {PROVIDERS.map((p) => (
+        <ProviderCard key={p.key} provider={p} />
+      ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  helper: {
+    marginTop: 4,
+    marginBottom: 4,
+    fontSize: 12,
+    color: lightTheme.colors.wave[500],
+  },
+  card: {
+    marginTop: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.cardBorder,
+    backgroundColor: lightTheme.colors.surface,
+    padding: 14,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: lightTheme.colors.wave[900],
+    marginBottom: 10,
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: lightTheme.colors.wave[600],
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[300],
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    fontSize: 14,
+    color: lightTheme.colors.wave[900],
+  },
+  keyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  keyInput: {
+    flex: 1,
+  },
+  toggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[300],
+    backgroundColor: lightTheme.colors.wave[50],
+  },
+  toggleButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: lightTheme.colors.wave[700],
+  },
+  keyActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  saveKeyButton: {
+    borderRadius: 10,
+    backgroundColor: lightTheme.colors.primary[700],
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  saveKeyButtonDisabled: {
+    backgroundColor: lightTheme.colors.wave[300],
+  },
+  saveKeyButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  clearKeyButton: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.lobster[300],
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    backgroundColor: lightTheme.colors.lobster[50],
+  },
+  clearKeyButtonText: {
+    color: lightTheme.colors.lobster[700],
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[300],
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+  },
+  chipActive: {
+    borderColor: '#0b5ea8',
+    backgroundColor: '#0b5ea8',
+  },
+  chipText: {
+    color: lightTheme.colors.wave[800],
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  chipTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+});

@@ -11,6 +11,7 @@ import type {
   TradeableAsset,
   TradingMode,
 } from '@trawling-traders/types';
+import { useSettingsStore } from '../../store';
 import { lightTheme } from '../../theme';
 import { createBotWizardStyles as styles } from './CreateBotWizard.styles';
 
@@ -168,6 +169,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     telegramPairingCode,
     setTelegramPairingCode,
   } = props;
+  const disabledCustodians = useSettingsStore((s) => s.disabledCustodians);
   const [activeDropdownRow, setActiveDropdownRow] = useState<number | null>(null);
 
   const usedFactorSet = useMemo(
@@ -230,7 +232,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   }
 
   if (step === 1) {
-    const assetsForFocus = tradeableAssets.filter((asset) => asset.assetFocus === assetFocus);
+    const assetsForFocus = tradeableAssets.filter(
+      (asset) => asset.assetFocus === assetFocus && !disabledCustodians.includes(asset.custodian)
+    );
     const toggleAsset = (tokenAddress: string) => {
       if (selectedAssets.includes(tokenAddress)) {
         setSelectedAssets(selectedAssets.filter((token) => token !== tokenAddress));
