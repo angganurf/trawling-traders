@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { useCedrosLogin, useEmailAuth, GoogleLoginButton } from '@cedros/login-react-native';
+import { useCedrosLogin, useEmailAuth, useOrgs, GoogleLoginButton } from '@cedros/login-react-native';
 import { api } from '@trawling-traders/api-client';
 import { authScreenStyles as styles } from './auth/AuthScreen.styles';
 
@@ -37,6 +37,7 @@ export function AuthScreen() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading: authLoading } = useCedrosLogin();
   const { login, register, isLoading: emailAuthLoading, error, clearError } = useEmailAuth();
+  const { activeOrg } = useOrgs();
   const isDark = colorScheme === 'dark';
   const backgroundAsset = isDark ? OCEAN_DARK : OCEAN_LIGHT;
 
@@ -78,24 +79,20 @@ export function AuthScreen() {
 
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
 
+    // Admin/owner org members skip subscription checks entirely
+    const orgRole = activeOrg?.membership?.role;
+    if (orgRole === 'owner' || orgRole === 'admin') {
+      isNavigatingRef.current = false;
+      return;
+    }
+
     const timeoutMs = 1500;
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('subscription-check-timeout')), timeoutMs);
     });
 
-    Promise.race([api.user.getCurrentUser(), timeoutPromise])
-      .then(async (userData) => {
-        const user = userData as Awaited<ReturnType<typeof api.user.getCurrentUser>> & {
-          is_admin?: boolean;
-          isAdmin?: boolean;
-        };
-
-        const isAdmin = Boolean(user.isAdmin ?? user.is_admin);
-        if (isAdmin) {
-          return;
-        }
-
-        const billing = await Promise.race([api.user.getBillingSummary(), timeoutPromise]);
+    Promise.race([api.user.getBillingSummary(), timeoutPromise])
+      .then((billing) => {
         const isActive = String((billing as { status?: string }).status || '').toLowerCase() === 'active';
         if (!isActive) {
           navigation.reset({ index: 0, routes: [{ name: 'Subscribe' }] });
@@ -109,7 +106,7 @@ export function AuthScreen() {
       .finally(() => {
         isNavigatingRef.current = false;
       });
-  }, [navigation]);
+  }, [navigation, activeOrg]);
 
   useEffect(() => {
     if (isAuthenticated) {
