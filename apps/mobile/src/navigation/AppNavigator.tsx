@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   drawerLabel: {
-    marginHorizontal: 10,
+    marginHorizontal: 4,
     borderRadius: 16,
     minHeight: 72,
     paddingVertical: 14,
-    paddingHorizontal: 26,
+    paddingHorizontal: 22,
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'center',
