@@ -37,7 +37,7 @@ export function AuthScreen() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading: authLoading } = useCedrosLogin();
   const { login, register, isLoading: emailAuthLoading, error, clearError } = useEmailAuth();
-  const { activeOrg, isLoading: orgsLoading } = useOrgs();
+  const { activeOrg } = useOrgs();
   const isDark = colorScheme === 'dark';
   const backgroundAsset = isDark ? OCEAN_DARK : OCEAN_LIGHT;
 
@@ -86,20 +86,25 @@ export function AuthScreen() {
     }
   }, [isAuthenticated, routeAfterAuth]);
 
-  // Subscription gating: runs once org data is loaded after auth
+  // Subscription gating: waits for activeOrg to load before deciding.
+  // orgsLoading starts false (before fetch), so we can't rely on it alone.
+  // Instead, wait for activeOrg to be non-null (cedros-login always creates one).
   const subscriptionCheckedRef = useRef(false);
   useEffect(() => {
-    if (!isAuthenticated || orgsLoading || subscriptionCheckedRef.current) {
-      return;
-    }
-    subscriptionCheckedRef.current = true;
+    if (!isAuthenticated || subscriptionCheckedRef.current) return;
 
     // Admin/owner org members skip subscription checks entirely
     const orgRole = activeOrg?.membership?.role;
     if (orgRole === 'owner' || orgRole === 'admin') {
+      subscriptionCheckedRef.current = true;
       return;
     }
 
+    // activeOrg not yet loaded — wait for the orgs fetch to complete
+    if (!activeOrg) return;
+
+    // Non-admin member — check billing
+    subscriptionCheckedRef.current = true;
     api.user
       .getBillingSummary()
       .then((billing) => {
@@ -113,7 +118,7 @@ export function AuthScreen() {
           console.warn('Subscription check failed:', err);
         }
       });
-  }, [isAuthenticated, orgsLoading, activeOrg, navigation]);
+  }, [isAuthenticated, activeOrg, navigation]);
 
   useEffect(() => {
     emailRef.current?.focus();
