@@ -17,6 +17,11 @@ export type TradingMode = 'paper' | 'live';
 // Strictness levels
 export type Strictness = 'low' | 'medium' | 'high';
 
+export interface AlgorithmFactor {
+  factor: string;
+  weight: number;
+}
+
 // LLM providers
 export type LlmProvider = 'openai' | 'anthropic' | 'venice' | 'openrouter';
 
@@ -184,12 +189,19 @@ export interface BillingSummary {
   currentPeriodEnd?: string;
 }
 
+export interface NameAvailability {
+  available: boolean;
+  normalizedName: string;
+  suggestedName?: string;
+}
+
 // API request/response types
 export interface CreateBotRequest {
   name: string;
   persona: Persona;
   assetFocus: AssetFocus;
   algorithmMode: AlgorithmMode;
+  algorithmFactors?: AlgorithmFactor[];
   strictness: Strictness;
   riskCaps: BotConfig['riskCaps'];
   tradingMode: TradingMode;
@@ -199,6 +211,8 @@ export interface CreateBotRequest {
   // Telegram integration
   telegramEnabled?: boolean;
   telegramBotToken?: string;
+  telegramUserId?: string;
+  telegramPairingCode?: string;
 }
 
 // OpenClaw config request/response types
@@ -208,6 +222,8 @@ export interface UpdateOpenClawConfigRequest {
   llmApiKey?: string;
   telegramEnabled?: boolean;
   telegramBotToken?: string;
+  telegramUserId?: string;
+  telegramPairingCode?: string;
 }
 
 export interface OpenClawConfigResponse {
@@ -216,7 +232,9 @@ export interface OpenClawConfigResponse {
   llmModel: string;
   hasLlmApiKey: boolean;
   telegramEnabled: boolean;
+  telegramUserId?: string;
   hasTelegramBotToken: boolean;
+  hasTelegramPairingCode: boolean;
   discordEnabled: boolean;
   hasDiscordBotToken: boolean;
   updatedAt: string;

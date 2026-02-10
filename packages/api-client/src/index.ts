@@ -14,6 +14,7 @@ import type {
   EmailCsvReportRequest,
   EmailCsvReportResponse,
   GetDocsResponse,
+  NameAvailability,
   GetBotChatMessagesResponse,
   TrackDocsEventRequest,
   TrackDocsEventResponse,
@@ -241,11 +242,41 @@ export const botApi = {
     };
   },
 
+  async checkNameAvailability(name: string): Promise<NameAvailability> {
+    const response = await fetchApi(`/bots/name-availability?name=${encodeURIComponent(name)}`);
+    return {
+      available: Boolean(response.available),
+      normalizedName: response.normalizedName ?? response.normalized_name ?? name.trim(),
+      suggestedName: response.suggestedName ?? response.suggested_name ?? undefined,
+    };
+  },
+
   // Create a new bot
   async createBot(request: CreateBotRequest): Promise<Bot> {
     return fetchApi('/bots', {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        name: request.name,
+        persona: request.persona,
+        asset_focus: request.assetFocus,
+        algorithm_mode: request.algorithmMode,
+        algorithm_factors: request.algorithmFactors,
+        strictness: request.strictness,
+        risk_caps: {
+          max_position_size_percent: request.riskCaps.maxPositionSizePercent,
+          max_daily_loss_usd: request.riskCaps.maxDailyLossUsd,
+          max_drawdown_percent: request.riskCaps.maxDrawdownPercent,
+          max_trades_per_day: request.riskCaps.maxTradesPerDay,
+        },
+        trading_mode: request.tradingMode,
+        llm_provider: request.llmProvider,
+        llm_model: request.llmModel,
+        llm_api_key: request.llmApiKey,
+        telegram_enabled: request.telegramEnabled,
+        telegram_bot_token: request.telegramBotToken,
+        telegram_user_id: request.telegramUserId,
+        telegram_pairing_code: request.telegramPairingCode,
+      }),
     });
   },
 
@@ -388,6 +419,18 @@ function mapBotConfig(raw: any): BotConfig {
 export const userApi = {
   async getCurrentUser(): Promise<User> {
     return fetchApi('/me');
+  },
+
+  async checkDisplayNameAvailability(displayName: string): Promise<NameAvailability> {
+    const response = await fetchApi(
+      `/account/display-name-availability?display_name=${encodeURIComponent(displayName)}`
+    );
+    return {
+      available: Boolean(response.available),
+      normalizedName:
+        response.normalizedName ?? response.normalized_name ?? displayName.trim(),
+      suggestedName: response.suggestedName ?? response.suggested_name ?? undefined,
+    };
   },
 
   async getSettings(): Promise<UserSettings> {

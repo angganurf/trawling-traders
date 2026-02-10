@@ -1,7 +1,7 @@
 //! Bot handlers for the control plane
 
 use axum::{
-    extract::{Extension, Path, State},
+    extract::{Extension, Path, Query, State},
     http::StatusCode,
     Json,
 };
@@ -18,6 +18,85 @@ use crate::{
     observability::{metrics, Logger},
     AppState,
 };
+
+#[derive(serde::Deserialize)]
+pub struct BotNameQuery {
+    pub name: Option<String>,
+}
+
+/// GET /bots/name-availability - Check whether a bot name is available for current user.
+pub async fn check_bot_name_availability(
+    State(state): State<Arc<AppState>>,
+    Extension(auth): Extension<AuthContext>,
+    Query(query): Query<BotNameQuery>,
+) -> Result<Json<NameAvailabilityResponse>, (StatusCode, String)> {
+    let user_id = Uuid::parse_str(&auth.user_id)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
+    let normalized_name = query
+        .name
+        .unwrap_or_else(|| "Trawler".to_string())
+        .trim()
+        .chars()
+        .take(100)
+        .collect::<String>();
+
+    if normalized_name.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Name is required".to_string()));
+    }
+
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1 FROM bots
+            WHERE user_id = $1
+              AND LOWER(name) = LOWER($2)
+              AND status != 'destroying'
+        )",
+    )
+    .bind(user_id)
+    .bind(&normalized_name)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if !exists {
+        return Ok(Json(NameAvailabilityResponse {
+            available: true,
+            normalized_name,
+            suggested_name: None,
+        }));
+    }
+
+    for idx in 2..=999 {
+        let candidate = format!("{} {}", normalized_name, idx);
+        let candidate_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(
+                SELECT 1 FROM bots
+                WHERE user_id = $1
+                  AND LOWER(name) = LOWER($2)
+                  AND status != 'destroying'
+            )",
+        )
+        .bind(user_id)
+        .bind(&candidate)
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+        if !candidate_exists {
+            return Ok(Json(NameAvailabilityResponse {
+                available: false,
+                normalized_name,
+                suggested_name: Some(candidate),
+            }));
+        }
+    }
+
+    Ok(Json(NameAvailabilityResponse {
+        available: false,
+        normalized_name,
+        suggested_name: None,
+    }))
+}
 
 /// Helper: Get bot with authorization check
 ///
@@ -114,15 +193,19 @@ pub async fn create_bot(
 
     let config_id = Uuid::new_v4();
     let custom_assets_json = req.custom_assets.map(|a| serde_json::to_value(a).unwrap());
+    let algorithm_factors_json = req
+        .algorithm_factors
+        .as_ref()
+        .map(|factors| serde_json::to_value(factors).unwrap_or(serde_json::Value::Null));
 
     sqlx::query(
         r#"
         INSERT INTO config_versions (
             id, bot_id, version, name, persona, asset_focus, custom_assets,
-            algorithm_mode, strictness, max_position_size_percent, max_daily_loss_usd,
+            algorithm_mode, algorithm_factors, strictness, max_position_size_percent, max_daily_loss_usd,
             max_drawdown_percent, max_trades_per_day, trading_mode, llm_provider,
             encrypted_llm_api_key
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         "#,
     )
     .bind(config_id)
@@ -133,6 +216,7 @@ pub async fn create_bot(
     .bind(req.asset_focus)
     .bind(custom_assets_json)
     .bind(req.algorithm_mode)
+    .bind(algorithm_factors_json)
     .bind(req.strictness)
     .bind(req.risk_caps.max_position_size_percent)
     .bind(req.risk_caps.max_daily_loss_usd)
@@ -179,6 +263,52 @@ pub async fn create_bot(
         .execute(&mut *tx)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Initialize OpenClaw config at bot creation so LLM/Telegram settings are persisted immediately.
+    let encrypted_llm_api_key = req
+        .llm_api_key
+        .as_ref()
+        .map(|key| state.secrets.encrypt(key).unwrap_or_default())
+        .unwrap_or_default();
+    let encrypted_telegram_bot_token = req
+        .telegram_bot_token
+        .as_ref()
+        .filter(|token| !token.is_empty())
+        .map(|token| state.secrets.encrypt(token).unwrap_or_default());
+    let encrypted_telegram_pairing_code = req
+        .telegram_pairing_code
+        .as_ref()
+        .filter(|code| !code.is_empty())
+        .map(|code| state.secrets.encrypt(code).unwrap_or_default());
+
+    sqlx::query(
+        r#"
+        INSERT INTO bot_openclaw_config (
+            bot_id, llm_provider, llm_model, encrypted_llm_api_key,
+            telegram_enabled, telegram_user_id, encrypted_telegram_bot_token, encrypted_telegram_pairing_code
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (bot_id) DO UPDATE SET
+            llm_provider = EXCLUDED.llm_provider,
+            llm_model = EXCLUDED.llm_model,
+            encrypted_llm_api_key = EXCLUDED.encrypted_llm_api_key,
+            telegram_enabled = EXCLUDED.telegram_enabled,
+            telegram_user_id = EXCLUDED.telegram_user_id,
+            encrypted_telegram_bot_token = COALESCE(EXCLUDED.encrypted_telegram_bot_token, bot_openclaw_config.encrypted_telegram_bot_token),
+            encrypted_telegram_pairing_code = COALESCE(EXCLUDED.encrypted_telegram_pairing_code, bot_openclaw_config.encrypted_telegram_pairing_code),
+            updated_at = NOW()
+        "#,
+    )
+    .bind(bot_id)
+    .bind(&req.llm_provider)
+    .bind(req.llm_model.as_deref().unwrap_or_default())
+    .bind(&encrypted_llm_api_key)
+    .bind(req.telegram_enabled)
+    .bind(req.telegram_user_id.as_deref())
+    .bind(encrypted_telegram_bot_token.as_deref())
+    .bind(encrypted_telegram_pairing_code.as_deref())
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     // Commit transaction - bot limit is now atomically enforced
     tx.commit()
@@ -560,15 +690,20 @@ pub async fn update_bot_config(
         .config
         .custom_assets
         .map(|a| serde_json::to_value(a).unwrap());
+    let algorithm_factors_json = req
+        .config
+        .algorithm_factors
+        .as_ref()
+        .map(|factors| serde_json::to_value(factors).unwrap_or(serde_json::Value::Null));
 
     sqlx::query(
         r#"
         INSERT INTO config_versions (
             id, bot_id, version, name, persona, asset_focus, custom_assets,
-            algorithm_mode, strictness, max_position_size_percent, max_daily_loss_usd,
+            algorithm_mode, algorithm_factors, strictness, max_position_size_percent, max_daily_loss_usd,
             max_drawdown_percent, max_trades_per_day, trading_mode, llm_provider,
             encrypted_llm_api_key
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         "#,
     )
     .bind(config_id)
@@ -579,6 +714,7 @@ pub async fn update_bot_config(
     .bind(req.config.asset_focus)
     .bind(custom_assets_json)
     .bind(req.config.algorithm_mode)
+    .bind(algorithm_factors_json)
     .bind(req.config.strictness)
     .bind(req.config.risk_caps.max_position_size_percent)
     .bind(req.config.risk_caps.max_daily_loss_usd)

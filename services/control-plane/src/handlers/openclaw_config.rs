@@ -82,6 +82,15 @@ pub async fn update_openclaw_config(
         ),
         _ => None,
     };
+    let encrypted_telegram_pairing_code = match &req.telegram_pairing_code {
+        Some(code) if !code.is_empty() => Some(
+            state
+                .secrets
+                .encrypt(code)
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?,
+        ),
+        _ => None,
+    };
 
     let llm_model = req.llm_model.clone().unwrap_or_default();
 
@@ -103,15 +112,19 @@ pub async fn update_openclaw_config(
                     llm_model = $2,
                     encrypted_llm_api_key = $3,
                     telegram_enabled = $4,
-                    encrypted_telegram_bot_token = COALESCE($5, encrypted_telegram_bot_token),
+                    telegram_user_id = $5,
+                    encrypted_telegram_bot_token = COALESCE($6, encrypted_telegram_bot_token),
+                    encrypted_telegram_pairing_code = COALESCE($7, encrypted_telegram_pairing_code),
                     updated_at = NOW()
-                WHERE id = $6",
+                WHERE id = $8",
             )
             .bind(&req.llm_provider)
             .bind(&llm_model)
             .bind(&encrypted_llm_api_key)
             .bind(req.telegram_enabled)
+            .bind(req.telegram_user_id.as_deref())
             .bind(&encrypted_telegram_token)
+            .bind(&encrypted_telegram_pairing_code)
             .bind(config_id)
             .execute(&state.db)
             .await
@@ -123,14 +136,18 @@ pub async fn update_openclaw_config(
                     llm_provider = $1,
                     llm_model = $2,
                     telegram_enabled = $3,
-                    encrypted_telegram_bot_token = COALESCE($4, encrypted_telegram_bot_token),
+                    telegram_user_id = $4,
+                    encrypted_telegram_bot_token = COALESCE($5, encrypted_telegram_bot_token),
+                    encrypted_telegram_pairing_code = COALESCE($6, encrypted_telegram_pairing_code),
                     updated_at = NOW()
-                WHERE id = $5",
+                WHERE id = $7",
             )
             .bind(&req.llm_provider)
             .bind(&llm_model)
             .bind(req.telegram_enabled)
+            .bind(req.telegram_user_id.as_deref())
             .bind(&encrypted_telegram_token)
+            .bind(&encrypted_telegram_pairing_code)
             .bind(config_id)
             .execute(&state.db)
             .await
@@ -143,15 +160,17 @@ pub async fn update_openclaw_config(
         sqlx::query(
             "INSERT INTO bot_openclaw_config
                 (bot_id, llm_provider, llm_model, encrypted_llm_api_key,
-                 telegram_enabled, encrypted_telegram_bot_token)
-            VALUES ($1, $2, $3, $4, $5, $6)",
+                 telegram_enabled, telegram_user_id, encrypted_telegram_bot_token, encrypted_telegram_pairing_code)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
         .bind(bot_id)
         .bind(&req.llm_provider)
         .bind(&llm_model)
         .bind(&encrypted_llm_api_key)
         .bind(req.telegram_enabled)
+        .bind(req.telegram_user_id.as_deref())
         .bind(&encrypted_telegram_token)
+        .bind(&encrypted_telegram_pairing_code)
         .execute(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

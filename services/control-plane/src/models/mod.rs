@@ -187,6 +187,7 @@ pub struct ConfigVersion {
     pub asset_focus: AssetFocus,
     pub custom_assets: Option<serde_json::Value>,
     pub algorithm_mode: AlgorithmMode,
+    pub algorithm_factors: Option<serde_json::Value>,
     pub strictness: Strictness,
     pub max_position_size_percent: i32,
     pub max_daily_loss_usd: i32,
@@ -208,8 +209,11 @@ pub struct BotOpenClawConfig {
     #[serde(skip_serializing)]
     pub encrypted_llm_api_key: String,
     pub telegram_enabled: bool,
+    pub telegram_user_id: Option<String>,
     #[serde(skip_serializing)]
     pub encrypted_telegram_bot_token: Option<String>,
+    #[serde(skip_serializing)]
+    pub encrypted_telegram_pairing_code: Option<String>,
     pub discord_enabled: bool,
     #[serde(skip_serializing)]
     pub encrypted_discord_bot_token: Option<String>,
@@ -395,6 +399,13 @@ pub struct BillingSummaryResponse {
     pub current_period_end: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct NameAvailabilityResponse {
+    pub available: bool,
+    pub normalized_name: String,
+    pub suggested_name: Option<String>,
+}
+
 #[derive(Debug, Clone, FromRow)]
 pub struct DocsCategoryRow {
     pub id: String,
@@ -456,6 +467,8 @@ pub struct CreateBotRequest {
     pub name: String,
     pub persona: Persona,
     pub algorithm_mode: AlgorithmMode,
+    /// Optional weighted factor list for linear-regression style strategy builder
+    pub algorithm_factors: Option<Vec<AlgorithmFactorInput>>,
     pub asset_focus: AssetFocus,
     pub strictness: Strictness,
     pub trading_mode: TradingMode,
@@ -472,6 +485,10 @@ pub struct CreateBotRequest {
     pub telegram_enabled: bool,
     /// Telegram bot token from @BotFather (encrypted at rest)
     pub telegram_bot_token: Option<String>,
+    /// Telegram user id received after first /start message
+    pub telegram_user_id: Option<String>,
+    /// Pairing code received from Telegram bot (encrypted at rest)
+    pub telegram_pairing_code: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -480,6 +497,8 @@ pub struct BotConfigInput {
     pub persona: Persona,
     pub asset_focus: AssetFocus,
     pub algorithm_mode: AlgorithmMode,
+    /// Optional weighted factor list for linear-regression style strategy builder
+    pub algorithm_factors: Option<Vec<AlgorithmFactorInput>>,
     pub strictness: Strictness,
     pub trading_mode: TradingMode,
     pub risk_caps: RiskCaps,
@@ -494,6 +513,16 @@ pub struct BotConfigInput {
     pub telegram_enabled: bool,
     /// Telegram bot token from @BotFather (encrypted at rest)
     pub telegram_bot_token: Option<String>,
+    /// Telegram user id received after first /start message
+    pub telegram_user_id: Option<String>,
+    /// Pairing code received from Telegram bot (encrypted at rest)
+    pub telegram_pairing_code: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AlgorithmFactorInput {
+    pub factor: String,
+    pub weight: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -732,7 +761,9 @@ pub struct OpenClawConfigResponse {
     pub llm_model: String,
     pub has_llm_api_key: bool,
     pub telegram_enabled: bool,
+    pub telegram_user_id: Option<String>,
     pub has_telegram_bot_token: bool,
+    pub has_telegram_pairing_code: bool,
     pub discord_enabled: bool,
     pub has_discord_bot_token: bool,
     pub updated_at: DateTime<Utc>,
@@ -746,7 +777,9 @@ impl From<BotOpenClawConfig> for OpenClawConfigResponse {
             llm_model: config.llm_model,
             has_llm_api_key: !config.encrypted_llm_api_key.is_empty(),
             telegram_enabled: config.telegram_enabled,
+            telegram_user_id: config.telegram_user_id,
             has_telegram_bot_token: config.encrypted_telegram_bot_token.is_some(),
+            has_telegram_pairing_code: config.encrypted_telegram_pairing_code.is_some(),
             discord_enabled: config.discord_enabled,
             has_discord_bot_token: config.encrypted_discord_bot_token.is_some(),
             updated_at: config.updated_at,
@@ -766,4 +799,8 @@ pub struct UpdateOpenClawConfigRequest {
     pub telegram_enabled: bool,
     /// Telegram bot token from @BotFather (encrypted at rest)
     pub telegram_bot_token: Option<String>,
+    /// Telegram user id received after first /start message
+    pub telegram_user_id: Option<String>,
+    /// Pairing code received from Telegram bot (encrypted at rest)
+    pub telegram_pairing_code: Option<String>,
 }

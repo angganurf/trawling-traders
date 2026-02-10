@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,22 +11,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import type { AlgorithmMode, AssetFocus, LlmModel, LlmProvider, Persona, Strictness, TradingMode } from '@trawling-traders/types';
+import type {
+  NameAvailability,
+  AlgorithmFactor,
+  AlgorithmMode,
+  AssetFocus,
+  LlmModel,
+  LlmProvider,
+  Persona,
+  Strictness,
+  TradingMode,
+} from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
 import { CreateBotWizardSteps } from './create-bot/CreateBotWizardSteps';
 import { createBotWizardStyles as styles } from './create-bot/CreateBotWizard.styles';
 
 type CreateBotScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateBot'>;
-type WizardStep = 0 | 1 | 2 | 3 | 4 | 5;
+type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 const STEP_META = [
   { title: 'Basics', description: 'Name your bot and choose your operating style.' },
   { title: 'Strategy', description: 'Pick market focus and behavior profile.' },
   { title: 'Risk', description: 'Set practical limits before deploying.' },
+  { title: 'Algorithm', description: 'Build a weighted factor formula for this bot.' },
   { title: 'AI', description: 'Connect the LLM provider and model your bot will use.' },
   { title: 'Telegram', description: 'Optional chat channel for commands, alerts, and pairing.' },
   { title: 'Review', description: 'Double-check configuration and deploy.' },
+] as const;
+
+const FACTOR_CATALOG = [
+  { key: 'price_momentum', label: 'Price Momentum' },
+  { key: 'volume_confirmation', label: 'Volume Confirmation' },
+  { key: 'volatility_regime', label: 'Volatility Regime' },
+  { key: 'rsi_reversion', label: 'RSI Reversion' },
+  { key: 'market_breadth', label: 'Market Breadth' },
+  { key: 'news_sentiment', label: 'News Sentiment' },
 ] as const;
 
 const PERSONAS: { value: Persona; label: string; description: string; recommended?: boolean }[] = [
@@ -86,11 +106,18 @@ export function CreateBotScreen() {
   const [step, setStep] = useState<WizardStep>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
+  const [nameAvailability, setNameAvailability] = useState<NameAvailability | null>(null);
+  const [nameCheckLoading, setNameCheckLoading] = useState(false);
 
   const [name, setName] = useState('');
   const [persona, setPersona] = useState<Persona>('beginner');
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
   const [algorithmMode, setAlgorithmMode] = useState<AlgorithmMode>('trend');
+  const [algorithmFactors, setAlgorithmFactors] = useState<AlgorithmFactor[]>([
+    { factor: 'price_momentum', weight: 0.4 },
+    { factor: 'volume_confirmation', weight: 0.25 },
+    { factor: 'volatility_regime', weight: 0.35 },
+  ]);
   const [strictness, setStrictness] = useState<Strictness>('high');
   const [tradingMode, setTradingMode] = useState<TradingMode>('paper');
   const [maxPositionSize, setMaxPositionSize] = useState('5');
@@ -107,6 +134,59 @@ export function CreateBotScreen() {
 
   const modelsForProvider = useMemo(() => LLM_MODELS[llmProvider], [llmProvider]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (name.trim().length > 0) {
+      return;
+    }
+    const generateDefault = async () => {
+      try {
+        const response = await api.bot.checkNameAvailability('Trawler');
+        if (cancelled) return;
+        const defaultName = response.available ? response.normalizedName : response.suggestedName || 'Trawler 2';
+        setName(defaultName);
+        setNameAvailability(response);
+      } catch {
+        if (!cancelled) {
+          setName('Trawler');
+        }
+      }
+    };
+    generateDefault();
+    return () => {
+      cancelled = true;
+    };
+  }, [name]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (name.trim().length === 0) {
+      setNameAvailability(null);
+      return;
+    }
+    setNameCheckLoading(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await api.bot.checkNameAvailability(name.trim());
+        if (!cancelled) {
+          setNameAvailability(response);
+        }
+      } catch {
+        if (!cancelled) {
+          setNameAvailability(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setNameCheckLoading(false);
+        }
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [name]);
+
   const validateCurrentStep = () => {
     if (step === 0 && !name.trim()) {
       return 'Please give this bot a name.';
@@ -121,10 +201,13 @@ export function CreateBotScreen() {
       const failed = checks.find((check) => check.error);
       if (failed?.error) return failed.error;
     }
-    if (step === 3) {
-      if (!llmApiKey.trim()) return 'Enter your LLM API key to continue.';
+    if (step === 3 && algorithmFactors.length === 0) {
+      return 'Add at least one algorithm factor.';
     }
     if (step === 4) {
+      if (!llmApiKey.trim()) return 'Enter your LLM API key to continue.';
+    }
+    if (step === 5) {
       if (telegramEnabled && !telegramBotToken.trim()) return 'Enter a Telegram token or disable Telegram.';
       if (telegramEnabled && !telegramUserId.trim()) return 'Enter your Telegram user ID.';
       if (telegramEnabled && !telegramPairingCode.trim()) return 'Enter your Telegram pairing code.';
@@ -139,7 +222,7 @@ export function CreateBotScreen() {
       setInlineError(error);
       return;
     }
-    if (step < 5) {
+    if (step < 6) {
       setStep((prev) => (prev + 1) as WizardStep);
     }
   };
@@ -178,6 +261,7 @@ export function CreateBotScreen() {
         persona,
         assetFocus,
         algorithmMode,
+        algorithmFactors,
         strictness,
         tradingMode,
         llmProvider,
@@ -233,6 +317,8 @@ export function CreateBotScreen() {
             setPersona={setPersona}
             name={name}
             setName={setName}
+            nameAvailability={nameAvailability}
+            nameCheckLoading={nameCheckLoading}
             assetChoices={ASSET_CHOICES}
             assetFocus={assetFocus}
             setAssetFocus={setAssetFocus}
@@ -242,6 +328,9 @@ export function CreateBotScreen() {
             strictnessOptions={STRICTNESS_OPTIONS}
             strictness={strictness}
             setStrictness={setStrictness}
+            factorCatalog={FACTOR_CATALOG.map((item) => ({ value: item.key, label: item.label }))}
+            algorithmFactors={algorithmFactors}
+            setAlgorithmFactors={setAlgorithmFactors}
             tradingMode={tradingMode}
             setTradingMode={setTradingMode}
             maxPositionSize={maxPositionSize}
@@ -273,7 +362,7 @@ export function CreateBotScreen() {
             <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={isSubmitting}>
               <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
             </TouchableOpacity>
-            {step < 5 ? (
+            {step < 6 ? (
               <TouchableOpacity style={styles.nextButton} onPress={onNext} disabled={isSubmitting}>
                 <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>

@@ -125,6 +125,10 @@ pub async fn app(state: Arc<AppState>) -> Router {
         .route("/me", get(handlers::bots::get_current_user))
         .route("/bots", get(handlers::bots::list_bots))
         .route(
+            "/bots/name-availability",
+            get(handlers::bots::check_bot_name_availability),
+        )
+        .route(
             "/bots",
             post(handlers::bots::create_bot).layer(axum::middleware::from_fn_with_state(
                 state.clone(),
@@ -147,6 +151,10 @@ pub async fn app(state: Arc<AppState>) -> Router {
         .route(
             "/account/settings",
             get(handlers::settings::get_user_settings),
+        )
+        .route(
+            "/account/display-name-availability",
+            get(handlers::settings::check_display_name_availability),
         )
         .route(
             "/account/settings",

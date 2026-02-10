@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Extension, State},
+    extract::{Extension, Query, State},
     http::StatusCode,
     Json,
 };
@@ -9,10 +9,16 @@ use uuid::Uuid;
 use crate::{
     middleware::AuthContext,
     models::{
-        AuthMethodsStatus, BillingSummaryResponse, UpdateUserSettingsRequest, UserSettingsResponse,
+        AuthMethodsStatus, BillingSummaryResponse, NameAvailabilityResponse, UpdateUserSettingsRequest,
+        UserSettingsResponse,
     },
     AppState,
 };
+
+#[derive(Debug, serde::Deserialize)]
+pub struct DisplayNameQuery {
+    pub display_name: Option<String>,
+}
 
 #[derive(Debug, sqlx::FromRow)]
 struct UserSettingsRow {
@@ -115,6 +121,79 @@ pub async fn update_user_settings(
 
     let row = load_user_settings_row(&state, user_id).await?;
     Ok(Json(to_response(row)))
+}
+
+pub async fn check_display_name_availability(
+    State(state): State<Arc<AppState>>,
+    Extension(auth): Extension<AuthContext>,
+    Query(query): Query<DisplayNameQuery>,
+) -> Result<Json<NameAvailabilityResponse>, (StatusCode, String)> {
+    let user_id = Uuid::parse_str(&auth.user_id)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
+    let normalized_name = query
+        .display_name
+        .unwrap_or_default()
+        .trim()
+        .chars()
+        .take(80)
+        .collect::<String>();
+
+    if normalized_name.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Display name is required".to_string()));
+    }
+
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1 FROM users
+            WHERE id != $1
+              AND name IS NOT NULL
+              AND LOWER(name) = LOWER($2)
+        )",
+    )
+    .bind(user_id)
+    .bind(&normalized_name)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if !exists {
+        return Ok(Json(NameAvailabilityResponse {
+            available: true,
+            normalized_name,
+            suggested_name: None,
+        }));
+    }
+
+    for idx in 2..=999 {
+        let candidate = format!("{} {}", normalized_name, idx);
+        let candidate_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(
+                SELECT 1 FROM users
+                WHERE id != $1
+                  AND name IS NOT NULL
+                  AND LOWER(name) = LOWER($2)
+            )",
+        )
+        .bind(user_id)
+        .bind(&candidate)
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+        if !candidate_exists {
+            return Ok(Json(NameAvailabilityResponse {
+                available: false,
+                normalized_name,
+                suggested_name: Some(candidate),
+            }));
+        }
+    }
+
+    Ok(Json(NameAvailabilityResponse {
+        available: false,
+        normalized_name,
+        suggested_name: None,
+    }))
 }
 
 fn plan_max_bots(product_id: &str) -> i32 {

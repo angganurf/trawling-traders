@@ -1,10 +1,20 @@
 import React from 'react';
 import { Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import type { AlgorithmMode, AssetFocus, LlmModel, LlmProvider, Persona, Strictness, TradingMode } from '@trawling-traders/types';
+import type {
+  AlgorithmFactor,
+  AlgorithmMode,
+  AssetFocus,
+  LlmModel,
+  LlmProvider,
+  NameAvailability,
+  Persona,
+  Strictness,
+  TradingMode,
+} from '@trawling-traders/types';
 import { lightTheme } from '../../theme';
 import { createBotWizardStyles as styles } from './CreateBotWizard.styles';
 
-export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5;
+export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 type Option<T extends string> = { value: T; label: string; description?: string; recommended?: boolean };
 
@@ -14,12 +24,17 @@ type CreateBotWizardStepsProps = {
   setPersona: (value: Persona) => void;
   name: string;
   setName: (value: string) => void;
+  nameAvailability: NameAvailability | null;
+  nameCheckLoading: boolean;
   assetFocus: AssetFocus;
   setAssetFocus: (value: AssetFocus) => void;
   algorithmMode: AlgorithmMode;
   setAlgorithmMode: (value: AlgorithmMode) => void;
   strictness: Strictness;
   setStrictness: (value: Strictness) => void;
+  factorCatalog: Option<string>[];
+  algorithmFactors: AlgorithmFactor[];
+  setAlgorithmFactors: (value: AlgorithmFactor[]) => void;
   tradingMode: TradingMode;
   setTradingMode: (value: TradingMode) => void;
   maxPositionSize: string;
@@ -80,6 +95,8 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     setPersona,
     name,
     setName,
+    nameAvailability,
+    nameCheckLoading,
     assetChoices,
     assetFocus,
     setAssetFocus,
@@ -89,6 +106,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     strictnessOptions,
     strictness,
     setStrictness,
+    factorCatalog,
+    algorithmFactors,
+    setAlgorithmFactors,
     tradingMode,
     setTradingMode,
     maxPositionSize,
@@ -128,6 +148,24 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
           placeholder="e.g. Equity Trawler #1"
           placeholderTextColor={lightTheme.colors.wave[400]}
         />
+        {nameCheckLoading ? (
+          <Text style={styles.helperText}>Checking availability...</Text>
+        ) : nameAvailability ? (
+          nameAvailability.available ? (
+            <Text style={styles.availableText}>Name available</Text>
+          ) : (
+            <View style={styles.nameUnavailableRow}>
+              <Text style={styles.inlineError}>Name already used.</Text>
+              {nameAvailability.suggestedName ? (
+                <TouchableOpacity onPress={() => setName(nameAvailability.suggestedName || name)}>
+                  <Text style={styles.useSuggestionText}>
+                    Use "{nameAvailability.suggestedName}"
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          )
+        ) : null}
         <Text style={styles.sectionLabel}>Persona</Text>
         {personas.map((item) => (
           <TouchableOpacity
@@ -220,6 +258,75 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   }
 
   if (step === 3) {
+    const isSelected = (factor: string) =>
+      algorithmFactors.some((item) => item.factor === factor);
+    const toggleFactor = (factor: string) => {
+      if (isSelected(factor)) {
+        setAlgorithmFactors(algorithmFactors.filter((item) => item.factor !== factor));
+        return;
+      }
+      setAlgorithmFactors([...algorithmFactors, { factor, weight: 0.2 }]);
+    };
+    const updateWeight = (factor: string, weightInput: string) => {
+      const parsed = Number.parseFloat(weightInput);
+      const safeWeight = Number.isFinite(parsed) ? Math.max(-1, Math.min(1, parsed)) : 0;
+      setAlgorithmFactors(
+        algorithmFactors.map((item) =>
+          item.factor === factor ? { ...item, weight: safeWeight } : item
+        )
+      );
+    };
+
+    return (
+      <View>
+        <Text style={styles.sectionLabel}>Select Factors</Text>
+        <View style={styles.chipRow}>
+          {factorCatalog.map((factor) => (
+            <TouchableOpacity
+              key={factor.value}
+              style={[styles.chip, isSelected(factor.value) && styles.chipActive]}
+              onPress={() => toggleFactor(factor.value)}
+            >
+              <Text style={[styles.chipText, isSelected(factor.value) && styles.chipTextActive]}>
+                {factor.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.sectionLabel}>Weights (m)</Text>
+        {algorithmFactors.length === 0 ? (
+          <Text style={styles.helperText}>Pick one or more factors to build your formula.</Text>
+        ) : (
+          algorithmFactors.map((factor) => {
+            const meta = factorCatalog.find((item) => item.value === factor.factor);
+            return (
+              <View key={factor.factor} style={styles.factorRow}>
+                <Text style={styles.factorLabel}>{meta?.label || factor.factor}</Text>
+                <TextInput
+                  style={styles.factorWeightInput}
+                  value={String(factor.weight)}
+                  onChangeText={(value) => updateWeight(factor.factor, value)}
+                  keyboardType="decimal-pad"
+                  placeholder="0.2"
+                />
+              </View>
+            );
+          })
+        )}
+        <Text style={styles.formulaPreview}>
+          y ={' '}
+          {algorithmFactors.length === 0
+            ? '0'
+            : algorithmFactors
+                .map((item, index) => `${item.weight.toFixed(2)}x${index + 1}`)
+                .join(' + ')}
+        </Text>
+      </View>
+    );
+  }
+
+  if (step === 4) {
     return (
       <View>
         <Text style={styles.sectionLabel}>LLM Provider</Text>
@@ -249,7 +356,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     );
   }
 
-  if (step === 4) {
+  if (step === 5) {
     return (
       <View>
         <View style={styles.instructionBox}>
@@ -341,6 +448,14 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
         <Text style={styles.summaryLabel}>AI</Text>
         <Text style={styles.summaryValue}>
           {llmProvider} • {llmModel}
+        </Text>
+      </View>
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryLabel}>Algorithm Formula</Text>
+        <Text style={styles.summaryValue}>
+          {algorithmFactors.length === 0
+            ? 'None'
+            : algorithmFactors.map((item) => `${item.factor}:${item.weight.toFixed(2)}`).join(' | ')}
         </Text>
       </View>
       <View style={styles.summaryRow}>

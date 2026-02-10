@@ -151,6 +151,10 @@ async fn build_router(
         .route("/me", get(control_plane::handlers::bots::get_current_user))
         .route("/bots", get(control_plane::handlers::bots::list_bots))
         .route(
+            "/bots/name-availability",
+            get(control_plane::handlers::bots::check_bot_name_availability),
+        )
+        .route(
             "/bots",
             post(control_plane::handlers::bots::create_bot).layer(
                 axum::middleware::from_fn_with_state(
@@ -187,6 +191,10 @@ async fn build_router(
         .route(
             "/account/settings",
             get(control_plane::handlers::settings::get_user_settings),
+        )
+        .route(
+            "/account/display-name-availability",
+            get(control_plane::handlers::settings::check_display_name_availability),
         )
         .route(
             "/account/settings",
