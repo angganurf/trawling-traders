@@ -15,6 +15,7 @@ interface OnboardingSectionProps {
 
 interface Step {
   label: string;
+  description: string;
   emoji: string;
   done: boolean;
   onPress: () => void;
@@ -26,18 +27,21 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
   const steps: Step[] = [
     {
       label: 'Create your account',
+      description: 'Set your identity and profile details before launching.',
       emoji: '🎣',
       done: true,
       onPress: () => navigation.navigate('Profile'),
     },
     {
       label: 'Create your first boat',
+      description: 'Pick your vessel setup and captain personality.',
       emoji: '🛥️',
       done: hasBots,
       onPress: () => navigation.navigate('CreateBot'),
     },
     {
       label: 'Fuel your fleet',
+      description: 'Add credits so your boats can operate continuously.',
       emoji: '⛽',
       done: hasFundedBot,
       onPress: () => navigation.navigate('Deposit'),
@@ -68,11 +72,16 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
               activeOpacity={0.6}
             >
               <Text style={styles.stepEmoji}>{step.emoji}</Text>
-              <Text
-                style={[styles.stepLabel, step.done && styles.stepLabelDone]}
-              >
-                {step.label}
-              </Text>
+              <View style={styles.stepCopy}>
+                <Text
+                  style={[styles.stepLabel, step.done && styles.stepLabelDone]}
+                >
+                  {step.label}
+                </Text>
+                <Text style={[styles.stepDescription, step.done && styles.stepDescriptionDone]}>
+                  {step.description}
+                </Text>
+              </View>
               <Ionicons
                 name="chevron-forward"
                 size={16}
@@ -132,24 +141,37 @@ const styles = StyleSheet.create({
   },
   stepRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+    alignItems: 'flex-start',
+    paddingVertical: 14,
   },
   stepEmoji: {
     fontSize: 20,
     marginRight: 10,
+    marginTop: 2,
+  },
+  stepCopy: {
+    flex: 1,
   },
   stepLabel: {
-    flex: 1,
     fontSize: 14,
     color: lightTheme.colors.text,
     fontWeight: '500',
+  },
+  stepDescription: {
+    marginTop: 2,
+    fontSize: 12,
+    color: colors.wave[600],
+    lineHeight: 17,
   },
   stepLabelDone: {
     textDecorationLine: 'line-through',
     color: colors.wave[400],
   },
+  stepDescriptionDone: {
+    color: colors.wave[400],
+  },
   chevron: {
     marginLeft: 8,
+    marginTop: 4,
   },
 });
