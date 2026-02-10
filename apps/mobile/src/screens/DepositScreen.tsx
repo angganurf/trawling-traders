@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useCedrosLogin } from '@cedros/login-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type {
   DepositConfigResponse,
   CreditBalanceResponse,
@@ -19,6 +20,7 @@ import type {
 import { DepositForm, CreditBalance, CreditHistory } from '@cedros/login-react-native';
 import { lightTheme } from '../theme';
 const FILL_UP_BG = require('../../../../assets/branding/tt-fill-up.png');
+const HEADER_HEIGHT = 56;
 
 /**
  * Fetches JSON from a cedros-login endpoint with bearer auth.
@@ -37,6 +39,8 @@ async function cedrosFetch<T>(serverUrl: string, path: string, token: string | n
 
 export function DepositScreen() {
   const { config: cedrosConfig, getAccessToken } = useCedrosLogin();
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
 
   const [depositConfig, setDepositConfig] = useState<DepositConfigResponse | null>(null);
   const [balance, setBalance] = useState<CreditBalanceResponse | null>(null);
@@ -112,7 +116,7 @@ export function DepositScreen() {
   return (
     <ImageBackground source={FILL_UP_BG} style={styles.bgFill} resizeMode="cover">
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: contentTopPadding }]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}

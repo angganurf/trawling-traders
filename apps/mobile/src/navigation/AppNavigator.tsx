@@ -145,6 +145,7 @@ export function AppNavigator() {
             <AppHeader
               title={typeof options.title === 'string' ? options.title : route.name}
               showBack={!!back}
+              transparent={Boolean(options.headerTransparent)}
               onBack={back ? navigation.goBack : undefined}
               onMenu={back ? undefined : () => navigation.dispatch(DrawerActions.toggleDrawer())}
               onProfile={() =>
@@ -192,7 +193,11 @@ export function AppNavigator() {
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
-        <Stack.Screen name="Deposit" component={DepositScreen} options={{ title: 'Fuel your fleet' }} />
+        <Stack.Screen
+          name="Deposit"
+          component={DepositScreen}
+          options={{ title: 'Fuel your fleet', headerTransparent: true }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
