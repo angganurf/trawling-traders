@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   ScrollView,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -22,9 +24,11 @@ import type {
   TradingMode,
 } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
-import { OceanBackground } from '../components/OceanBackground';
 import { CreateBotWizardSteps } from './create-bot/CreateBotWizardSteps';
 import { createBotWizardStyles as styles } from './create-bot/CreateBotWizard.styles';
+
+const SKY_LIGHT = require('../../../../assets/branding/tt-sky-light.png');
+const SKY_DARK = require('../../../../assets/branding/tt-sky-dark.png');
 
 type CreateBotScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateBot'>;
 type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -209,6 +213,8 @@ function parseNumberField(value: string, label: string, min: number, max: number
 
 export function CreateBotScreen() {
   const navigation = useNavigation<CreateBotScreenNavigationProp>();
+  const colorScheme = useColorScheme();
+  const skyBg = colorScheme === 'dark' ? SKY_DARK : SKY_LIGHT;
 
   const [step, setStep] = useState<WizardStep>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -441,8 +447,8 @@ export function CreateBotScreen() {
   };
 
   return (
-    <OceanBackground>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ImageBackground source={skyBg} style={styles.container} resizeMode="cover">
+      <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.headerSubtitle}>Guided setup for a safer, clearer launch.</Text>
         <View style={styles.progressRow}>
           {STEP_META.map((_, index) => (
@@ -531,6 +537,6 @@ export function CreateBotScreen() {
           </View>
         </View>
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
