@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerItemList } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { lightTheme } from '../theme';
 import { AppHeader } from '../components/AppHeader';
@@ -47,7 +47,6 @@ export type MainDrawerParamList = {
   Docs: undefined;
   Reports: undefined;
   Chat: undefined;
-  Deposit: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,6 +73,7 @@ function MainTabs() {
 function MainDrawer() {
   return (
     <Drawer.Navigator
+      drawerContent={(props) => <MainDrawerContent {...props} />}
       screenOptions={({ navigation }) => ({
         headerShown: true,
         drawerActiveTintColor: lightTheme.colors.primary[700],
@@ -104,8 +104,23 @@ function MainDrawer() {
       <Drawer.Screen name="Docs" component={DocsScreen} />
       <Drawer.Screen name="Reports" component={ReportsScreen} />
       <Drawer.Screen name="Chat" component={ChatScreen} />
-      <Drawer.Screen name="Deposit" component={DepositScreen} />
     </Drawer.Navigator>
+  );
+}
+
+function MainDrawerContent(props: any) {
+  const nav = props.navigation;
+  return (
+    <DrawerContentScrollView {...props}>
+      <DrawerItemList {...props} />
+      <DrawerItem
+        label="Fuel your fleet"
+        onPress={() => {
+          nav.closeDrawer();
+          nav.getParent()?.navigate('Deposit');
+        }}
+      />
+    </DrawerContentScrollView>
   );
 }
 
