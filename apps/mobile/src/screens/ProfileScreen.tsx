@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -12,11 +13,13 @@ import {
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCedrosLogin } from '@cedros/login-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BillingSummary, UserSettings } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
+const PROFILE_BG = require('../../../../assets/branding/tt-head.png');
+const HEADER_HEIGHT = 56;
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -29,6 +32,8 @@ function formatPlanName(planCode: string): string {
 
 export function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
   const { logout } = useCedrosLogin();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [billing, setBilling] = useState<BillingSummary | null>(null);
@@ -99,18 +104,18 @@ export function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <OceanBackground>
+      <ImageBackground source={PROFILE_BG} style={styles.bgFill} resizeMode="cover">
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={lightTheme.colors.primary[700]} />
         </View>
-      </OceanBackground>
+      </ImageBackground>
     );
   }
 
   return (
-    <OceanBackground>
+    <ImageBackground source={PROFILE_BG} style={styles.bgFill} resizeMode="cover">
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: contentTopPadding }]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -184,11 +189,14 @@ export function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     paddingBottom: 28,
