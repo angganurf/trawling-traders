@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -192,6 +192,13 @@ const LLM_MODELS: Record<LlmProvider, { value: LlmModel; label: string }[]> = {
   openrouter: [{ value: 'auto', label: 'Auto (Best Available)' }],
 };
 
+function generateFishingName(): string {
+  const adjective = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
+  const water = NAME_WATERS[Math.floor(Math.random() * NAME_WATERS.length)];
+  const boat = NAME_BOATS[Math.floor(Math.random() * NAME_BOATS.length)];
+  return `${adjective}-${water}-${boat}`;
+}
+
 function parseNumberField(value: string, label: string, min: number, max: number): { value: number; error?: string } {
   const trimmed = value.trim();
   const parsed = Number.parseInt(trimmed, 10);
@@ -211,7 +218,8 @@ export function CreateBotScreen() {
   const [nameAvailability, setNameAvailability] = useState<NameAvailability | null>(null);
   const [nameCheckLoading, setNameCheckLoading] = useState(false);
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState(generateFishingName);
+  const userEditedName = useRef(false);
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
   const [algorithmFactors, setAlgorithmFactors] = useState<AlgorithmFactor[]>([
     { factor: 'price_momentum', weight: 0.4 },
@@ -253,50 +261,10 @@ export function CreateBotScreen() {
 
   const modelsForProvider = useMemo(() => LLM_MODELS[llmProvider], [llmProvider]);
 
-  const generateFishingName = () => {
-    const adjective = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
-    const water = NAME_WATERS[Math.floor(Math.random() * NAME_WATERS.length)];
-    const boat = NAME_BOATS[Math.floor(Math.random() * NAME_BOATS.length)];
-    return `${adjective}-${water}-${boat}`;
-  };
+  // generateFishingName is defined at module scope (above component)
 
-  useEffect(() => {
-    let cancelled = false;
-    if (name.trim().length > 0) {
-      return;
-    }
-    const generateDefault = async () => {
-      try {
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          const candidate = generateFishingName();
-          const response = await api.bot.checkNameAvailability(candidate);
-          if (cancelled) return;
-
-          if (response.available) {
-            setName(response.normalizedName);
-            setNameAvailability(response);
-            return;
-          }
-
-          if (response.suggestedName) {
-            setName(response.suggestedName);
-            setNameAvailability(response);
-            return;
-          }
-        }
-        const fallback = generateFishingName();
-        setName(fallback);
-      } catch {
-        if (!cancelled) {
-          setName(generateFishingName());
-        }
-      }
-    };
-    generateDefault();
-    return () => {
-      cancelled = true;
-    };
-  }, [name]);
+  // The debounced name-check effect (below) handles initial validation.
+  // No separate generation effect needed — name is seeded via useState init.
 
   useEffect(() => {
     let cancelled = false;
@@ -340,11 +308,16 @@ export function CreateBotScreen() {
       return;
     }
     setNameCheckLoading(true);
+    const delay = userEditedName.current ? 250 : 0;
     const timeout = setTimeout(async () => {
       try {
         const response = await api.bot.checkNameAvailability(name.trim());
-        if (!cancelled) {
-          setNameAvailability(response);
+        if (cancelled) return;
+        setNameAvailability(response);
+        // Auto-regenerate on collision only for auto-generated names
+        if (!response.available && !userEditedName.current) {
+          const next = response.suggestedName ?? generateFishingName();
+          setName(next);
         }
       } catch {
         if (!cancelled) {
@@ -355,7 +328,7 @@ export function CreateBotScreen() {
           setNameCheckLoading(false);
         }
       }
-    }, 250);
+    }, delay);
     return () => {
       cancelled = true;
       clearTimeout(timeout);
@@ -492,7 +465,7 @@ export function CreateBotScreen() {
           <CreateBotWizardSteps
             step={step}
             name={name}
-            setName={setName}
+            setName={(v: string) => { userEditedName.current = true; setName(v); }}
             nameAvailability={nameAvailability}
             nameCheckLoading={nameCheckLoading}
             assetChoices={ASSET_CHOICES}
