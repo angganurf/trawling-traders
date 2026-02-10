@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   View,
@@ -34,7 +34,7 @@ type AuthScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'A
 export function AuthScreen() {
   const navigation = useNavigation<AuthScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, isLoading: authLoading, user } = useCedrosLogin();
+  const { isAuthenticated, isLoading: authLoading } = useCedrosLogin();
   const [mode, setMode] = useState<'login' | 'register'>('login');
 
   // Animation values
@@ -46,36 +46,40 @@ export function AuthScreen() {
   // Track if navigation is in progress to prevent race condition
   const isNavigatingRef = useRef(false);
 
-  // Navigate when authenticated, checking subscription status first
-  useEffect(() => {
-    if (isAuthenticated && user && !isNavigatingRef.current) {
-      isNavigatingRef.current = true;
-
-      // Check subscription status before navigating
-      api.user.getCurrentUser()
-        .then((userData) => {
-          const subscription = userData.subscription;
-          const isActive = subscription?.status === 'active';
-
-          if (isActive) {
-            navigation.navigate('Main');
-          } else {
-            // No active subscription - go to subscribe screen
-            navigation.navigate('Subscribe');
-          }
-        })
-        .catch((error) => {
-          if (__DEV__) {
-            console.error('Failed to check subscription status:', error);
-          }
-          // On error, default to Main (subscription middleware will handle)
-          navigation.navigate('Main');
-        })
-        .finally(() => {
-          isNavigatingRef.current = false;
-        });
+  const routeAfterAuth = useCallback(() => {
+    if (isNavigatingRef.current) {
+      return;
     }
-  }, [isAuthenticated, user, navigation]);
+    isNavigatingRef.current = true;
+
+    api.user
+      .getCurrentUser()
+      .then((userData) => {
+        const subscription = userData.subscription;
+        const isActive = subscription?.status === 'active';
+        if (isActive) {
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        } else {
+          navigation.reset({ index: 0, routes: [{ name: 'Subscribe' }] });
+        }
+      })
+      .catch((error) => {
+        if (__DEV__) {
+          console.error('Failed to check subscription status:', error);
+        }
+        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      })
+      .finally(() => {
+        isNavigatingRef.current = false;
+      });
+  }, [navigation]);
+
+  // Navigate when authenticated, even if user profile hydration lags.
+  useEffect(() => {
+    if (isAuthenticated) {
+      routeAfterAuth();
+    }
+  }, [isAuthenticated, routeAfterAuth]);
 
   useEffect(() => {
     // Start entrance animations
@@ -200,6 +204,7 @@ export function AuthScreen() {
                   if (__DEV__) {
                     console.log('Email login success');
                   }
+                  routeAfterAuth();
                 }}
                 onRegisterPress={() => setMode('register')}
               />
@@ -209,6 +214,7 @@ export function AuthScreen() {
                   if (__DEV__) {
                     console.log('Registration success');
                   }
+                  routeAfterAuth();
                 }}
                 onLoginPress={() => setMode('login')}
               />
@@ -232,6 +238,7 @@ export function AuthScreen() {
                 if (__DEV__) {
                   console.log('Google login success');
                 }
+                routeAfterAuth();
               }}
               onError={(error) => {
                 if (__DEV__) {
