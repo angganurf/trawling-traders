@@ -10,7 +10,7 @@ export const createBotWizardStyles = StyleSheet.create({
     paddingBottom: 44,
   },
   headerSubtitle: {
-    color: lightTheme.colors.wave[600],
+    color: '#ffffff',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 8,
@@ -27,7 +27,7 @@ export const createBotWizardStyles = StyleSheet.create({
     backgroundColor: lightTheme.colors.wave[400],
   },
   progressDotActive: {
-    backgroundColor: lightTheme.colors.wave[800],
+    backgroundColor: '#ffffff',
   },
   card: {
     backgroundColor: lightTheme.colors.surface,
