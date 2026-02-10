@@ -12,9 +12,8 @@ import type { Bot, BotEvent, MetricPoint } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { AuthExpiredError, NetworkError, ServerError } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
-import { useUser, useBotAction } from '../hooks/useBots';
+import { useBotAction } from '../hooks/useBots';
 import { lightTheme, colors, spacing } from '../theme';
-import { DashboardHeader } from './home/DashboardHeader';
 import { KpiStrip } from './home/KpiStrip';
 import { BotFleetCard } from './home/BotFleetCard';
 import { OnboardingSection } from './home/OnboardingSection';
@@ -27,7 +26,6 @@ interface OverviewStats {
 }
 
 export function HomeOverviewScreen() {
-  const { user } = useUser();
   const { performAction } = useBotAction();
 
   const [bots, setBots] = useState<Bot[]>([]);
@@ -155,8 +153,6 @@ export function HomeOverviewScreen() {
           />
         }
       >
-        <DashboardHeader user={user} bots={bots} />
-
         {error && <Text style={styles.errorText}>{error}</Text>}
 
         {hasActiveBots && (

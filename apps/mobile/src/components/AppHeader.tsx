@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { lightTheme } from '../theme';
 
@@ -20,11 +21,18 @@ export function AppHeader({
   onMenu,
   onProfile,
 }: AppHeaderProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <View
       style={{
-        height: 56,
+        paddingTop: insets.top,
         backgroundColor: lightTheme.colors.background,
+      }}
+    >
+    <View
+      style={{
+        height: 56,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -66,6 +74,7 @@ export function AppHeader({
           }}
         />
       </TouchableOpacity>
+    </View>
     </View>
   );
 }

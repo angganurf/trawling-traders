@@ -15,6 +15,7 @@ interface OnboardingSectionProps {
 
 interface Step {
   label: string;
+  emoji: string;
   done: boolean;
 }
 
@@ -22,9 +23,9 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const steps: Step[] = [
-    { label: 'Create your account', done: true },
-    { label: 'Create your first bot', done: hasBots },
-    { label: 'Fund your bot', done: hasFundedBot },
+    { label: 'Create your account', emoji: '🚢', done: true },
+    { label: 'Create your first bot', emoji: '🎣', done: hasBots },
+    { label: 'Fund your bot', emoji: '🐟', done: hasFundedBot },
   ];
 
   const done = steps.filter((s) => s.done).length;
@@ -33,7 +34,7 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Get Started</Text>
+        <Text style={styles.title}>Welcome aboard, trader!</Text>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { flex: progress }]} />
           <View style={{ flex: 1 - progress }} />
@@ -44,9 +45,7 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
 
         {steps.map((step) => (
           <View key={step.label} style={styles.stepRow}>
-            <View style={[styles.checkbox, step.done && styles.checkboxDone]}>
-              {step.done && <Text style={styles.checkmark}>✓</Text>}
-            </View>
+            <Text style={styles.stepEmoji}>{step.emoji}</Text>
             <Text
               style={[styles.stepLabel, step.done && styles.stepLabelDone]}
             >
@@ -112,24 +111,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.wave[300],
-    alignItems: 'center',
-    justifyContent: 'center',
+  stepEmoji: {
+    fontSize: 20,
     marginRight: 10,
-  },
-  checkboxDone: {
-    backgroundColor: colors.bullish[500],
-    borderColor: colors.bullish[500],
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
   },
   stepLabel: {
     fontSize: 14,
