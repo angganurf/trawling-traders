@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -30,6 +30,8 @@ import { CommunityScreen } from '../screens/CommunityScreen';
 
 const SHIP_LOCKER_BG = require('../../../../assets/branding/tt-panel.png');
 const PANEL_BUTTON_OFF = require('../../../../assets/branding/tt-panel-button-off.png');
+const PANEL_BUTTON_HOVER = require('../../../../assets/branding/tt-panel-button-hover.png');
+const PANEL_BUTTON_ON = require('../../../../assets/branding/tt-panel-button-on.png');
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -303,23 +305,29 @@ function DrawerLabelButton({
   onPress: () => void;
   active?: boolean;
 }) {
+  const getButtonSource = (pressed: boolean) => {
+    if (active) return PANEL_BUTTON_ON;
+    if (pressed) return PANEL_BUTTON_HOVER;
+    return PANEL_BUTTON_OFF;
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.drawerLabel, active ? styles.drawerLabelActive : undefined]}
+    <Pressable
+      style={styles.drawerLabel}
       onPress={onPress}
-      activeOpacity={0.8}
     >
-      <ImageBackground
-        source={PANEL_BUTTON_OFF}
-        style={styles.drawerLabelBg}
-        imageStyle={styles.drawerLabelBgImage}
-        resizeMode="cover"
-      />
-      {active ? <View style={styles.drawerActiveMarker} /> : null}
-      <Text style={[styles.drawerLabelText, active ? styles.drawerLabelTextActive : undefined]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
+      {({ pressed }) => (
+        <>
+          <ImageBackground
+            source={getButtonSource(pressed)}
+            style={styles.drawerLabelBg}
+            imageStyle={styles.drawerLabelBgImage}
+            resizeMode="cover"
+          />
+          <Text style={styles.drawerLabelText}>{label}</Text>
+        </>
+      )}
+    </Pressable>
   );
 }
 
@@ -356,11 +364,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   drawerItemsWrap: {
-    gap: 16,
+    gap: 9,
     paddingBottom: 20,
   },
   drawerLabel: {
-    marginHorizontal: 18,
+    marginHorizontal: 10,
     borderRadius: 16,
     minHeight: 72,
     paddingVertical: 14,
@@ -375,35 +383,11 @@ const styles = StyleSheet.create({
   drawerLabelBgImage: {
     borderRadius: 16,
   },
-  drawerLabelActive: {
-    shadowColor: '#0a1a2d',
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
   drawerLabelText: {
     color: '#eef6ff',
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'left',
     letterSpacing: 0.25,
-  },
-  drawerLabelTextActive: {
-    color: '#ffffff',
-  },
-  drawerActiveMarker: {
-    position: 'absolute',
-    left: 8,
-    top: '50%',
-    marginTop: -20,
-    width: 10,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#ffc53d',
-    shadowColor: '#ffca45',
-    shadowOpacity: 0.62,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
   },
 });
