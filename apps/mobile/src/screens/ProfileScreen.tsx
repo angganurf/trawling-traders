@@ -124,9 +124,6 @@ export function ProfileScreen() {
           />
         }
       >
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Read-only account overview. Edit details in Settings.</Text>
-
         {error && (
           <View style={styles.errorCard}>
             <Text style={styles.errorTitle}>Unable to load profile</Text>
@@ -206,40 +203,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: lightTheme.colors.wave[900],
-    fontFamily: lightTheme.typography.families.display,
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    color: lightTheme.colors.wave[600],
-  },
   card: {
     marginTop: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    backgroundColor: lightTheme.colors.surface,
-    padding: 14,
+    borderColor: '#9ed6ff',
+    backgroundColor: 'rgba(246, 251, 255, 0.92)',
+    padding: 16,
+    shadowColor: '#063f6c',
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: lightTheme.colors.wave[900],
-    marginBottom: 10,
+    marginBottom: 12,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   label: {
     fontSize: 13,
-    color: lightTheme.colors.wave[600],
+    color: lightTheme.colors.wave[700],
   },
   value: {
     fontSize: 14,
@@ -247,11 +238,13 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.wave[900],
   },
   primaryButton: {
-    marginTop: 10,
+    marginTop: 12,
     borderRadius: 10,
     backgroundColor: lightTheme.colors.primary[700],
     paddingVertical: 11,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: lightTheme.colors.primary[800],
   },
   primaryButtonText: {
     color: '#fff',
@@ -259,13 +252,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   secondaryButton: {
-    marginTop: 10,
+    marginTop: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: lightTheme.colors.primary[700],
+    borderColor: '#5ca8e4',
     paddingVertical: 11,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   secondaryButtonText: {
     color: lightTheme.colors.primary[700],
@@ -291,7 +284,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: lightTheme.colors.lobster[300],
-    backgroundColor: lightTheme.colors.lobster[50],
+    backgroundColor: 'rgba(255, 236, 236, 0.94)',
     padding: 12,
   },
   errorTitle: {
