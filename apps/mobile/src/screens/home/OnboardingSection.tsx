@@ -37,7 +37,7 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
       onPress: () => navigation.navigate('CreateBot'),
     },
     {
-      label: 'Fuel Your Fleet',
+      label: 'Fuel your fleet',
       emoji: '⛽',
       done: hasFundedBot,
       onPress: () => navigation.navigate('Deposit'),

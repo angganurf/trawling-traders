@@ -192,7 +192,7 @@ export function AppNavigator() {
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
-        <Stack.Screen name="Deposit" component={DepositScreen} options={{ title: 'Fuel Your Fleet' }} />
+        <Stack.Screen name="Deposit" component={DepositScreen} options={{ title: 'Fuel your fleet' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
