@@ -1,9 +1,9 @@
 import React from 'react';
-import { View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerItemList } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { lightTheme } from '../theme';
 import { AppHeader } from '../components/AppHeader';
@@ -26,6 +26,8 @@ import { DepositScreen } from '../screens/DepositScreen';
 import { ResearchScreen } from '../screens/ResearchScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
+
+const SHIP_LOCKER_BG = require('../../../../assets/branding/tt-ship-locker.png');
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -110,16 +112,70 @@ function MainDrawer() {
 
 function MainDrawerContent(props: any) {
   const nav = props.navigation;
+  const activeRoute = props.state?.routeNames?.[props.state?.index] ?? 'Home';
+  const items: { key: string; label: string; active?: boolean; onPress: () => void }[] = [
+    {
+      key: 'home',
+      label: 'Home',
+      active: activeRoute === 'Home',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('Home');
+      },
+    },
+    {
+      key: 'docs',
+      label: 'Docs',
+      active: activeRoute === 'Docs',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('Docs');
+      },
+    },
+    {
+      key: 'reports',
+      label: 'Reports',
+      active: activeRoute === 'Reports',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('Reports');
+      },
+    },
+    {
+      key: 'chat',
+      label: 'Chat',
+      active: activeRoute === 'Chat',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('Chat');
+      },
+    },
+    {
+      key: 'fuel',
+      label: 'Fuel your fleet',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.getParent()?.navigate('Deposit');
+      },
+    },
+  ];
   return (
-    <DrawerContentScrollView {...props}>
-      <DrawerItemList {...props} />
-      <DrawerItem
-        label="Fuel your fleet"
-        onPress={() => {
-          nav.closeDrawer();
-          nav.getParent()?.navigate('Deposit');
-        }}
-      />
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={styles.drawerScroll}
+    >
+      <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
+        <View style={styles.drawerItemsWrap}>
+          {items.map((item) => (
+            <DrawerLabelButton
+              key={item.key}
+              label={item.label}
+              active={item.active}
+              onPress={item.onPress}
+            />
+          ))}
+        </View>
+      </ImageBackground>
     </DrawerContentScrollView>
   );
 }
@@ -178,37 +234,79 @@ function AppStack() {
 
 function ProfileDrawerContent(props: any) {
   const nav = props.navigation;
+  const items: { key: string; label: string; onPress: () => void }[] = [
+    {
+      key: 'profile',
+      label: 'Profile',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('App', { screen: 'Profile' });
+      },
+    },
+    {
+      key: 'billing',
+      label: 'Billing',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('App', { screen: 'Billing' });
+      },
+    },
+    {
+      key: 'settings',
+      label: 'Settings',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('App', { screen: 'Settings' });
+      },
+    },
+    {
+      key: 'logout',
+      label: 'Log out',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.navigate('App', { screen: 'Auth' });
+      },
+    },
+  ];
   return (
-    <DrawerContentScrollView {...props}>
-      <DrawerItem
-        label="Profile"
-        onPress={() => {
-          nav.closeDrawer();
-          nav.navigate('App', { screen: 'Profile' });
-        }}
-      />
-      <DrawerItem
-        label="Billing"
-        onPress={() => {
-          nav.closeDrawer();
-          nav.navigate('App', { screen: 'Billing' });
-        }}
-      />
-      <DrawerItem
-        label="Settings"
-        onPress={() => {
-          nav.closeDrawer();
-          nav.navigate('App', { screen: 'Settings' });
-        }}
-      />
-      <DrawerItem
-        label="Log out"
-        onPress={() => {
-          nav.closeDrawer();
-          nav.navigate('App', { screen: 'Auth' });
-        }}
-      />
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={styles.drawerScroll}
+    >
+      <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
+        <View style={styles.drawerItemsWrap}>
+          {items.map((item) => (
+            <DrawerLabelButton
+              key={item.key}
+              label={item.label}
+              onPress={item.onPress}
+            />
+          ))}
+        </View>
+      </ImageBackground>
     </DrawerContentScrollView>
+  );
+}
+
+function DrawerLabelButton({
+  label,
+  onPress,
+  active = false,
+}: {
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.drawerLabel, active ? styles.drawerLabelActive : undefined]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={[styles.drawerLabelText, active ? styles.drawerLabelTextActive : undefined]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -229,3 +327,45 @@ export function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  drawerScroll: {
+    flexGrow: 1,
+  },
+  drawerBg: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  drawerItemsWrap: {
+    gap: 16,
+    paddingTop: 34,
+  },
+  drawerLabel: {
+    borderWidth: 1,
+    borderColor: '#8b98a5',
+    borderRadius: 6,
+    backgroundColor: 'rgba(246, 244, 239, 0.9)',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    shadowColor: '#111',
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  drawerLabelActive: {
+    borderColor: '#4f6f8a',
+    backgroundColor: 'rgba(230, 240, 248, 0.92)',
+  },
+  drawerLabelText: {
+    color: '#233140',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  drawerLabelTextActive: {
+    color: '#0f3f67',
+  },
+});
