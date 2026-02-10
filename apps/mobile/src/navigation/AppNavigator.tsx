@@ -8,7 +8,7 @@ import { lightTheme } from '../theme';
 
 import { AuthScreen } from '../screens/AuthScreen';
 import { SubscribeScreen } from '../screens/SubscribeScreen';
-import { BotsListScreen } from '../screens/BotsListScreen';
+import { HomeOverviewScreen } from '../screens/HomeOverviewScreen';
 import { CreateBotScreen } from '../screens/CreateBotScreen';
 import { BotDetailScreen } from '../screens/BotDetailScreen';
 import { BotStrategyConfigScreen } from '../screens/BotStrategyConfigScreen';
@@ -62,7 +62,7 @@ function MainTabs() {
         },
       }}
     >
-      <Tab.Screen name="Bots" component={BotsListScreen} />
+      <Tab.Screen name="Bots" component={HomeOverviewScreen} />
       <Tab.Screen name="Research" component={ResearchScreen} />
       <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Tab.Screen name="Community" component={CommunityScreen} />
