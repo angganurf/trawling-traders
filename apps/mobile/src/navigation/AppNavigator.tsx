@@ -129,6 +129,22 @@ function MainDrawerContent(props: any) {
       },
     },
     {
+      key: 'deposit',
+      label: 'Deposit',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.getParent()?.navigate('Deposit');
+      },
+    },
+    {
+      key: 'withdraw',
+      label: 'Withdraw',
+      onPress: () => {
+        nav.closeDrawer();
+        nav.getParent()?.navigate('Deposit');
+      },
+    },
+    {
       key: 'docs',
       label: 'Docs',
       active: activeRoute === 'Docs',
@@ -153,14 +169,6 @@ function MainDrawerContent(props: any) {
       onPress: () => {
         nav.closeDrawer();
         nav.navigate('Chat');
-      },
-    },
-    {
-      key: 'fuel',
-      label: 'Fuel your fleet',
-      onPress: () => {
-        nav.closeDrawer();
-        nav.getParent()?.navigate('Deposit');
       },
     },
   ];
