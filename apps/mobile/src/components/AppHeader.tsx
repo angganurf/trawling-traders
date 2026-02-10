@@ -56,7 +56,6 @@ export function AppHeader({
           color: lightTheme.colors.wave[900],
           fontSize: 20,
           fontFamily: lightTheme.typography.families.display,
-          fontWeight: '700',
         }}
       >
         {title}
