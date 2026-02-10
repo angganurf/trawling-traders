@@ -25,6 +25,37 @@ pub struct BotNameQuery {
     pub name: Option<String>,
 }
 
+fn normalize_bot_name(input: &str) -> Result<String, (StatusCode, String)> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Name is required".to_string()));
+    }
+    if trimmed.len() > 100 {
+        return Err((StatusCode::BAD_REQUEST, "Name must be at most 100 characters".to_string()));
+    }
+    if !trimmed
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch.is_ascii_whitespace())
+    {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Name can only include letters, numbers, and spaces".to_string(),
+        ));
+    }
+
+    let normalized = trimmed
+        .split_whitespace()
+        .map(|segment| segment.to_ascii_lowercase())
+        .collect::<Vec<_>>()
+        .join("-");
+
+    if normalized.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Name is required".to_string()));
+    }
+
+    Ok(normalized)
+}
+
 /// GET /bots/name-availability - Check whether a bot name is available for current user.
 pub async fn check_bot_name_availability(
     State(state): State<Arc<AppState>>,
@@ -33,23 +64,14 @@ pub async fn check_bot_name_availability(
 ) -> Result<Json<NameAvailabilityResponse>, (StatusCode, String)> {
     let user_id = Uuid::parse_str(&auth.user_id)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
-    let normalized_name = query
-        .name
-        .unwrap_or_else(|| "Trawler".to_string())
-        .trim()
-        .chars()
-        .take(100)
-        .collect::<String>();
-
-    if normalized_name.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Name is required".to_string()));
-    }
+    let requested_name = query.name.unwrap_or_else(|| "Trawler".to_string());
+    let normalized_name = normalize_bot_name(&requested_name)?;
 
     let exists: bool = sqlx::query_scalar(
         "SELECT EXISTS(
             SELECT 1 FROM bots
             WHERE user_id = $1
-              AND LOWER(name) = LOWER($2)
+              AND name = $2
               AND status != 'destroying'
         )",
     )
@@ -68,12 +90,12 @@ pub async fn check_bot_name_availability(
     }
 
     for idx in 2..=999 {
-        let candidate = format!("{} {}", normalized_name, idx);
+        let candidate = format!("{}-{}", normalized_name, idx);
         let candidate_exists: bool = sqlx::query_scalar(
             "SELECT EXISTS(
                 SELECT 1 FROM bots
                 WHERE user_id = $1
-                  AND LOWER(name) = LOWER($2)
+                  AND name = $2
                   AND status != 'destroying'
             )",
         )
@@ -252,6 +274,7 @@ pub async fn create_bot(
     if let Err(errors) = req.validate() {
         return Err((StatusCode::BAD_REQUEST, errors.to_string()));
     }
+    let normalized_name = normalize_bot_name(&req.name)?;
 
     let user_id = Uuid::parse_str(&auth.user_id)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
@@ -335,7 +358,7 @@ pub async fn create_bot(
     .bind(config_id)
     .bind(Uuid::nil())
     .bind(1)
-    .bind(&req.name)
+    .bind(&normalized_name)
     .bind(resolved_persona)
     .bind(req.asset_focus)
     .bind(custom_assets_json)
@@ -373,7 +396,7 @@ pub async fn create_bot(
     )
     .bind(bot_id)
     .bind(user_id)
-    .bind(&req.name)
+    .bind(&normalized_name)
     .bind(resolved_persona)
     .bind(config_id)
     .bind(&bootstrap_token)
@@ -448,7 +471,7 @@ pub async fn create_bot(
     tokio::spawn(async move {
         spawn_bot_droplet(
             bot_id,
-            req.name.clone(),
+            normalized_name.clone(),
             pool,
             secrets,
             metrics,

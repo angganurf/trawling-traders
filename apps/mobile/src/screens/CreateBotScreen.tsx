@@ -239,7 +239,22 @@ function generateFishingName(): string {
   const adjective = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
   const water = NAME_WATERS[Math.floor(Math.random() * NAME_WATERS.length)];
   const boat = NAME_BOATS[Math.floor(Math.random() * NAME_BOATS.length)];
-  return `${adjective}-${water}-${boat}`;
+  return [adjective, water, boat]
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function sanitizeBoatNameInput(value: string): string {
+  const lettersNumbersSpacesOnly = value.replace(/[^a-zA-Z0-9 ]+/g, '');
+  return lettersNumbersSpacesOnly.replace(/\s+/g, ' ').trimStart();
+}
+
+function displayNameFromNormalized(value: string): string {
+  return value
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function parseNumberField(value: string, label: string, min: number, max: number): { value: number; error?: string } {
@@ -380,7 +395,7 @@ export function CreateBotScreen() {
         // Auto-regenerate on collision only for auto-generated names
         if (!response.available && !userEditedName.current) {
           const next = response.suggestedName ?? generateFishingName();
-          setName(next);
+          setName(displayNameFromNormalized(next));
         }
       } catch {
         if (!cancelled) {
@@ -526,7 +541,7 @@ export function CreateBotScreen() {
           <CreateBotWizardSteps
             step={step}
             name={name}
-            setName={(v: string) => { userEditedName.current = true; setName(v); }}
+            setName={(v: string) => { userEditedName.current = true; setName(sanitizeBoatNameInput(v)); }}
             nameAvailability={nameAvailability}
             nameCheckLoading={nameCheckLoading}
             assistantStyle={assistantStyle}

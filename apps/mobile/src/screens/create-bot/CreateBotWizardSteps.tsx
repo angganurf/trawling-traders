@@ -149,6 +149,14 @@ function imageForCaptainKey(imageKey: string) {
   return CAPTAIN_IMAGES[imageKey as keyof typeof CAPTAIN_IMAGES] ?? CAPTAIN_IMAGES.trader;
 }
 
+function displayBoatName(value: string): string {
+  return value
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const {
     step,
@@ -256,7 +264,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. bright-atlantic-trawler"
+          placeholder="e.g. Bright Atlantic Trawler"
           placeholderTextColor={lightTheme.colors.wave[400]}
         />
         {nameCheckLoading ? (
@@ -268,9 +276,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             <View style={styles.nameUnavailableRow}>
               <Text style={styles.inlineError}>Name already used.</Text>
               {nameAvailability.suggestedName ? (
-                <TouchableOpacity onPress={() => setName(nameAvailability.suggestedName || name)}>
+                <TouchableOpacity onPress={() => setName(displayBoatName(nameAvailability.suggestedName || name))}>
                   <Text style={styles.useSuggestionText}>
-                    Use "{nameAvailability.suggestedName}"
+                    Use "{displayBoatName(nameAvailability.suggestedName)}"
                   </Text>
                 </TouchableOpacity>
               ) : null}
