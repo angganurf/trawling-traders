@@ -282,8 +282,23 @@ export const createBotWizardStyles = StyleSheet.create({
   },
   captainImage: {
     width: '100%',
-    height: 320,
-    transform: [{ translateY: 8 }],
+    height: 330,
+    transform: [{ translateY: 24 }],
+  },
+  captainInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  captainInfoCopy: {
+    flex: 1,
+  },
+  captainArrowButton: {
+    width: 28,
+    height: 28,
+    marginTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   captainName: {
     color: lightTheme.colors.wave[900],

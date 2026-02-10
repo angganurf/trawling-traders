@@ -380,6 +380,17 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
         setAssistantStyle(selectedOption.assistantStyle);
       }
     };
+    const activeCaptainIndex = Math.max(
+      0,
+      assistantOptions.findIndex((option) => option.assistantStyle === assistantStyle)
+    );
+    const selectCaptainAt = (index: number) => {
+      const bounded = Math.max(0, Math.min(index, assistantOptions.length - 1));
+      const selectedOption = assistantOptions[bounded];
+      if (selectedOption) {
+        setAssistantStyle(selectedOption.assistantStyle);
+      }
+    };
 
     return (
       <View>
@@ -417,8 +428,38 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                     resizeMode="cover"
                   />
                 </View>
-                <Text style={styles.captainName}>{option.captainName}</Text>
-                <Text style={styles.captainDescription}>{option.personalityDescription}</Text>
+                <View style={styles.captainInfoRow}>
+                  <TouchableOpacity
+                    style={styles.captainArrowButton}
+                    onPress={() => selectCaptainAt(activeCaptainIndex - 1)}
+                    disabled={activeCaptainIndex === 0}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={20}
+                      color={activeCaptainIndex === 0 ? lightTheme.colors.wave[400] : lightTheme.colors.wave[700]}
+                    />
+                  </TouchableOpacity>
+                  <View style={styles.captainInfoCopy}>
+                    <Text style={styles.captainName}>{option.captainName}</Text>
+                    <Text style={styles.captainDescription}>{option.personalityDescription}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.captainArrowButton}
+                    onPress={() => selectCaptainAt(activeCaptainIndex + 1)}
+                    disabled={activeCaptainIndex === assistantOptions.length - 1}
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={
+                        activeCaptainIndex === assistantOptions.length - 1
+                          ? lightTheme.colors.wave[400]
+                          : lightTheme.colors.wave[700]
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
