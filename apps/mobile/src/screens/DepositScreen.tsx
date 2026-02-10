@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,8 +17,8 @@ import type {
   DepositTier,
 } from '@cedros/login-react-native';
 import { DepositForm, CreditBalance, CreditHistory } from '@cedros/login-react-native';
-import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
+const FILL_UP_BG = require('../../../../assets/branding/tt-fill-up.png');
 
 /**
  * Fetches JSON from a cedros-login endpoint with bearer auth.
@@ -100,16 +101,16 @@ export function DepositScreen() {
 
   if (isLoading) {
     return (
-      <OceanBackground>
+      <ImageBackground source={FILL_UP_BG} style={styles.bgFill} resizeMode="cover">
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={lightTheme.colors.primary[700]} />
         </View>
-      </OceanBackground>
+      </ImageBackground>
     );
   }
 
   return (
-    <OceanBackground>
+    <ImageBackground source={FILL_UP_BG} style={styles.bgFill} resizeMode="cover">
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -151,11 +152,14 @@ export function DepositScreen() {
           </View>
         )}
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     paddingBottom: 28,
