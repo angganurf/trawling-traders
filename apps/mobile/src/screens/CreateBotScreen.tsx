@@ -199,6 +199,42 @@ const LLM_MODELS: Record<LlmProvider, { value: LlmModel; label: string }[]> = {
   openrouter: [{ value: 'auto', label: 'Auto (Best Available)' }],
 };
 
+const FALLBACK_ASSISTANT_OPTIONS: AIAssistantOption[] = [
+  {
+    id: 'fallback-beginner',
+    assistantStyle: 'beginner',
+    captainName: 'Captain Current',
+    personalityDescription:
+      'Calm and practical. Explains decisions clearly, protects downside first, and keeps the crew focused on disciplined entries.',
+    imageKey: 'trader',
+    imagePath: '/assets/branding/tt-trader-captain.png',
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    id: 'fallback-tweaker',
+    assistantStyle: 'tweaker',
+    captainName: 'Captain Helm',
+    personalityDescription:
+      'Hands-on and tactical. Watches momentum shifts closely, adjusts quickly, and gives direct, execution-focused guidance.',
+    imageKey: 'sea',
+    imagePath: '/assets/branding/tt-sea-captain.png',
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    id: 'fallback-quant-lite',
+    assistantStyle: 'quant-lite',
+    captainName: 'Rocky Reef',
+    personalityDescription:
+      'Signal-driven and analytical. Tracks structure, validates with data, and avoids emotional overtrading during turbulence.',
+    imageKey: 'rocky',
+    imagePath: '/assets/branding/tt-rocky-captain.png',
+    sortOrder: 3,
+    isActive: true,
+  },
+];
+
 function generateFishingName(): string {
   const adjective = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
   const water = NAME_WATERS[Math.floor(Math.random() * NAME_WATERS.length)];
@@ -284,29 +320,33 @@ export function CreateBotScreen() {
     const loadSetupOptions = async () => {
       setAssetsLoading(true);
       setAssistantOptionsLoading(true);
-      try {
-        const [assets, options] = await Promise.all([
-          api.bot.listTradeableAssets(),
-          api.bot.listAssistantOptions(),
-        ]);
-        if (!cancelled) {
-          setTradeableAssets(assets);
-          setAssistantOptions(options);
-          if (options.length > 0) {
-            setAssistantStyle(options[0].assistantStyle);
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          setTradeableAssets([]);
-          setAssistantOptions([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setAssetsLoading(false);
-          setAssistantOptionsLoading(false);
-        }
+      const [assetsResult, assistantOptionsResult] = await Promise.allSettled([
+        api.bot.listTradeableAssets(),
+        api.bot.listAssistantOptions(),
+      ]);
+
+      if (cancelled) {
+        return;
       }
+
+      if (assetsResult.status === 'fulfilled') {
+        setTradeableAssets(assetsResult.value);
+      } else {
+        setTradeableAssets([]);
+      }
+      setAssetsLoading(false);
+
+      if (
+        assistantOptionsResult.status === 'fulfilled' &&
+        assistantOptionsResult.value.length > 0
+      ) {
+        setAssistantOptions(assistantOptionsResult.value);
+        setAssistantStyle(assistantOptionsResult.value[0].assistantStyle);
+      } else {
+        setAssistantOptions(FALLBACK_ASSISTANT_OPTIONS);
+        setAssistantStyle(FALLBACK_ASSISTANT_OPTIONS[0].assistantStyle);
+      }
+      setAssistantOptionsLoading(false);
     };
 
     loadSetupOptions();
