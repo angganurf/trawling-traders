@@ -29,6 +29,7 @@ import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
 
 const SHIP_LOCKER_BG = require('../../../../assets/branding/tt-panel.png');
+const PANEL_BUTTON_OFF = require('../../../../assets/branding/tt-panel-button-off.png');
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -308,6 +309,7 @@ function DrawerLabelButton({
       onPress={onPress}
       activeOpacity={0.8}
     >
+      <ImageBackground source={PANEL_BUTTON_OFF} style={styles.drawerLabelBg} resizeMode="stretch" />
       {active ? <View style={styles.drawerActiveMarker} /> : null}
       <Text style={[styles.drawerLabelText, active ? styles.drawerLabelTextActive : undefined]}>
         {label}
@@ -354,23 +356,21 @@ const styles = StyleSheet.create({
   },
   drawerLabel: {
     marginHorizontal: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(143, 173, 203, 0.5)',
     borderRadius: 16,
-    backgroundColor: 'rgba(60, 90, 126, 0.86)',
     paddingVertical: 20,
     paddingHorizontal: 24,
-    shadowColor: '#0a1a2d',
-    shadowOpacity: 0.42,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
     position: 'relative',
     overflow: 'hidden',
   },
+  drawerLabelBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
   drawerLabelActive: {
-    borderColor: 'rgba(218, 236, 255, 0.74)',
-    backgroundColor: 'rgba(71, 106, 146, 0.92)',
+    shadowColor: '#0a1a2d',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   drawerLabelText: {
     color: '#eef6ff',
