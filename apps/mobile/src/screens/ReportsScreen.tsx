@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   Modal,
   ScrollView,
   StyleSheet,
@@ -11,8 +12,8 @@ import {
 } from 'react-native';
 import type { EmailCsvReportRequest } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
-import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
+const CLIP_BOARD_BG = require('../../../../assets/branding/tt-clip-board.png');
 
 const REPORT_KINDS: Array<{ label: string; value: EmailCsvReportRequest['reportKind']; description: string }> = [
   { label: 'Tax Report', value: 'tax', description: 'Trade opens/closes formatted for tax workflows.' },
@@ -65,7 +66,7 @@ export function ReportsScreen() {
   const closePicker = () => setPicker(null);
 
   return (
-    <OceanBackground>
+    <ImageBackground source={CLIP_BOARD_BG} style={styles.bgFill} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Reports</Text>
         <Text style={styles.subtitle}>Request a CSV report by email for taxes or record-keeping.</Text>
@@ -123,11 +124,14 @@ export function ReportsScreen() {
           </TouchableOpacity>
         </Modal>
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     paddingBottom: 28,
