@@ -7,19 +7,18 @@ export const createBotWizardStyles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 8,
     paddingBottom: 44,
   },
   headerSubtitle: {
     color: lightTheme.colors.wave[600],
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   progressRow: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   progressDot: {
     flex: 1,
