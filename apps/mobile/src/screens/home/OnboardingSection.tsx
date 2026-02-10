@@ -26,13 +26,13 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
   const steps: Step[] = [
     {
       label: 'Create your account',
-      emoji: '⚓',
+      emoji: '🎣',
       done: true,
       onPress: () => navigation.navigate('Profile'),
     },
     {
       label: 'Create your first boat',
-      emoji: '🚤',
+      emoji: '🛥️',
       done: hasBots,
       onPress: () => navigation.navigate('CreateBot'),
     },
