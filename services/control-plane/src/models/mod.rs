@@ -19,6 +19,7 @@ pub enum Persona {
 
 #[derive(Debug, Clone, Copy, PartialEq, sqlx::Type, Serialize, Deserialize)]
 #[sqlx(type_name = "algorithm_mode", rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub enum AlgorithmMode {
     Trend,
     MeanReversion,
@@ -27,10 +28,12 @@ pub enum AlgorithmMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, sqlx::Type, Serialize, Deserialize)]
 #[sqlx(type_name = "asset_focus", rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub enum AssetFocus {
     Majors,
     TokenizedEquities,
     TokenizedMetals,
+    #[serde(rename = "finance-2")]
     Finance2,
     Memes,
     Custom,
