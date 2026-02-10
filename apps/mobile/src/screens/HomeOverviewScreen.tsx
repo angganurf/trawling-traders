@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useColorScheme,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,9 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Bot, BotEvent, MetricPoint } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { AuthExpiredError, NetworkError, ServerError } from '@trawling-traders/api-client';
-import { OceanBackground } from '../components/OceanBackground';
 
-const NO_BOTS_BG = require('../../../../assets/branding/no-bots-background.png');
+const HOME_BG_LIGHT = require('../../../../assets/branding/tt-home-light.png');
+const HOME_BG_DARK = require('../../../../assets/branding/tt-home-dark.png');
 import { useBotAction } from '../hooks/useBots';
 import { lightTheme, colors, spacing } from '../theme';
 import { KpiStrip } from './home/KpiStrip';
@@ -33,6 +34,8 @@ const HEADER_HEIGHT = 56;
 
 export function HomeOverviewScreen() {
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const homeBackground = colorScheme === 'dark' ? HOME_BG_DARK : HOME_BG_LIGHT;
   const { performAction } = useBotAction();
   const contentTopPadding = insets.top + HEADER_HEIGHT;
 
@@ -140,17 +143,17 @@ export function HomeOverviewScreen() {
 
   if (!botsLoaded) {
     return (
-      <OceanBackground>
+      <ImageBackground source={homeBackground} style={styles.bgFill} resizeMode="cover">
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary[700]} />
         </View>
-      </OceanBackground>
+      </ImageBackground>
     );
   }
 
   if (!hasActiveBots) {
     return (
-      <ImageBackground source={NO_BOTS_BG} style={styles.bgFill} resizeMode="cover">
+      <ImageBackground source={homeBackground} style={styles.bgFill} resizeMode="cover">
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: contentTopPadding + spacing.md }]}
           showsVerticalScrollIndicator={false}
@@ -166,7 +169,7 @@ export function HomeOverviewScreen() {
   }
 
   return (
-    <OceanBackground>
+    <ImageBackground source={homeBackground} style={styles.bgFill} resizeMode="cover">
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: contentTopPadding + spacing.md }]}
         showsVerticalScrollIndicator={false}
@@ -200,7 +203,7 @@ export function HomeOverviewScreen() {
 
         <AlertsPanel events={allEvents} />
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
