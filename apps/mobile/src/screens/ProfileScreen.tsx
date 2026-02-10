@@ -14,7 +14,7 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCedrosLogin } from '@cedros/login-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { BillingSummary, UserSettings } from '@trawling-traders/types';
+import type { UserSettings } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { lightTheme } from '../theme';
@@ -23,20 +23,12 @@ const HEADER_HEIGHT = 56;
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
-function formatPlanName(planCode: string): string {
-  const normalized = planCode.toLowerCase();
-  if (normalized.includes('enterprise')) return 'Enterprise';
-  if (normalized.includes('pro')) return 'Trader Pro';
-  return 'Free';
-}
-
 export function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
   const { logout } = useCedrosLogin();
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [billing, setBilling] = useState<BillingSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -45,16 +37,11 @@ export function ProfileScreen() {
   const loadProfile = useCallback(async () => {
     setError(null);
     try {
-      const [settingsResponse, billingResponse] = await Promise.all([
-        api.user.getSettings(),
-        api.user.getBillingSummary(),
-      ]);
+      const settingsResponse = await api.user.getSettings();
       setSettings(settingsResponse);
-      setBilling(billingResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load profile');
       setSettings(null);
-      setBilling(null);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -152,26 +139,6 @@ export function ProfileScreen() {
 
           <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Settings')}>
             <Text style={styles.primaryButtonText}>Edit Settings</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Subscription Snapshot</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Plan</Text>
-            <Text style={styles.value}>{formatPlanName(billing?.planCode || 'free')}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Status</Text>
-            <Text style={styles.value}>{(billing?.status || 'inactive').toUpperCase()}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Bots Used</Text>
-            <Text style={styles.value}>{billing?.botCount ?? 0} / {billing?.maxBots ?? 1}</Text>
-          </View>
-
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Billing')}>
-            <Text style={styles.secondaryButtonText}>Open Billing</Text>
           </TouchableOpacity>
         </View>
 
