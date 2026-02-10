@@ -277,8 +277,10 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             onValueChange={(live) => setTradingMode(live ? 'live' : 'paper')}
             trackColor={{
               false: lightTheme.colors.wave[300],
-              true: lightTheme.colors.lobster[400],
+              true: lightTheme.colors.primary[500],
             }}
+            thumbColor={tradingMode === 'live' ? lightTheme.colors.primary[50] : '#ffffff'}
+            ios_backgroundColor={lightTheme.colors.wave[300]}
           />
         </View>
         <View
