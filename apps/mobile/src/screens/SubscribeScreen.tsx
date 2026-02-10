@@ -7,6 +7,7 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 import { SubscribeButton } from '@cedros/pay-react-native';
 import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
+import { usePayments } from '../context/PaymentsContext';
 
 const LOB_AVATAR = require('../../assets/lob-avatar.png');
 
@@ -15,6 +16,7 @@ type SubscribeScreenNavigationProp = NativeStackNavigationProp<RootStackParamLis
 export function SubscribeScreen() {
   const navigation = useNavigation<SubscribeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+  const { isPaymentsEnabled, paymentConfigError } = usePayments();
 
   const handleSubscribeSuccess = (sessionId: string) => {
     if (__DEV__) {
@@ -70,15 +72,24 @@ export function SubscribeScreen() {
             </View>
 
             <View style={styles.buttonContainer}>
-              <SubscribeButton
-                resource="trader-pro-monthly"
-                interval="monthly"
-                label="Subscribe with Stripe"
-                onSuccess={handleSubscribeSuccess}
-                onError={handleSubscribeError}
-                style={styles.subscribeButton}
-                textStyle={styles.subscribeButtonText}
-              />
+              {isPaymentsEnabled ? (
+                <SubscribeButton
+                  resource="trader-pro-monthly"
+                  interval="monthly"
+                  label="Subscribe with Stripe"
+                  onSuccess={handleSubscribeSuccess}
+                  onError={handleSubscribeError}
+                  style={styles.subscribeButton}
+                  textStyle={styles.subscribeButtonText}
+                />
+              ) : (
+                <View style={styles.unavailableBox}>
+                  <Text style={styles.unavailableTitle}>Payments are temporarily unavailable.</Text>
+                  {paymentConfigError ? (
+                    <Text style={styles.unavailableMessage}>{paymentConfigError}</Text>
+                  ) : null}
+                </View>
+              )}
             </View>
           </View>
 
@@ -201,6 +212,25 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 8,
+  },
+  unavailableBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.cardBorder,
+    backgroundColor: lightTheme.colors.wave[50],
+    padding: 14,
+  },
+  unavailableTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: lightTheme.colors.wave[900],
+    textAlign: 'center',
+  },
+  unavailableMessage: {
+    marginTop: 6,
+    fontSize: 12,
+    color: lightTheme.colors.wave[600],
+    textAlign: 'center',
   },
   subscribeButton: {
     backgroundColor: lightTheme.colors.accent,

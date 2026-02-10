@@ -9,6 +9,7 @@ const PROD_API_URL = 'https://api.trawlingtraders.com';
 // EXPO_PUBLIC_API_URL overrides the default dev/prod selection.
 // Usage: `make mobile-liveapi` or `EXPO_PUBLIC_API_URL=https://api.trawlingtraders.com npx expo start`
 const ENV_API_URL = process.env.EXPO_PUBLIC_API_URL;
+const ENV_STRIPE_PUBLIC_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
 export const API_URL = ENV_API_URL || (__DEV__ ? DEV_API_URL : PROD_API_URL);
 
@@ -20,7 +21,7 @@ export const CEDROS_CONFIG = {
   retries: 3,
 };
 
-const CEDROS_PAY_SERVER_URL = `${API_URL}/v1/pay`;
+const CEDROS_PAY_SERVER_URL = API_URL;
 
 export interface CedrosPayConfig {
   stripePublicKey: string;
@@ -64,22 +65,44 @@ export const CEDROS_PAY_FALLBACK_CONFIG: CedrosPayConfig = {
 };
 
 export async function fetchCedrosPayConfig(): Promise<CedrosPayConfig> {
-  // cedros-pay /paywall/v1/shop returns shop config including Stripe publishable key
-  const response = await fetch(`${CEDROS_PAY_SERVER_URL}/paywall/v1/shop`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Cedros pay config (HTTP ${response.status})`);
+  // Primary endpoint from cedros-pay route layout.
+  // Legacy endpoint is included as fallback for older deployments.
+  const endpoints = [
+    `${CEDROS_PAY_SERVER_URL}/paywall/v1/shop`,
+    `${CEDROS_PAY_SERVER_URL}/v1/pay/paywall/v1/shop`,
+  ];
+
+  let lastError: string | null = null;
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        lastError = `HTTP ${response.status} at ${endpoint}`;
+        continue;
+      }
+      const payload = await response.json();
+      const stripePublicKey = extractStripePublishableKey(payload);
+      if (stripePublicKey) {
+        return {
+          stripePublicKey,
+          serverUrl: CEDROS_PAY_SERVER_URL,
+          solanaCluster: 'mainnet-beta',
+        };
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
   }
 
-  const payload = await response.json();
-  const stripePublicKey = extractStripePublishableKey(payload);
-  if (!stripePublicKey) {
-    console.warn('Stripe publishable key not found in /paywall/v1/shop response');
-    return CEDROS_PAY_FALLBACK_CONFIG;
+  if (typeof ENV_STRIPE_PUBLIC_KEY === 'string' && ENV_STRIPE_PUBLIC_KEY.trim().length > 0) {
+    return {
+      stripePublicKey: ENV_STRIPE_PUBLIC_KEY.trim(),
+      serverUrl: CEDROS_PAY_SERVER_URL,
+      solanaCluster: 'mainnet-beta',
+    };
   }
 
-  return {
-    stripePublicKey,
-    serverUrl: CEDROS_PAY_SERVER_URL,
-    solanaCluster: 'mainnet-beta',
-  };
+  throw new Error(
+    `Stripe publishable key unavailable from paywall config${lastError ? ` (${lastError})` : ''}`
+  );
 }

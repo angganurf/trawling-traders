@@ -66,7 +66,7 @@ export function BillingScreen() {
   const openCheckout = () => {
     Alert.alert(
       'Manage Subscription',
-      `Open checkout/manage flow at ${API_URL}/v1/pay/paywall/v1/shop in web/admin tooling.`,
+      `Open checkout/manage flow at ${API_URL}/paywall/v1/shop in web/admin tooling.`,
       [{ text: 'OK' }]
     );
   };

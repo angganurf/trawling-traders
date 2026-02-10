@@ -10,6 +10,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { CEDROS_CONFIG, fetchCedrosPayConfig, type CedrosPayConfig } from './src/config/api';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { NetworkProvider } from './src/context/NetworkContext';
+import { PaymentsProvider } from './src/context/PaymentsContext';
 import { ApiProvider } from './src/api';
 
 SplashScreen.preventAutoHideAsync();
@@ -66,31 +67,64 @@ export default function App() {
     <ErrorBoundary>
       <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <CedrosLoginProvider config={CEDROS_CONFIG}>
-        {payConfig ? (
-          <CedrosProvider config={payConfig}>{content}</CedrosProvider>
-        ) : (
-          <SafeAreaProvider>
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-              <ActivityIndicator size="large" />
-              {configError ? (
-                <>
-                  <Text style={{ marginTop: 16, textAlign: 'center' }}>
-                    Failed to load payment configuration.
-                  </Text>
-                  <Text style={{ marginTop: 8, textAlign: 'center', opacity: 0.7 }}>{configError}</Text>
-                  <TouchableOpacity
-                    style={{ marginTop: 16, backgroundColor: '#0f172a', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
-                    onPress={loadPayConfig}
-                  >
-                    <Text style={{ color: '#fff', fontWeight: '600' }}>Retry</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <Text style={{ marginTop: 16, textAlign: 'center' }}>Loading payment configuration…</Text>
-              )}
-            </View>
-          </SafeAreaProvider>
-        )}
+        <PaymentsProvider value={{ isPaymentsEnabled: !!payConfig, paymentConfigError: configError }}>
+          {payConfig ? (
+            <CedrosProvider config={payConfig}>{content}</CedrosProvider>
+          ) : (
+            <>
+              {content}
+              <SafeAreaProvider>
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: 20,
+                    left: 16,
+                    right: 16,
+                    borderRadius: 12,
+                    padding: 12,
+                    backgroundColor: '#fff8e1',
+                    borderWidth: 1,
+                    borderColor: '#fbbf24',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
+                >
+                  {configError ? (
+                    <>
+                      <Text style={{ textAlign: 'center', fontWeight: '600' }}>
+                        Payments unavailable in this session.
+                      </Text>
+                      <Text style={{ marginTop: 4, textAlign: 'center', opacity: 0.75 }}>
+                        {configError}
+                      </Text>
+                      <TouchableOpacity
+                        style={{
+                          marginTop: 10,
+                          backgroundColor: '#0f172a',
+                          paddingHorizontal: 16,
+                          paddingVertical: 10,
+                          borderRadius: 8,
+                          alignSelf: 'center',
+                        }}
+                        onPress={loadPayConfig}
+                      >
+                        <Text style={{ color: '#fff', fontWeight: '600' }}>Retry payments init</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <View style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+                      <ActivityIndicator size="small" />
+                      <Text style={{ marginLeft: 8 }}>Loading payment configuration…</Text>
+                    </View>
+                  )}
+                </View>
+              </SafeAreaProvider>
+            </>
+          )}
+        </PaymentsProvider>
       </CedrosLoginProvider>
       </View>
     </ErrorBoundary>
