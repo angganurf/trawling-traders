@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Text, TouchableOpacity } from 'react-native';
+import { Alert, Image, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -42,16 +42,40 @@ export type MainDrawerParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
+const LOB_AVATAR = require('../../assets/lob-avatar.png');
 
 function MainDrawer() {
   return (
     <Drawer.Navigator
-      screenOptions={{
+      screenOptions={({ navigation, route }) => ({
+        headerShown: true,
         headerStyle: { backgroundColor: lightTheme.colors.primary[900] },
         headerTintColor: '#fff',
         headerTitleStyle: { fontFamily: lightTheme.typography.families.display },
         drawerActiveTintColor: lightTheme.colors.primary[700],
-      }}
+        headerTitle:
+          route.name === 'Home'
+            ? 'Overview'
+            : route.name,
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() =>
+              profileMenu(
+                () => navigation.getParent()?.navigate('Profile'),
+                () => navigation.getParent()?.navigate('Billing'),
+                () => navigation.getParent()?.navigate('Settings'),
+                () => navigation.getParent()?.navigate('Auth')
+              )
+            }
+            style={{ marginRight: 12 }}
+          >
+            <Image
+              source={LOB_AVATAR}
+              style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#fff' }}
+            />
+          </TouchableOpacity>
+        ),
+      })}
     >
       <Drawer.Screen name="Home" component={HomeOverviewScreen} />
       <Drawer.Screen name="Docs" component={DocsScreen} />
