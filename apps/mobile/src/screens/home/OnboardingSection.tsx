@@ -47,7 +47,7 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
       onPress: () => navigation.navigate('Deposit'),
     },
     {
-      label: 'Harvest your catch',
+      label: 'Track your fleet',
       description: 'This page will show fleet results and let you customize and chat with your captains after your first boat is live.',
       emoji: '📈',
       done: hasBots,
