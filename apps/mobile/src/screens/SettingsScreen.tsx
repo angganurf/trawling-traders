@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -8,13 +9,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Persona, UserSettings } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
-import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
 import { AccountSettings } from './settings/AccountSettings';
 import { AiProviderSettings } from './settings/AiProviderSettings';
 import { CustodianSettings } from './settings/CustodianSettings';
+const HELM_BG = require('../../../../assets/branding/tt-helm.png');
+const HEADER_HEIGHT = 56;
 
 type SettingsTab = 'account' | 'ai-providers' | 'custodians';
 
@@ -25,6 +28,8 @@ const TABS: { key: SettingsTab; label: string }[] = [
 ];
 
 export function SettingsScreen() {
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,18 +66,18 @@ export function SettingsScreen() {
 
   if (isLoading) {
     return (
-      <OceanBackground>
+      <ImageBackground source={HELM_BG} style={styles.bgFill} resizeMode="cover">
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={lightTheme.colors.primary[700]} />
         </View>
-      </OceanBackground>
+      </ImageBackground>
     );
   }
 
   return (
-    <OceanBackground>
+    <ImageBackground source={HELM_BG} style={styles.bgFill} resizeMode="cover">
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: contentTopPadding }]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -107,11 +112,14 @@ export function SettingsScreen() {
         {activeTab === 'ai-providers' && <AiProviderSettings />}
         {activeTab === 'custodians' && <CustodianSettings />}
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     paddingBottom: 28,

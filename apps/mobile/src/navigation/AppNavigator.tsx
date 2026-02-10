@@ -150,7 +150,7 @@ function AppStack() {
       <Stack.Screen name="BotStrategyConfig" component={BotStrategyConfigScreen} options={{ title: 'Strategy Config' }} />
       <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', headerTransparent: true }} />
       <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
       <Stack.Screen
         name="Deposit"
