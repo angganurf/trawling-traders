@@ -125,6 +125,10 @@ pub async fn app(state: Arc<AppState>) -> Router {
         .route("/me", get(handlers::bots::get_current_user))
         .route("/bots", get(handlers::bots::list_bots))
         .route(
+            "/bots/tradeable-assets",
+            get(handlers::bots::list_tradeable_assets),
+        )
+        .route(
             "/bots/name-availability",
             get(handlers::bots::check_bot_name_availability),
         )

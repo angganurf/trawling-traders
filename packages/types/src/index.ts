@@ -22,6 +22,19 @@ export interface AlgorithmFactor {
   weight: number;
 }
 
+export interface TradeableAsset {
+  id: string;
+  assetFocus: AssetFocus;
+  symbol: string;
+  name: string;
+  tokenAddress: string;
+  decimals: number;
+  custodian: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // LLM providers
 export type LlmProvider = 'openai' | 'anthropic' | 'venice' | 'openrouter';
 
@@ -200,6 +213,7 @@ export interface CreateBotRequest {
   name: string;
   persona: Persona;
   assetFocus: AssetFocus;
+  customAssets?: string[];
   algorithmMode: AlgorithmMode;
   algorithmFactors?: AlgorithmFactor[];
   strictness: Strictness;

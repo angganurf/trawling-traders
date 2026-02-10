@@ -459,6 +459,25 @@ pub struct TrackDocsEventResponse {
     pub success: bool,
 }
 
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct TradeableAsset {
+    pub id: Uuid,
+    pub asset_focus: AssetFocus,
+    pub symbol: String,
+    pub name: String,
+    pub token_address: String,
+    pub decimals: i32,
+    pub custodian: String,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ListTradeableAssetsResponse {
+    pub assets: Vec<TradeableAsset>,
+}
+
 // Request types for API
 
 #[derive(Debug, Deserialize, validator::Validate)]

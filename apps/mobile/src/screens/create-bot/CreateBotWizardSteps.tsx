@@ -9,6 +9,7 @@ import type {
   NameAvailability,
   Persona,
   Strictness,
+  TradeableAsset,
   TradingMode,
 } from '@trawling-traders/types';
 import { lightTheme } from '../../theme';
@@ -33,8 +34,11 @@ type CreateBotWizardStepsProps = {
   nameCheckLoading: boolean;
   assetFocus: AssetFocus;
   setAssetFocus: (value: AssetFocus) => void;
+  tradeableAssets: TradeableAsset[];
+  selectedAssets: string[];
+  setSelectedAssets: (value: string[]) => void;
+  assetsLoading: boolean;
   algorithmMode: AlgorithmMode;
-  setAlgorithmMode: (value: AlgorithmMode) => void;
   strictness: Strictness;
   setStrictness: (value: Strictness) => void;
   factorCatalog: Option<string>[];
@@ -70,12 +74,6 @@ type CreateBotWizardStepsProps = {
   assetChoices: Option<AssetFocus>[];
   strictnessOptions: Option<Strictness>[];
 };
-
-const ALGORITHM_MODES: Option<AlgorithmMode>[] = [
-  { value: 'trend', label: 'Trend' },
-  { value: 'mean-reversion', label: 'Mean Reversion' },
-  { value: 'breakout', label: 'Breakout' },
-];
 
 const SUBSCRIPT_DIGITS: Record<string, string> = {
   '0': '₀',
@@ -132,8 +130,11 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     assetChoices,
     assetFocus,
     setAssetFocus,
+    tradeableAssets,
+    selectedAssets,
+    setSelectedAssets,
+    assetsLoading,
     algorithmMode,
-    setAlgorithmMode,
     strictnessOptions,
     strictness,
     setStrictness,
@@ -219,27 +220,16 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             ) : null}
           </TouchableOpacity>
         ))}
-      </View>
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <View>
-        <Text style={styles.sectionLabel}>Asset Focus</Text>
-        {renderChip(assetChoices, assetFocus, setAssetFocus)}
-        <Text style={styles.sectionLabel}>Strictness</Text>
-        {renderChip(strictnessOptions, strictness, setStrictness)}
         <Text style={styles.sectionLabel}>Trading Mode</Text>
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
             <Text style={styles.switchTitle}>
-              {tradingMode === 'paper' ? 'Paper Trading' : 'Live Trading'}
+              {tradingMode === 'paper' ? 'Paper Trading (Test Only)' : 'Live Trading'}
             </Text>
             <Text style={styles.switchSubtitle}>
               {tradingMode === 'paper'
-                ? 'Recommended until strategy is stable.'
-                : 'Real funds are at risk.'}
+                ? 'Recommended to start. Use this mode to validate behavior with no real funds at risk.'
+                : 'Live mode uses real funds. Keep paper mode on until you trust your setup.'}
             </Text>
           </View>
           <Switch
@@ -251,6 +241,56 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             }}
           />
         </View>
+      </View>
+    );
+  }
+
+  if (step === 1) {
+    const assetsForFocus = tradeableAssets.filter((asset) => asset.assetFocus === assetFocus);
+    const toggleAsset = (tokenAddress: string) => {
+      if (selectedAssets.includes(tokenAddress)) {
+        setSelectedAssets(selectedAssets.filter((token) => token !== tokenAddress));
+        return;
+      }
+      setSelectedAssets([...selectedAssets, tokenAddress]);
+    };
+
+    return (
+      <View>
+        <Text style={styles.sectionLabel}>Asset Focus</Text>
+        {renderChip(assetChoices, assetFocus, setAssetFocus)}
+        <Text style={styles.sectionLabel}>Allowed Assets</Text>
+        {assetsLoading ? (
+          <Text style={styles.helperText}>Loading curated assets...</Text>
+        ) : assetsForFocus.length === 0 ? (
+          <Text style={styles.helperText}>No assets available for this category yet.</Text>
+        ) : (
+          <>
+            <Text style={styles.helperText}>
+              Select the exact assets this bot can trade. It will only trade from this list.
+            </Text>
+            {assetsForFocus.map((asset) => {
+              const selected = selectedAssets.includes(asset.tokenAddress);
+              return (
+                <TouchableOpacity
+                  key={asset.tokenAddress}
+                  style={[
+                    styles.assetCard,
+                    selected ? styles.assetCardActive : undefined,
+                  ]}
+                  onPress={() => toggleAsset(asset.tokenAddress)}
+                >
+                  <View style={styles.assetCardHeader}>
+                    <Text style={styles.assetSymbol}>{asset.symbol}</Text>
+                    <Text style={styles.assetCustodian}>{asset.custodian}</Text>
+                  </View>
+                  <Text style={styles.assetName}>{asset.name}</Text>
+                  <Text style={styles.assetAddress}>{asset.tokenAddress}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </>
+        )}
       </View>
     );
   }
@@ -303,6 +343,20 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             <Text style={styles.helperText}>Default: 10%</Text>
           </View>
         </View>
+        <Text style={styles.sectionLabel}>Strictness</Text>
+        {renderChip(strictnessOptions, strictness, setStrictness)}
+        <View style={styles.instructionBox}>
+          <Text style={styles.instructionTitle}>How Strictness Works</Text>
+          <Text style={styles.instructionStep}>
+            Strictness works with your risk caps and other execution thresholds to control how much confirmation is required before a trade.
+          </Text>
+          <Text style={styles.instructionStep}>
+            Example: a conservative setup can wait for signal stability over a longer look-back window (such as ~15 minutes) instead of trading the first second RSI flips.
+          </Text>
+          <Text style={styles.instructionStep}>
+            Your parameters are always respected. Strictness changes confidence requirements and stability checks, not whether your bot ignores your settings.
+          </Text>
+        </View>
       </View>
     );
   }
@@ -351,9 +405,6 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
 
     return (
       <View>
-        <Text style={styles.sectionLabel}>Execution Mode</Text>
-        {renderChip(ALGORITHM_MODES, algorithmMode, setAlgorithmMode)}
-
         <Text style={styles.sectionLabel}>Formula</Text>
         <Text style={styles.formulaPreview}>
           y ={' '}
@@ -592,7 +643,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
       <View style={styles.summaryRow}>
         <Text style={styles.summaryLabel}>Market / Mode</Text>
         <Text style={styles.summaryValue}>
-          {assetFocus} • {tradingMode}
+          {assetFocus} • {selectedAssets.length} assets • {tradingMode}
         </Text>
       </View>
       <View style={styles.summaryRow}>

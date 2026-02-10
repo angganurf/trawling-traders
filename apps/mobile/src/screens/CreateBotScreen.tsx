@@ -20,6 +20,7 @@ import type {
   LlmProvider,
   Persona,
   Strictness,
+  TradeableAsset,
   TradingMode,
 } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
@@ -31,9 +32,9 @@ type CreateBotScreenNavigationProp = NativeStackNavigationProp<RootStackParamLis
 type WizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 const STEP_META = [
-  { title: 'Basics', description: 'Name your bot and choose your operating style.' },
-  { title: 'Strategy', description: 'Pick market focus and behavior profile.' },
-  { title: 'Risk', description: 'Set practical limits before deploying.' },
+  { title: 'Basics', description: 'Name your bot, choose your style, and decide if you want paper-only testing.' },
+  { title: 'Strategy', description: 'Pick a market category, then select the exact assets this bot is allowed to trade.' },
+  { title: 'Risk', description: 'Set caps and strictness for how cautiously signals are executed.' },
   { title: 'Algorithm', description: 'Build a weighted factor formula for this bot.' },
   { title: 'AI', description: 'Connect the LLM provider and model your bot will use.' },
   { title: 'Telegram', description: 'Optional chat channel for commands, alerts, and pairing.' },
@@ -164,7 +165,6 @@ const ASSET_CHOICES: { value: AssetFocus; label: string; recommended?: boolean }
   { value: 'tokenized-equities', label: 'xStocks (Recommended)', recommended: true },
   { value: 'majors', label: 'Crypto Majors' },
   { value: 'tokenized-metals', label: 'Metals' },
-  { value: 'custom', label: 'Custom Basket' },
   { value: 'memes', label: 'Meme Coins (High Risk)' },
 ];
 
@@ -211,7 +211,7 @@ export function CreateBotScreen() {
   const [name, setName] = useState('');
   const [persona, setPersona] = useState<Persona>('beginner');
   const [assetFocus, setAssetFocus] = useState<AssetFocus>('tokenized-equities');
-  const [algorithmMode, setAlgorithmMode] = useState<AlgorithmMode>('trend');
+  const [algorithmMode] = useState<AlgorithmMode>('trend');
   const [algorithmFactors, setAlgorithmFactors] = useState<AlgorithmFactor[]>([
     { factor: 'price_momentum', weight: 0.4 },
     { factor: 'volume_confirmation', weight: 0.25 },
@@ -219,6 +219,9 @@ export function CreateBotScreen() {
   ]);
   const [strictness, setStrictness] = useState<Strictness>('high');
   const [tradingMode, setTradingMode] = useState<TradingMode>('paper');
+  const [tradeableAssets, setTradeableAssets] = useState<TradeableAsset[]>([]);
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [assetsLoading, setAssetsLoading] = useState(false);
   const [maxPositionSize, setMaxPositionSize] = useState('5');
   const [maxDailyLoss, setMaxDailyLoss] = useState('50');
   const [maxDrawdown, setMaxDrawdown] = useState('10');
@@ -280,6 +283,41 @@ export function CreateBotScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    const loadTradeableAssets = async () => {
+      setAssetsLoading(true);
+      try {
+        const assets = await api.bot.listTradeableAssets();
+        if (!cancelled) {
+          setTradeableAssets(assets);
+        }
+      } catch {
+        if (!cancelled) {
+          setTradeableAssets([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setAssetsLoading(false);
+        }
+      }
+    };
+
+    loadTradeableAssets();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const currentFocusAssets = new Set(
+      tradeableAssets
+        .filter((asset) => asset.assetFocus === assetFocus)
+        .map((asset) => asset.tokenAddress)
+    );
+    setSelectedAssets((prev) => prev.filter((token) => currentFocusAssets.has(token)));
+  }, [assetFocus, tradeableAssets]);
+
+  useEffect(() => {
+    let cancelled = false;
     if (name.trim().length === 0) {
       setNameAvailability(null);
       return;
@@ -310,6 +348,10 @@ export function CreateBotScreen() {
   const validateCurrentStep = () => {
     if (step === 0 && !name.trim()) {
       return 'Please give this bot a name.';
+    }
+    if (step === 1) {
+      if (assetsLoading) return 'Loading assets for this category. Please wait a moment.';
+      if (selectedAssets.length === 0) return 'Select at least one asset to trade.';
     }
     if (step === 2) {
       const checks = [
@@ -380,6 +422,7 @@ export function CreateBotScreen() {
         name: name.trim(),
         persona,
         assetFocus,
+        customAssets: selectedAssets,
         algorithmMode,
         algorithmFactors,
         strictness,
@@ -442,8 +485,11 @@ export function CreateBotScreen() {
             assetChoices={ASSET_CHOICES}
             assetFocus={assetFocus}
             setAssetFocus={setAssetFocus}
+            tradeableAssets={tradeableAssets}
+            selectedAssets={selectedAssets}
+            setSelectedAssets={setSelectedAssets}
+            assetsLoading={assetsLoading}
             algorithmMode={algorithmMode}
-            setAlgorithmMode={setAlgorithmMode}
             strictnessOptions={STRICTNESS_OPTIONS}
             strictness={strictness}
             setStrictness={setStrictness}

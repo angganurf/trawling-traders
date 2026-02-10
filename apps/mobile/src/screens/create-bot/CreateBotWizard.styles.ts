@@ -210,6 +210,43 @@ export const createBotWizardStyles = StyleSheet.create({
     flex: 1,
     paddingRight: 12,
   },
+  assetCard: {
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[250],
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    padding: 10,
+    marginBottom: 8,
+  },
+  assetCardActive: {
+    borderColor: lightTheme.colors.primary[700],
+    backgroundColor: lightTheme.colors.primary[50],
+  },
+  assetCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  assetSymbol: {
+    color: lightTheme.colors.wave[900],
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  assetCustodian: {
+    color: lightTheme.colors.wave[600],
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  assetName: {
+    color: lightTheme.colors.wave[700],
+    fontSize: 12,
+    marginTop: 4,
+  },
+  assetAddress: {
+    color: lightTheme.colors.wave[500],
+    fontSize: 10,
+    marginTop: 6,
+  },
   factorRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -6,6 +6,7 @@ use axum::{
     Json,
 };
 use chrono::Utc;
+use std::collections::HashSet;
 use std::sync::Arc;
 use tracing::{error, info, warn};
 use uuid::Uuid;
@@ -148,6 +149,73 @@ pub async fn list_bots(
     Ok(Json(ListBotsResponse { bots, total }))
 }
 
+/// GET /bots/tradeable-assets - List curated tradeable assets by focus category
+pub async fn list_tradeable_assets(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<ListTradeableAssetsResponse>, (StatusCode, String)> {
+    let assets = sqlx::query_as::<_, TradeableAsset>(
+        r#"
+        SELECT * FROM tradeable_assets
+        WHERE is_active = TRUE
+        ORDER BY asset_focus, symbol, name
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(ListTradeableAssetsResponse { assets }))
+}
+
+async fn validate_selected_assets(
+    db: &sqlx::PgPool,
+    asset_focus: AssetFocus,
+    selected_assets: Option<&[String]>,
+) -> Result<(), (StatusCode, String)> {
+    let Some(selected_assets) = selected_assets else {
+        return Ok(());
+    };
+
+    if selected_assets.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Select at least one asset for the chosen focus.".to_string(),
+        ));
+    }
+
+    let unique_assets: HashSet<&str> = selected_assets.iter().map(String::as_str).collect();
+    if unique_assets.len() != selected_assets.len() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Duplicate assets are not allowed.".to_string(),
+        ));
+    }
+
+    let valid_count: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(*)::bigint
+        FROM tradeable_assets
+        WHERE is_active = TRUE
+          AND asset_focus = $1
+          AND token_address = ANY($2)
+        "#,
+    )
+    .bind(asset_focus)
+    .bind(selected_assets)
+    .fetch_one(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if valid_count != selected_assets.len() as i64 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Some selected assets are invalid for this asset focus.".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
 /// POST /bots - Create a new bot
 pub async fn create_bot(
     State(state): State<Arc<AppState>>,
@@ -165,6 +233,12 @@ pub async fn create_bot(
     req.risk_caps
         .validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid risk caps: {}", e)))?;
+    validate_selected_assets(
+        &state.db,
+        req.asset_focus,
+        req.custom_assets.as_deref(),
+    )
+    .await?;
 
     // Use transaction to prevent race condition between count check and insert
     let mut tx = state
@@ -685,6 +759,12 @@ pub async fn update_bot_config(
         .risk_caps
         .validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid risk caps: {}", e)))?;
+    validate_selected_assets(
+        &state.db,
+        req.config.asset_focus,
+        req.config.custom_assets.as_deref(),
+    )
+    .await?;
 
     let custom_assets_json = req
         .config

@@ -29,6 +29,7 @@ import type {
   BotActionRequest,
   User,
   UserSettings,
+  TradeableAsset,
 } from '@trawling-traders/types';
 
 // Generic API error
@@ -251,6 +252,22 @@ export const botApi = {
     };
   },
 
+  async listTradeableAssets(): Promise<TradeableAsset[]> {
+    const response = await fetchApi('/bots/tradeable-assets');
+    return (response.assets || []).map((asset: any) => ({
+      id: asset.id,
+      assetFocus: asset.assetFocus ?? asset.asset_focus,
+      symbol: asset.symbol,
+      name: asset.name,
+      tokenAddress: asset.tokenAddress ?? asset.token_address,
+      decimals: Number(asset.decimals),
+      custodian: asset.custodian,
+      isActive: Boolean(asset.isActive ?? asset.is_active),
+      createdAt: asset.createdAt ?? asset.created_at,
+      updatedAt: asset.updatedAt ?? asset.updated_at,
+    }));
+  },
+
   // Create a new bot
   async createBot(request: CreateBotRequest): Promise<Bot> {
     return fetchApi('/bots', {
@@ -259,6 +276,7 @@ export const botApi = {
         name: request.name,
         persona: request.persona,
         asset_focus: request.assetFocus,
+        custom_assets: request.customAssets,
         algorithm_mode: request.algorithmMode,
         algorithm_factors: request.algorithmFactors,
         strictness: request.strictness,

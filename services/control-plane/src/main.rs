@@ -151,6 +151,10 @@ async fn build_router(
         .route("/me", get(control_plane::handlers::bots::get_current_user))
         .route("/bots", get(control_plane::handlers::bots::list_bots))
         .route(
+            "/bots/tradeable-assets",
+            get(control_plane::handlers::bots::list_tradeable_assets),
+        )
+        .route(
             "/bots/name-availability",
             get(control_plane::handlers::bots::check_bot_name_availability),
         )
