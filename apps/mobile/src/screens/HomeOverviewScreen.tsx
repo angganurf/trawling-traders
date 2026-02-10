@@ -183,7 +183,9 @@ export function HomeOverviewScreen() {
           </>
         )}
 
-        {screenState === 'empty' && <OnboardingSection />}
+        {screenState === 'empty' && (
+          <OnboardingSection hasBots={false} hasFundedBot={false} />
+        )}
       </ScrollView>
     </OceanBackground>
   );

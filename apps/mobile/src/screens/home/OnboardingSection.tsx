@@ -1,173 +1,71 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { lightTheme, colors, spacing, shadows } from '../../theme';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 import { ctaButton } from './HomeOverview.styles';
 
-const STORAGE_KEY = '@tt:onboarding-progress';
+interface OnboardingSectionProps {
+  /** Whether the user has at least one bot (step 2 complete) */
+  hasBots: boolean;
+  /** Whether any bot has a funded wallet (step 3 complete) */
+  hasFundedBot: boolean;
+}
 
-interface ChecklistItem {
-  id: string;
+interface Step {
   label: string;
+  done: boolean;
 }
 
-const CHECKLIST: ChecklistItem[] = [
-  { id: 'explore', label: 'Explore strategy templates' },
-  { id: 'risk', label: 'Set risk limits' },
-  { id: 'model', label: 'Choose an AI model' },
-  { id: 'create', label: 'Create your first bot' },
-];
-
-interface StrategyTemplate {
-  name: string;
-  description: string;
-  riskLevel: 1 | 2 | 3;
-}
-
-const TEMPLATES: StrategyTemplate[] = [
-  {
-    name: 'Conservative',
-    description: 'Low risk, steady returns',
-    riskLevel: 1,
-  },
-  {
-    name: 'Trend Rider',
-    description: 'Follow momentum signals',
-    riskLevel: 2,
-  },
-  {
-    name: 'Mean Reversion',
-    description: 'Buy dips, sell rips',
-    riskLevel: 3,
-  },
-];
-
-function RiskDots({ level }: { level: number }) {
-  return (
-    <View style={styles.riskRow}>
-      {[1, 2, 3].map((i) => (
-        <View
-          key={i}
-          style={[
-            styles.riskDot,
-            {
-              backgroundColor:
-                i <= level ? colors.lobster[400 + (level - 1) * 100] : colors.wave[200],
-            },
-          ]}
-        />
-      ))}
-    </View>
-  );
-}
-
-export function OnboardingSection() {
+export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionProps) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [checked, setChecked] = useState<Set<string>>(new Set());
 
-  // Load persisted progress
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try {
-          setChecked(new Set(JSON.parse(raw)));
-        } catch {
-          /* ignore corrupt data */
-        }
-      }
-    });
-  }, []);
+  const steps: Step[] = [
+    { label: 'Create your account', done: true },
+    { label: 'Create your first bot', done: hasBots },
+    { label: 'Fund your bot', done: hasFundedBot },
+  ];
 
-  const toggleItem = useCallback(
-    (id: string) => {
-      setChecked((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
-        return next;
-      });
-    },
-    []
-  );
-
-  const done = checked.size;
-  const total = CHECKLIST.length;
-  const progress = total > 0 ? done / total : 0;
+  const done = steps.filter((s) => s.done).length;
+  const progress = done / steps.length;
 
   return (
     <View style={styles.container}>
-      {/* Checklist card */}
       <View style={styles.card}>
-        <Text style={styles.title}>Launch your first bot in 3 minutes</Text>
+        <Text style={styles.title}>Get Started</Text>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { flex: progress }]} />
           <View style={{ flex: 1 - progress }} />
         </View>
         <Text style={styles.progressLabel}>
-          {done}/{total} complete
+          {done}/{steps.length} complete
         </Text>
 
-        {CHECKLIST.map((item) => {
-          const isChecked = checked.has(item.id);
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.checkRow}
-              onPress={() => toggleItem(item.id)}
-              activeOpacity={0.7}
+        {steps.map((step) => (
+          <View key={step.label} style={styles.stepRow}>
+            <View style={[styles.checkbox, step.done && styles.checkboxDone]}>
+              {step.done && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text
+              style={[styles.stepLabel, step.done && styles.stepLabelDone]}
             >
-              <View style={[styles.checkbox, isChecked && styles.checkboxDone]}>
-                {isChecked && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text
-                style={[
-                  styles.checkLabel,
-                  isChecked && styles.checkLabelDone,
-                ]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+              {step.label}
+            </Text>
+          </View>
+        ))}
       </View>
 
-      {/* Strategy templates */}
-      <Text style={styles.sectionTitle}>Strategy Templates</Text>
-      {TEMPLATES.map((tmpl) => (
-        <View key={tmpl.name} style={styles.templateCard}>
-          <View style={styles.templateHeader}>
-            <Text style={styles.templateName}>{tmpl.name}</Text>
-            <RiskDots level={tmpl.riskLevel} />
-          </View>
-          <Text style={styles.templateDesc}>{tmpl.description}</Text>
-          <TouchableOpacity
-            style={ctaButton.container}
-            onPress={() => navigation.navigate('CreateBot')}
-            activeOpacity={0.85}
-          >
-            <Text style={ctaButton.text}>Create from Template</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
-
-      {/* Blurred sample fleet */}
-      <Text style={styles.sectionTitle}>What your fleet could look like</Text>
-      {['Sample Bot Alpha', 'Sample Bot Bravo'].map((name) => (
-        <View key={name} style={styles.sampleCard}>
-          <View style={styles.sampleRow}>
-            <Text style={styles.sampleName}>{name}</Text>
-            <View style={styles.sampleBadge}>
-              <Text style={styles.sampleBadgeText}>ONLINE</Text>
-            </View>
-          </View>
-          <Text style={styles.samplePnl}>+$142.88</Text>
-        </View>
-      ))}
+      <View style={styles.ctaSection}>
+        <Text style={styles.ctaMessage}>Ready to create your first bot?</Text>
+        <TouchableOpacity
+          style={ctaButton.container}
+          onPress={() => navigation.navigate('CreateBot')}
+          activeOpacity={0.85}
+        >
+          <Text style={ctaButton.text}>Create Bot</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -209,7 +107,7 @@ const styles = StyleSheet.create({
     color: colors.wave[500],
     marginBottom: 12,
   },
-  checkRow: {
+  stepRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
@@ -233,92 +131,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  checkLabel: {
+  stepLabel: {
     fontSize: 14,
     color: lightTheme.colors.text,
     fontWeight: '500',
   },
-  checkLabelDone: {
+  stepLabelDone: {
     textDecorationLine: 'line-through',
     color: colors.wave[400],
   },
-  sectionTitle: {
+  ctaSection: {
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  ctaMessage: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: lightTheme.colors.text,
-    fontFamily: lightTheme.typography.families.display,
-    marginBottom: 10,
-    marginTop: 4,
-  },
-  templateCard: {
-    backgroundColor: lightTheme.colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    padding: 14,
-    marginBottom: 10,
-    ...shadows.sm,
-  },
-  templateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  templateName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: lightTheme.colors.text,
-  },
-  templateDesc: {
-    fontSize: 13,
-    color: colors.wave[500],
-    marginBottom: 10,
-  },
-  riskRow: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  riskDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  sampleCard: {
-    backgroundColor: lightTheme.colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: lightTheme.colors.cardBorder,
-    padding: 14,
-    marginBottom: 10,
-    opacity: 0.3,
-    ...shadows.sm,
-  },
-  sampleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  sampleName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: lightTheme.colors.text,
-  },
-  sampleBadge: {
-    backgroundColor: colors.bullish[500],
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  sampleBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  samplePnl: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.bullish[600],
+    marginBottom: 12,
   },
 });
