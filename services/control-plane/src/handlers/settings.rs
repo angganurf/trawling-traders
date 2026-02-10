@@ -9,8 +9,8 @@ use uuid::Uuid;
 use crate::{
     middleware::AuthContext,
     models::{
-        AuthMethodsStatus, BillingSummaryResponse, NameAvailabilityResponse, UpdateUserSettingsRequest,
-        UserSettingsResponse,
+        AuthMethodsStatus, BillingSummaryResponse, NameAvailabilityResponse,
+        UpdateUserSettingsRequest, UserSettingsResponse,
     },
     AppState,
 };
@@ -139,7 +139,10 @@ pub async fn check_display_name_availability(
         .collect::<String>();
 
     if normalized_name.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Display name is required".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Display name is required".to_string(),
+        ));
     }
 
     let exists: bool = sqlx::query_scalar(
