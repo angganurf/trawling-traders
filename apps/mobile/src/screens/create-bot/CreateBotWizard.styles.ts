@@ -18,7 +18,7 @@ export const createBotWizardStyles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 14,
   },
   progressDot: {
     flex: 1,
