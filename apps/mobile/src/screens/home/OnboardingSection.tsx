@@ -46,6 +46,13 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
       done: hasFundedBot,
       onPress: () => navigation.navigate('Deposit'),
     },
+    {
+      label: 'Monitor your results',
+      description: 'This page will show fleet results and let you customize and chat with your captains after your first boat is live.',
+      emoji: '📈',
+      done: hasBots,
+      onPress: () => navigation.navigate('Main'),
+    },
   ];
 
   const done = steps.filter((s) => s.done).length;
