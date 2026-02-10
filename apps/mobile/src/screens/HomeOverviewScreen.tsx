@@ -9,12 +9,13 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Bot, BotEvent, MetricPoint } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
 import { AuthExpiredError, NetworkError, ServerError } from '@trawling-traders/api-client';
 import { OceanBackground } from '../components/OceanBackground';
 
-const NO_BOTS_BG = require('../../../../assets/branding/no-bots-background.PNG');
+const NO_BOTS_BG = require('../../../../assets/branding/no-bots-background.png');
 import { useBotAction } from '../hooks/useBots';
 import { lightTheme, colors, spacing } from '../theme';
 import { KpiStrip } from './home/KpiStrip';
@@ -28,8 +29,12 @@ interface OverviewStats {
   openTrades: number;
 }
 
+const HEADER_HEIGHT = 56;
+
 export function HomeOverviewScreen() {
+  const insets = useSafeAreaInsets();
   const { performAction } = useBotAction();
+  const contentTopPadding = insets.top + HEADER_HEIGHT;
 
   const [bots, setBots] = useState<Bot[]>([]);
   const [allMetrics, setAllMetrics] = useState<MetricPoint[]>([]);
@@ -147,7 +152,7 @@ export function HomeOverviewScreen() {
     return (
       <ImageBackground source={NO_BOTS_BG} style={styles.bgFill} resizeMode="cover">
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingTop: contentTopPadding + spacing.md }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
@@ -163,7 +168,7 @@ export function HomeOverviewScreen() {
   return (
     <OceanBackground>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: contentTopPadding + spacing.md }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -204,7 +209,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
     paddingBottom: 36,
   },
   centered: {

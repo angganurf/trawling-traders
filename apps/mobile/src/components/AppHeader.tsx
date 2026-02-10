@@ -9,6 +9,7 @@ const LOB_AVATAR = require('../../assets/lob-avatar.png');
 interface AppHeaderProps {
   title: string;
   showBack?: boolean;
+  transparent?: boolean;
   onBack?: () => void;
   onMenu?: () => void;
   onProfile?: () => void;
@@ -17,6 +18,7 @@ interface AppHeaderProps {
 export function AppHeader({
   title,
   showBack = false,
+  transparent = false,
   onBack,
   onMenu,
   onProfile,
@@ -27,7 +29,7 @@ export function AppHeader({
     <View
       style={{
         paddingTop: insets.top,
-        backgroundColor: lightTheme.colors.background,
+        backgroundColor: transparent ? 'transparent' : lightTheme.colors.background,
       }}
     >
     <View
