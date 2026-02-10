@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   drawerLabel: {
-    marginHorizontal: 4,
+    marginHorizontal: 0,
     borderRadius: 16,
     minHeight: 72,
     paddingVertical: 14,
-    paddingHorizontal: 22,
+    paddingHorizontal: 30,
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'center',
@@ -382,6 +382,7 @@ const styles = StyleSheet.create({
   },
   drawerLabelBgImage: {
     borderRadius: 16,
+    transform: [{ scaleX: 2.35 }, { scaleY: 1.42 }],
   },
   drawerLabelText: {
     color: '#eef6ff',
