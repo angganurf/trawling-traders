@@ -49,7 +49,7 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
     {
       label: 'Track your fleet',
       description: 'This page will show fleet results and let you customize and chat with your captains after your first boat is live.',
-      emoji: '📈',
+      emoji: '📡',
       done: hasBots,
       onPress: () => navigation.navigate('Main'),
     },
