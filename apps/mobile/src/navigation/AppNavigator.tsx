@@ -168,7 +168,7 @@ function MainDrawerContent(props: any) {
       contentContainerStyle={styles.drawerScroll}
     >
       <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
-        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 74 }]}>
+        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 128 }]}>
           {items.map((item) => (
             <DrawerLabelButton
               key={item.key}
@@ -279,7 +279,7 @@ function ProfileDrawerContent(props: any) {
       contentContainerStyle={styles.drawerScroll}
     >
       <ImageBackground source={SHIP_LOCKER_BG} style={styles.drawerBg} resizeMode="cover">
-        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 74 }]}>
+        <View style={[styles.drawerItemsWrap, { paddingTop: insets.top + 128 }]}>
           {items.map((item) => (
             <DrawerLabelButton
               key={item.key}
@@ -349,51 +349,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   drawerItemsWrap: {
-    gap: 12,
+    gap: 16,
     paddingBottom: 20,
   },
   drawerLabel: {
     marginHorizontal: 18,
     borderWidth: 1,
-    borderColor: 'rgba(116, 150, 184, 0.38)',
-    borderRadius: 14,
-    backgroundColor: 'rgba(48, 78, 112, 0.5)',
-    paddingVertical: 13,
-    paddingHorizontal: 20,
-    shadowColor: '#081526',
-    shadowOpacity: 0.28,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    borderColor: 'rgba(143, 173, 203, 0.5)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(60, 90, 126, 0.86)',
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    shadowColor: '#0a1a2d',
+    shadowOpacity: 0.42,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
     position: 'relative',
     overflow: 'hidden',
   },
   drawerLabelActive: {
-    borderColor: 'rgba(202, 224, 246, 0.62)',
-    backgroundColor: 'rgba(60, 95, 132, 0.62)',
+    borderColor: 'rgba(218, 236, 255, 0.74)',
+    backgroundColor: 'rgba(71, 106, 146, 0.92)',
   },
   drawerLabelText: {
-    color: '#e7f1fb',
-    fontSize: 15,
+    color: '#eef6ff',
+    fontSize: 20,
     fontWeight: '700',
     textAlign: 'left',
-    letterSpacing: 0.2,
+    letterSpacing: 0.25,
   },
   drawerLabelTextActive: {
     color: '#ffffff',
   },
   drawerActiveMarker: {
     position: 'absolute',
-    left: 6,
+    left: 8,
     top: '50%',
-    marginTop: -14,
-    width: 8,
-    height: 28,
+    marginTop: -20,
+    width: 10,
+    height: 40,
     borderRadius: 8,
     backgroundColor: '#ffc53d',
     shadowColor: '#ffca45',
-    shadowOpacity: 0.45,
-    shadowRadius: 4,
+    shadowOpacity: 0.62,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
   },
 });
