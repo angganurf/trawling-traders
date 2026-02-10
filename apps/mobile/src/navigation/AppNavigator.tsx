@@ -1,13 +1,14 @@
 import React from 'react';
 import { Alert, Image, Text, TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { lightTheme } from '../theme';
 
 import { AuthScreen } from '../screens/AuthScreen';
 import { SubscribeScreen } from '../screens/SubscribeScreen';
-import { HomeOverviewScreen } from '../screens/HomeOverviewScreen';
+import { BotsListScreen } from '../screens/BotsListScreen';
 import { CreateBotScreen } from '../screens/CreateBotScreen';
 import { BotDetailScreen } from '../screens/BotDetailScreen';
 import { BotStrategyConfigScreen } from '../screens/BotStrategyConfigScreen';
@@ -18,6 +19,9 @@ import { ReportsScreen } from '../screens/ReportsScreen';
 import { DocsScreen } from '../screens/DocsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { BillingScreen } from '../screens/BillingScreen';
+import { ResearchScreen } from '../screens/ResearchScreen';
+import { LeaderboardScreen } from '../screens/LeaderboardScreen';
+import { CommunityScreen } from '../screens/CommunityScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -42,7 +46,29 @@ export type MainDrawerParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
+const Tab = createBottomTabNavigator();
 const LOB_AVATAR = require('../../assets/lob-avatar.png');
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: lightTheme.colors.primary[700],
+        tabBarInactiveTintColor: lightTheme.colors.wave[500],
+        tabBarStyle: {
+          backgroundColor: lightTheme.colors.surface,
+          borderTopColor: lightTheme.colors.cardBorder,
+        },
+      }}
+    >
+      <Tab.Screen name="Bots" component={BotsListScreen} />
+      <Tab.Screen name="Research" component={ResearchScreen} />
+      <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <Tab.Screen name="Community" component={CommunityScreen} />
+    </Tab.Navigator>
+  );
+}
 
 function MainDrawer() {
   return (
@@ -55,7 +81,7 @@ function MainDrawer() {
         drawerActiveTintColor: lightTheme.colors.primary[700],
         headerTitle:
           route.name === 'Home'
-            ? 'Overview'
+            ? getFocusedRouteNameFromRoute(route) || 'Bots'
             : route.name,
         headerRight: () => (
           <TouchableOpacity
@@ -77,7 +103,7 @@ function MainDrawer() {
         ),
       })}
     >
-      <Drawer.Screen name="Home" component={HomeOverviewScreen} />
+      <Drawer.Screen name="Home" component={MainTabs} />
       <Drawer.Screen name="Docs" component={DocsScreen} />
       <Drawer.Screen name="Reports" component={ReportsScreen} />
       <Drawer.Screen name="Chat" component={ChatScreen} />
