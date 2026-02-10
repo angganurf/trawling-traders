@@ -1,9 +1,9 @@
 import React from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { lightTheme } from '../theme';
 import { AppHeader } from '../components/AppHeader';
@@ -47,10 +47,12 @@ export type MainDrawerParamList = {
   Docs: undefined;
   Reports: undefined;
   Chat: undefined;
+  Deposit: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
+const ProfileDrawer = createDrawerNavigator<{ App: undefined }>();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
@@ -79,14 +81,7 @@ function MainDrawer() {
           <AppHeader
             title="Trawling Traders"
             onMenu={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-            onProfile={() =>
-              profileMenu(
-                () => navigation.getParent()?.navigate('Profile'),
-                () => navigation.getParent()?.navigate('Billing'),
-                () => navigation.getParent()?.navigate('Settings'),
-                () => navigation.getParent()?.navigate('Auth')
-              )
-            }
+            onProfile={() => navigation.getParent()?.getParent()?.dispatch(DrawerActions.toggleDrawer())}
           />
         ),
       })}
@@ -101,14 +96,7 @@ function MainDrawer() {
               title="Trawling Traders"
               transparent
               onMenu={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-              onProfile={() =>
-                profileMenu(
-                  () => navigation.getParent()?.navigate('Profile'),
-                  () => navigation.getParent()?.navigate('Billing'),
-                  () => navigation.getParent()?.navigate('Settings'),
-                  () => navigation.getParent()?.navigate('Auth')
-                )
-              }
+              onProfile={() => navigation.getParent()?.getParent()?.dispatch(DrawerActions.toggleDrawer())}
             />
           ),
         })}
@@ -116,89 +104,113 @@ function MainDrawer() {
       <Drawer.Screen name="Docs" component={DocsScreen} />
       <Drawer.Screen name="Reports" component={ReportsScreen} />
       <Drawer.Screen name="Chat" component={ChatScreen} />
+      <Drawer.Screen name="Deposit" component={DepositScreen} />
     </Drawer.Navigator>
   );
 }
 
-function profileMenu(
-  onNavigateProfile: () => void,
-  onNavigateBilling: () => void,
-  onNavigateSettings: () => void,
-  onLogout: () => void
-) {
-  Alert.alert('Profile Menu', 'Choose an option', [
-    { text: 'Profile', onPress: onNavigateProfile },
-    { text: 'Billing', onPress: onNavigateBilling },
-    { text: 'Settings', onPress: onNavigateSettings },
-    { text: 'Log out', style: 'destructive', onPress: onLogout },
-    { text: 'Cancel', style: 'cancel' },
-  ]);
+function AppStack() {
+  return (
+    <Stack.Navigator
+      initialRouteName="Auth"
+      screenOptions={{
+        header: ({ navigation, route, options, back }) => (
+          <AppHeader
+            title={typeof options.title === 'string' ? options.title : route.name}
+            showBack={!!back}
+            transparent={Boolean(options.headerTransparent)}
+            onBack={back ? navigation.goBack : undefined}
+            onMenu={back ? undefined : () => navigation.dispatch(DrawerActions.toggleDrawer())}
+            onProfile={() => navigation.getParent()?.dispatch(DrawerActions.toggleDrawer())}
+          />
+        ),
+      }}
+    >
+      <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Subscribe" component={SubscribeScreen} options={{ title: 'Subscribe', headerRight: () => null }} />
+      <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="CreateBot"
+        component={CreateBotScreen}
+        options={({ navigation }) => ({
+          title: 'Create Boat',
+          headerTransparent: true,
+          header: () => (
+            <AppHeader
+              title="Create Boat"
+              showBack
+              transparent
+              onBack={navigation.goBack}
+              onProfile={() => navigation.getParent()?.dispatch(DrawerActions.toggleDrawer())}
+            />
+          ),
+        })}
+      />
+      <Stack.Screen name="BotDetail" component={BotDetailScreen} options={{ title: 'Bot Details' }} />
+      <Stack.Screen name="BotStrategyConfig" component={BotStrategyConfigScreen} options={{ title: 'Strategy Config' }} />
+      <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
+      <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
+      <Stack.Screen
+        name="Deposit"
+        component={DepositScreen}
+        options={{ title: 'Fuel your fleet', headerTransparent: true }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function ProfileDrawerContent(props: any) {
+  const nav = props.navigation;
+  return (
+    <DrawerContentScrollView {...props}>
+      <DrawerItem
+        label="Profile"
+        onPress={() => {
+          nav.closeDrawer();
+          nav.navigate('App', { screen: 'Profile' });
+        }}
+      />
+      <DrawerItem
+        label="Billing"
+        onPress={() => {
+          nav.closeDrawer();
+          nav.navigate('App', { screen: 'Billing' });
+        }}
+      />
+      <DrawerItem
+        label="Settings"
+        onPress={() => {
+          nav.closeDrawer();
+          nav.navigate('App', { screen: 'Settings' });
+        }}
+      />
+      <DrawerItem
+        label="Log out"
+        onPress={() => {
+          nav.closeDrawer();
+          nav.navigate('App', { screen: 'Auth' });
+        }}
+      />
+    </DrawerContentScrollView>
+  );
 }
 
 export function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Auth"
+      <ProfileDrawer.Navigator
         screenOptions={{
-          header: ({ navigation, route, options, back }) => (
-            <AppHeader
-              title={typeof options.title === 'string' ? options.title : route.name}
-              showBack={!!back}
-              transparent={Boolean(options.headerTransparent)}
-              onBack={back ? navigation.goBack : undefined}
-              onMenu={back ? undefined : () => navigation.dispatch(DrawerActions.toggleDrawer())}
-              onProfile={() =>
-                profileMenu(
-                  () => navigation.navigate('Profile'),
-                  () => navigation.navigate('Billing'),
-                  () => navigation.navigate('Settings'),
-                  () => navigation.navigate('Auth')
-                )
-              }
-            />
-          ),
+          headerShown: false,
+          drawerPosition: 'right',
+          drawerType: 'front',
+          swipeEnabled: false,
         }}
+        drawerContent={(props) => <ProfileDrawerContent {...props} />}
       >
-        <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Subscribe" component={SubscribeScreen} options={{ title: 'Subscribe', headerRight: () => null }} />
-        <Stack.Screen name="Main" component={MainDrawer} options={{ headerShown: false }} />
-        <Stack.Screen
-          name="CreateBot"
-          component={CreateBotScreen}
-          options={({ navigation }) => ({
-            title: 'Create Boat',
-            headerTransparent: true,
-            header: () => (
-              <AppHeader
-                title="Create Boat"
-                showBack
-                transparent
-                onBack={navigation.goBack}
-                onProfile={() =>
-                  profileMenu(
-                    () => navigation.navigate('Profile'),
-                    () => navigation.navigate('Billing'),
-                    () => navigation.navigate('Settings'),
-                    () => navigation.navigate('Auth')
-                  )
-                }
-              />
-            ),
-          })}
-        />
-        <Stack.Screen name="BotDetail" component={BotDetailScreen} options={{ title: 'Bot Details' }} />
-        <Stack.Screen name="BotStrategyConfig" component={BotStrategyConfigScreen} options={{ title: 'Strategy Config' }} />
-        <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
-        <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-        <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
-        <Stack.Screen
-          name="Deposit"
-          component={DepositScreen}
-          options={{ title: 'Fuel your fleet', headerTransparent: true }}
-        />
-      </Stack.Navigator>
+        <ProfileDrawer.Screen name="App" component={AppStack} />
+      </ProfileDrawer.Navigator>
     </NavigationContainer>
   );
 }
