@@ -18,7 +18,7 @@ interface Step {
   description: string;
   emoji: string;
   done: boolean;
-  onPress: () => void;
+  onPress?: () => void;
 }
 
 export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionProps) {
@@ -51,7 +51,6 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
       description: 'This page will show fleet results and let you customize and chat with your captains after your first boat is live.',
       emoji: '📡',
       done: hasBots,
-      onPress: () => navigation.navigate('Main'),
     },
   ];
 
@@ -76,6 +75,7 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
             <TouchableOpacity
               style={styles.stepRow}
               onPress={step.onPress}
+              disabled={!step.onPress}
               activeOpacity={0.6}
             >
               <Text style={styles.stepEmoji}>{step.emoji}</Text>
@@ -89,12 +89,14 @@ export function OnboardingSection({ hasBots, hasFundedBot }: OnboardingSectionPr
                   {step.description}
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.wave[400]}
-                style={styles.chevron}
-              />
+              {step.onPress ? (
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.wave[400]}
+                  style={styles.chevron}
+                />
+              ) : null}
             </TouchableOpacity>
           </React.Fragment>
         ))}
