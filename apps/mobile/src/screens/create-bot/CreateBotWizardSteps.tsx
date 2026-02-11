@@ -256,6 +256,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const [categoryViewportWidth, setCategoryViewportWidth] = useState(280);
   const categoryScrollRef = useRef<ScrollView | null>(null);
   const [assetSelectionMode, setAssetSelectionMode] = useState<AssetSelectionMode>('all');
+  const [customAssetsByFocus, setCustomAssetsByFocus] = useState<Partial<Record<AssetFocus, string[]>>>({});
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [assetPickerDraftSelection, setAssetPickerDraftSelection] = useState<string[]>([]);
 
@@ -274,6 +275,10 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     () => assetsForFocus.map((asset) => asset.tokenAddress),
     [assetsForFocus]
   );
+  const customSelectionForFocus = useMemo(() => {
+    const rawSelection = customAssetsByFocus[assetFocus] ?? [];
+    return rawSelection.filter((token) => assetsForFocusTokenAddresses.includes(token));
+  }, [assetFocus, assetsForFocusTokenAddresses, customAssetsByFocus]);
 
   useEffect(() => {
     if (
@@ -314,18 +319,24 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     if (step !== 2) {
       return;
     }
+    const preferredMode: AssetSelectionMode =
+      customSelectionForFocus.length > 0 ? 'custom' : 'all';
+    if (assetSelectionMode !== preferredMode) {
+      setAssetSelectionMode(preferredMode);
+      return;
+    }
     if (assetSelectionMode === 'all') {
       if (!hasSameTokens(selectedAssets, assetsForFocusTokenAddresses)) {
         setSelectedAssets(assetsForFocusTokenAddresses);
       }
       return;
     }
-    const filteredSelection = selectedAssets.filter((token) => assetsForFocusTokenAddresses.includes(token));
-    if (!hasSameTokens(selectedAssets, filteredSelection)) {
-      setSelectedAssets(filteredSelection);
+    if (!hasSameTokens(selectedAssets, customSelectionForFocus)) {
+      setSelectedAssets(customSelectionForFocus);
     }
   }, [
     assetSelectionMode,
+    customSelectionForFocus,
     assetsForFocusTokenAddresses,
     selectedAssets,
     setSelectedAssets,
@@ -561,9 +572,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
         ? `${selectedAssets.length} selected`
         : `${assetsForFocus.length} available`;
     const openAssetPicker = () => {
-      setAssetPickerDraftSelection(
-        selectedAssets.filter((token) => assetsForFocusTokenAddresses.includes(token))
-      );
+      setAssetPickerDraftSelection(customSelectionForFocus);
       setAssetPickerOpen(true);
     };
     const toggleDraftAsset = (tokenAddress: string) => {
@@ -574,7 +583,14 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
       setAssetPickerDraftSelection([...assetPickerDraftSelection, tokenAddress]);
     };
     const saveAssetPickerSelection = () => {
-      setSelectedAssets(assetPickerDraftSelection);
+      const cleanedSelection = assetPickerDraftSelection.filter((token) =>
+        assetsForFocusTokenAddresses.includes(token)
+      );
+      setCustomAssetsByFocus((prev) => ({
+        ...prev,
+        [assetFocus]: cleanedSelection,
+      }));
+      setSelectedAssets(cleanedSelection);
       setAssetSelectionMode('custom');
       setAssetPickerOpen(false);
     };
@@ -683,7 +699,10 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.optionCard, assetSelectionMode === 'custom' && styles.optionCardActive]}
-              onPress={openAssetPicker}
+              onPress={() => {
+                setAssetSelectionMode('custom');
+                openAssetPicker();
+              }}
             >
               <Text style={styles.optionTitle}>Select assets</Text>
               <Text style={styles.optionDescription}>
@@ -721,11 +740,9 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                     style={[styles.assetPickerRow, selected && styles.assetPickerRowActive]}
                     onPress={() => toggleDraftAsset(asset.tokenAddress)}
                   >
-                    <Ionicons
-                      name={selected ? 'checkbox' : 'square-outline'}
-                      size={20}
-                      color={selected ? lightTheme.colors.primary[700] : lightTheme.colors.wave[500]}
-                    />
+                    <View style={[styles.assetPickerCheckbox, selected && styles.assetPickerCheckboxActive]}>
+                      {selected ? <Text style={styles.assetPickerCheckboxMark}>✓</Text> : null}
+                    </View>
                     <View style={styles.assetPickerRowCopy}>
                       <Text style={styles.assetSymbol}>{asset.symbol}</Text>
                       <Text style={styles.assetName}>{asset.name}</Text>

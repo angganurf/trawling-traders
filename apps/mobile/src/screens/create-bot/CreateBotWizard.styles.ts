@@ -310,6 +310,26 @@ export const createBotWizardStyles = StyleSheet.create({
   assetPickerRowCopy: {
     flex: 1,
   },
+  assetPickerCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[400],
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assetPickerCheckboxActive: {
+    borderColor: lightTheme.colors.primary[700],
+    backgroundColor: lightTheme.colors.primary[700],
+  },
+  assetPickerCheckboxMark: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
   assetPickerSaveButton: {
     marginHorizontal: 16,
     marginBottom: 18,
