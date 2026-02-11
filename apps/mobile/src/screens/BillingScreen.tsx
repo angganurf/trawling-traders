@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,14 +12,16 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_URL } from '../config/api';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import type { BillingSummary } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
-import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
 
 type BillingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Billing'>;
+const ENGINE_ROOM_BG = require('../../../../assets/branding/tt-engine-room.png');
+const HEADER_HEIGHT = 56;
 
 function formatPlanName(planCode: string): string {
   const normalized = planCode.toLowerCase();
@@ -29,6 +32,8 @@ function formatPlanName(planCode: string): string {
 
 export function BillingScreen() {
   const navigation = useNavigation<BillingScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
   const [billing, setBilling] = useState<BillingSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -73,18 +78,18 @@ export function BillingScreen() {
 
   if (isLoading) {
     return (
-      <OceanBackground>
+      <ImageBackground source={ENGINE_ROOM_BG} style={styles.bgFill} resizeMode="cover">
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={lightTheme.colors.primary[700]} />
         </View>
-      </OceanBackground>
+      </ImageBackground>
     );
   }
 
   return (
-    <OceanBackground>
+    <ImageBackground source={ENGINE_ROOM_BG} style={styles.bgFill} resizeMode="cover">
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: contentTopPadding }]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -163,11 +168,14 @@ export function BillingScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     paddingBottom: 28,

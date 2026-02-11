@@ -107,7 +107,21 @@ function MainDrawer() {
           ),
         })}
       />
-      <Drawer.Screen name="Docs" component={DocsScreen} />
+      <Drawer.Screen
+        name="Docs"
+        component={DocsScreen}
+        options={({ navigation }) => ({
+          headerTransparent: true,
+          header: () => (
+            <AppHeader
+              title="Docs"
+              transparent
+              onMenu={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+              onProfile={() => navigation.getParent()?.getParent()?.dispatch(DrawerActions.toggleDrawer())}
+            />
+          ),
+        })}
+      />
       <Drawer.Screen
         name="Reports"
         component={ReportsScreen}
@@ -250,7 +264,11 @@ function AppStack() {
       <Stack.Screen name="BotBehaviorConfig" component={BotBehaviorConfigScreen} options={{ title: 'Behavior Config' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', headerTransparent: true }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', headerTransparent: true }} />
-      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
+      <Stack.Screen
+        name="Billing"
+        component={BillingScreen}
+        options={{ title: 'Billing', headerTransparent: true }}
+      />
       <Stack.Screen
         name="Deposit"
         component={DepositScreen}
