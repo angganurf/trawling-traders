@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,10 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DocsArticle, DocsCategory, TrackDocsEventRequest } from '@trawling-traders/types';
 import { api } from '@trawling-traders/api-client';
-import { OceanBackground } from '../components/OceanBackground';
 import { lightTheme } from '../theme';
+const DOCS_BG = require('../../../../assets/branding/tt-docs.png');
+const HEADER_HEIGHT = 56;
 
 type DocsCategoryId = string;
 
@@ -28,6 +31,8 @@ function articleMatchesQuery(article: DocsArticle, query: string): boolean {
 }
 
 export function DocsScreen() {
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = insets.top + HEADER_HEIGHT + 10;
   const [categories, setCategories] = useState<DocsCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,8 +185,8 @@ export function DocsScreen() {
       : 'Browse setup guides, optimization playbooks, and support references.';
 
   return (
-    <OceanBackground>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ImageBackground source={DOCS_BG} style={styles.bgFill} resizeMode="cover">
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: contentTopPadding }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Docs</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
 
@@ -270,11 +275,14 @@ export function DocsScreen() {
           </View>
         )}
       </ScrollView>
-    </OceanBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgFill: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     paddingBottom: 28,

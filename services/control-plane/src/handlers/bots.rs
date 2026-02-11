@@ -31,7 +31,10 @@ fn normalize_bot_name(input: &str) -> Result<String, (StatusCode, String)> {
         return Err((StatusCode::BAD_REQUEST, "Name is required".to_string()));
     }
     if trimmed.len() > 100 {
-        return Err((StatusCode::BAD_REQUEST, "Name must be at most 100 characters".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Name must be at most 100 characters".to_string(),
+        ));
     }
     if !trimmed
         .chars()
