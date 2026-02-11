@@ -250,6 +250,83 @@ export const createBotWizardStyles = StyleSheet.create({
     fontSize: 10,
     marginTop: 6,
   },
+  assetPickerContainer: {
+    flex: 1,
+    backgroundColor: lightTheme.colors.surface,
+  },
+  assetPickerHeader: {
+    minHeight: 56,
+    borderBottomWidth: 1,
+    borderBottomColor: lightTheme.colors.wave[200],
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  assetPickerBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assetPickerHeaderTitle: {
+    fontSize: 18,
+    color: lightTheme.colors.wave[900],
+    fontWeight: '700',
+  },
+  assetPickerHeaderSpacer: {
+    width: 36,
+    height: 36,
+  },
+  assetPickerSubTitle: {
+    marginTop: 10,
+    marginBottom: 10,
+    paddingHorizontal: 16,
+    color: lightTheme.colors.wave[600],
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  assetPickerList: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  assetPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.wave[250],
+    backgroundColor: '#fff',
+    marginBottom: 8,
+  },
+  assetPickerRowActive: {
+    borderColor: lightTheme.colors.primary[700],
+    backgroundColor: lightTheme.colors.primary[50],
+  },
+  assetPickerRowCopy: {
+    flex: 1,
+  },
+  assetPickerSaveButton: {
+    marginHorizontal: 16,
+    marginBottom: 18,
+    marginTop: 4,
+    borderRadius: 14,
+    backgroundColor: '#0b5ea8',
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  assetPickerSaveButtonDisabled: {
+    backgroundColor: lightTheme.colors.wave[300],
+  },
+  assetPickerSaveButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
   boatCarousel: {
     paddingBottom: 6,
   },
@@ -270,6 +347,26 @@ export const createBotWizardStyles = StyleSheet.create({
   },
   captainModeVisual: {
     marginBottom: 4,
+  },
+  categoryCarousel: {
+    paddingBottom: 4,
+  },
+  categoryModeVisual: {
+    marginBottom: 8,
+  },
+  categorySlide: {
+    paddingHorizontal: 4,
+  },
+  categoryImage: {
+    width: '100%',
+    height: 230,
+    borderRadius: 10,
+  },
+  categoryInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
   },
   captainSlide: {
     paddingHorizontal: 4,

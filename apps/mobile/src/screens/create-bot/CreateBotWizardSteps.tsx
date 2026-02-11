@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Modal,
   ScrollView,
   Switch,
   Text,
@@ -147,8 +148,32 @@ const BOAT_IMAGES = {
   paper: require('../../../../../assets/branding/tt-toy-side.png'),
 } as const;
 
+const CATEGORY_IMAGES: Record<AssetFocus, number> = {
+  'tokenized-equities': require('../../../../../assets/branding/tt-stocks.png'),
+  'tokenized-metals': require('../../../../../assets/branding/tt-commodities.png'),
+  majors: require('../../../../../assets/branding/tt-crypto-majors.png'),
+  'finance-2': require('../../../../../assets/branding/tt-finance-2.png'),
+  memes: require('../../../../../assets/branding/tt-memecoins.png'),
+  custom: require('../../../../../assets/branding/tt-finance-2.png'),
+};
+
+const CATEGORY_COPY: Record<AssetFocus, string> = {
+  'tokenized-equities': 'Global stock exposure for broad directional and rotational setups.',
+  'tokenized-metals': 'Hard-asset markets for inflation and macro cycle positioning.',
+  majors: 'Large-cap crypto pairs with deeper liquidity and tighter structure.',
+  'finance-2': 'On-chain finance leaders where narratives can shift quickly.',
+  memes: 'High-volatility memecoin markets for aggressive momentum trawling.',
+  custom: 'Custom portfolio scope for a manually curated trading universe.',
+};
+
+type AssetSelectionMode = 'all' | 'custom';
+
 function imageForCaptainKey(imageKey: string) {
   return CAPTAIN_IMAGES[imageKey as keyof typeof CAPTAIN_IMAGES] ?? CAPTAIN_IMAGES.trader;
+}
+
+function imageForCategory(value: AssetFocus) {
+  return CATEGORY_IMAGES[value] ?? CATEGORY_IMAGES['tokenized-equities'];
 }
 
 function displayBoatName(value: string): string {
@@ -157,6 +182,14 @@ function displayBoatName(value: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function hasSameTokens(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  const rightSet = new Set(right);
+  return left.every((token) => rightSet.has(token));
 }
 
 export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
@@ -220,10 +253,26 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   const captainScrollRef = useRef<ScrollView | null>(null);
   const [boatViewportWidth, setBoatViewportWidth] = useState(280);
   const boatScrollRef = useRef<ScrollView | null>(null);
+  const [categoryViewportWidth, setCategoryViewportWidth] = useState(280);
+  const categoryScrollRef = useRef<ScrollView | null>(null);
+  const [assetSelectionMode, setAssetSelectionMode] = useState<AssetSelectionMode>('all');
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const [assetPickerDraftSelection, setAssetPickerDraftSelection] = useState<string[]>([]);
 
   const usedFactorSet = useMemo(
     () => new Set(algorithmFactors.map((factor) => factor.factor)),
     [algorithmFactors]
+  );
+  const assetsForFocus = useMemo(
+    () =>
+      tradeableAssets.filter(
+        (asset) => asset.assetFocus === assetFocus && !disabledCustodians.includes(asset.custodian)
+      ),
+    [assetFocus, disabledCustodians, tradeableAssets]
+  );
+  const assetsForFocusTokenAddresses = useMemo(
+    () => assetsForFocus.map((asset) => asset.tokenAddress),
+    [assetsForFocus]
   );
 
   useEffect(() => {
@@ -249,6 +298,39 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     const x = tradingMode === 'live' ? 0 : boatViewportWidth;
     boatScrollRef.current.scrollTo({ x, animated: true });
   }, [boatViewportWidth, step, tradingMode]);
+
+  useEffect(() => {
+    if (step !== 2 || !categoryScrollRef.current || categoryViewportWidth <= 0) {
+      return;
+    }
+    const selectedIndex = Math.max(
+      0,
+      assetChoices.findIndex((choice) => choice.value === assetFocus)
+    );
+    categoryScrollRef.current.scrollTo({ x: selectedIndex * categoryViewportWidth, animated: true });
+  }, [assetChoices, assetFocus, categoryViewportWidth, step]);
+
+  useEffect(() => {
+    if (step !== 2) {
+      return;
+    }
+    if (assetSelectionMode === 'all') {
+      if (!hasSameTokens(selectedAssets, assetsForFocusTokenAddresses)) {
+        setSelectedAssets(assetsForFocusTokenAddresses);
+      }
+      return;
+    }
+    const filteredSelection = selectedAssets.filter((token) => assetsForFocusTokenAddresses.includes(token));
+    if (!hasSameTokens(selectedAssets, filteredSelection)) {
+      setSelectedAssets(filteredSelection);
+    }
+  }, [
+    assetSelectionMode,
+    assetsForFocusTokenAddresses,
+    selectedAssets,
+    setSelectedAssets,
+    step,
+  ]);
 
   if (step === 0) {
     const handleBoatSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -469,21 +551,117 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
   }
 
   if (step === 2) {
-    const assetsForFocus = tradeableAssets.filter(
-      (asset) => asset.assetFocus === assetFocus && !disabledCustodians.includes(asset.custodian)
+    const activeCategoryIndex = Math.max(
+      0,
+      assetChoices.findIndex((choice) => choice.value === assetFocus)
     );
-    const toggleAsset = (tokenAddress: string) => {
-      if (selectedAssets.includes(tokenAddress)) {
-        setSelectedAssets(selectedAssets.filter((token) => token !== tokenAddress));
+    const activeCategory = assetChoices[activeCategoryIndex] ?? assetChoices[0];
+    const selectedCountLabel =
+      assetSelectionMode === 'custom'
+        ? `${selectedAssets.length} selected`
+        : `${assetsForFocus.length} available`;
+    const openAssetPicker = () => {
+      setAssetPickerDraftSelection(
+        selectedAssets.filter((token) => assetsForFocusTokenAddresses.includes(token))
+      );
+      setAssetPickerOpen(true);
+    };
+    const toggleDraftAsset = (tokenAddress: string) => {
+      if (assetPickerDraftSelection.includes(tokenAddress)) {
+        setAssetPickerDraftSelection(assetPickerDraftSelection.filter((token) => token !== tokenAddress));
         return;
       }
-      setSelectedAssets([...selectedAssets, tokenAddress]);
+      setAssetPickerDraftSelection([...assetPickerDraftSelection, tokenAddress]);
+    };
+    const saveAssetPickerSelection = () => {
+      setSelectedAssets(assetPickerDraftSelection);
+      setAssetSelectionMode('custom');
+      setAssetPickerOpen(false);
+    };
+    const handleCategorySwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (categoryViewportWidth <= 0) {
+        return;
+      }
+      const index = Math.round(event.nativeEvent.contentOffset.x / categoryViewportWidth);
+      const selectedCategory = assetChoices[Math.max(0, Math.min(index, assetChoices.length - 1))];
+      if (selectedCategory) {
+        setAssetFocus(selectedCategory.value);
+      }
+    };
+    const selectCategoryAt = (index: number) => {
+      const bounded = Math.max(0, Math.min(index, assetChoices.length - 1));
+      const category = assetChoices[bounded];
+      if (category) {
+        setAssetFocus(category.value);
+      }
     };
 
     return (
       <View>
-        <Text style={styles.sectionLabel}>Categories</Text>
-        {renderChip(assetChoices, assetFocus, setAssetFocus)}
+        <Text style={styles.helperText}>Swipe to browse specialty categories.</Text>
+        <View
+          style={styles.categoryModeVisual}
+          onLayout={(event) => {
+            const width = Math.floor(event.nativeEvent.layout.width);
+            if (width > 0 && width !== categoryViewportWidth) {
+              setCategoryViewportWidth(width);
+            }
+          }}
+        >
+          <ScrollView
+            ref={categoryScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleCategorySwipeEnd}
+            snapToInterval={categoryViewportWidth}
+            decelerationRate="fast"
+            contentContainerStyle={styles.categoryCarousel}
+          >
+            {assetChoices.map((choice) => (
+              <TouchableOpacity
+                key={choice.value}
+                style={[styles.categorySlide, { width: categoryViewportWidth }]}
+                onPress={() => setAssetFocus(choice.value)}
+                activeOpacity={0.9}
+              >
+                <Image
+                  source={imageForCategory(choice.value)}
+                  style={styles.categoryImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+        <View style={styles.categoryInfoRow}>
+          <TouchableOpacity
+            style={styles.captainArrowButton}
+            onPress={() => selectCategoryAt(activeCategoryIndex - 1)}
+            disabled={activeCategoryIndex === 0}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={activeCategoryIndex === 0 ? lightTheme.colors.wave[400] : lightTheme.colors.wave[700]}
+            />
+          </TouchableOpacity>
+          <View style={styles.captainInfoCopy}>
+            <Text style={styles.captainName}>{activeCategory?.label}</Text>
+            <Text style={styles.captainDescription}>{CATEGORY_COPY[activeCategory?.value ?? 'tokenized-equities']}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.captainArrowButton}
+            onPress={() => selectCategoryAt(activeCategoryIndex + 1)}
+            disabled={activeCategoryIndex === assetChoices.length - 1}
+          >
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={activeCategoryIndex === assetChoices.length - 1 ? lightTheme.colors.wave[400] : lightTheme.colors.wave[700]}
+            />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.sectionLabel}>Target Assets</Text>
         {assetsLoading ? (
           <Text style={styles.helperText}>Loading curated assets...</Text>
@@ -491,31 +669,84 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
           <Text style={styles.helperText}>No assets available for this category yet.</Text>
         ) : (
           <>
-            <Text style={styles.helperText}>
-              Select the exact assets this boat can trade. It will only trade from this list.
-            </Text>
-            {assetsForFocus.map((asset) => {
-              const selected = selectedAssets.includes(asset.tokenAddress);
-              return (
-                <TouchableOpacity
-                  key={asset.tokenAddress}
-                  style={[
-                    styles.assetCard,
-                    selected ? styles.assetCardActive : undefined,
-                  ]}
-                  onPress={() => toggleAsset(asset.tokenAddress)}
-                >
-                  <View style={styles.assetCardHeader}>
-                    <Text style={styles.assetSymbol}>{asset.symbol}</Text>
-                    <Text style={styles.assetCustodian}>{asset.custodian}</Text>
-                  </View>
-                  <Text style={styles.assetName}>{asset.name}</Text>
-                  <Text style={styles.assetAddress}>{asset.tokenAddress}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            <TouchableOpacity
+              style={[styles.optionCard, assetSelectionMode === 'all' && styles.optionCardActive]}
+              onPress={() => {
+                setAssetSelectionMode('all');
+                setSelectedAssets(assetsForFocusTokenAddresses);
+              }}
+            >
+              <Text style={styles.optionTitle}>All assets</Text>
+              <Text style={styles.optionDescription}>
+                Trade every available asset in {activeCategory.label} ({assetsForFocus.length} total).
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.optionCard, assetSelectionMode === 'custom' && styles.optionCardActive]}
+              onPress={openAssetPicker}
+            >
+              <Text style={styles.optionTitle}>Select assets</Text>
+              <Text style={styles.optionDescription}>
+                Choose specific assets for this boat. {selectedCountLabel}.
+              </Text>
+            </TouchableOpacity>
           </>
         )}
+        <Modal
+          visible={assetPickerOpen}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setAssetPickerOpen(false)}
+        >
+          <View style={styles.assetPickerContainer}>
+            <View style={styles.assetPickerHeader}>
+              <TouchableOpacity
+                style={styles.assetPickerBackButton}
+                onPress={() => setAssetPickerOpen(false)}
+              >
+                <Ionicons name="chevron-back" size={22} color={lightTheme.colors.wave[800]} />
+              </TouchableOpacity>
+              <Text style={styles.assetPickerHeaderTitle}>Select Assets</Text>
+              <View style={styles.assetPickerHeaderSpacer} />
+            </View>
+            <Text style={styles.assetPickerSubTitle}>
+              {activeCategory.label} • {assetPickerDraftSelection.length} selected
+            </Text>
+            <ScrollView contentContainerStyle={styles.assetPickerList}>
+              {assetsForFocus.map((asset) => {
+                const selected = assetPickerDraftSelection.includes(asset.tokenAddress);
+                return (
+                  <TouchableOpacity
+                    key={asset.tokenAddress}
+                    style={[styles.assetPickerRow, selected && styles.assetPickerRowActive]}
+                    onPress={() => toggleDraftAsset(asset.tokenAddress)}
+                  >
+                    <Ionicons
+                      name={selected ? 'checkbox' : 'square-outline'}
+                      size={20}
+                      color={selected ? lightTheme.colors.primary[700] : lightTheme.colors.wave[500]}
+                    />
+                    <View style={styles.assetPickerRowCopy}>
+                      <Text style={styles.assetSymbol}>{asset.symbol}</Text>
+                      <Text style={styles.assetName}>{asset.name}</Text>
+                    </View>
+                    <Text style={styles.assetCustodian}>{asset.custodian}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity
+              style={[
+                styles.assetPickerSaveButton,
+                assetPickerDraftSelection.length === 0 && styles.assetPickerSaveButtonDisabled,
+              ]}
+              onPress={saveAssetPickerSelection}
+              disabled={assetPickerDraftSelection.length === 0}
+            >
+              <Text style={styles.assetPickerSaveButtonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
       </View>
     );
   }
