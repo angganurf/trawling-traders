@@ -24,6 +24,7 @@ import { DocsScreen } from '../screens/DocsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { BillingScreen } from '../screens/BillingScreen';
 import { DepositScreen } from '../screens/DepositScreen';
+import { WithdrawScreen } from '../screens/WithdrawScreen';
 import { ResearchScreen } from '../screens/ResearchScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Billing: undefined;
   Deposit: undefined;
+  Withdraw: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -169,7 +171,7 @@ function MainDrawerContent(props: any) {
       label: 'Withdraw',
       onPress: () => {
         nav.closeDrawer();
-        nav.getParent()?.navigate('Deposit');
+        nav.getParent()?.navigate('Withdraw');
       },
     },
     {
@@ -273,6 +275,11 @@ function AppStack() {
         name="Deposit"
         component={DepositScreen}
         options={{ title: 'Fuel your fleet', headerTransparent: true }}
+      />
+      <Stack.Screen
+        name="Withdraw"
+        component={WithdrawScreen}
+        options={{ title: 'Withdraw', headerTransparent: true }}
       />
     </Stack.Navigator>
   );
