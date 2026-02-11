@@ -34,6 +34,7 @@ pub enum AssetFocus {
     TokenizedEquities,
     TokenizedMetals,
     #[serde(rename = "finance-2")]
+    #[sqlx(rename = "finance_2")]
     Finance2,
     Memes,
     Custom,
