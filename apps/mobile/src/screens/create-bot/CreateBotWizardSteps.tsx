@@ -570,7 +570,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
     const selectedCountLabel =
       assetSelectionMode === 'custom'
         ? `${selectedAssets.length} selected`
-        : `${assetsForFocus.length} available`;
+        : `${assetsForFocus.length} total`;
     const openAssetPicker = () => {
       setAssetPickerDraftSelection(customSelectionForFocus);
       setAssetPickerOpen(true);
@@ -644,7 +644,7 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                 <Image
                   source={imageForCategory(choice.value)}
                   style={styles.categoryImage}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               </TouchableOpacity>
             ))}
@@ -692,9 +692,12 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                 setSelectedAssets(assetsForFocusTokenAddresses);
               }}
             >
-              <Text style={styles.optionTitle}>All assets</Text>
+              <View style={styles.optionTitleRow}>
+                <Text style={styles.optionTitle}>All assets</Text>
+                <Text style={styles.optionCountBadge}>{assetsForFocus.length} total</Text>
+              </View>
               <Text style={styles.optionDescription}>
-                Trade every available asset in {activeCategory.label} ({assetsForFocus.length} total).
+                Trade every available asset in {activeCategory.label}.
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -704,9 +707,12 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                 openAssetPicker();
               }}
             >
-              <Text style={styles.optionTitle}>Select assets</Text>
+              <View style={styles.optionTitleRow}>
+                <Text style={styles.optionTitle}>Select assets</Text>
+                <Text style={styles.optionCountBadge}>{selectedCountLabel}</Text>
+              </View>
               <Text style={styles.optionDescription}>
-                Choose specific assets for this boat. {selectedCountLabel}.
+                Choose exactly which assets this boat is allowed to trade.
               </Text>
             </TouchableOpacity>
           </>
