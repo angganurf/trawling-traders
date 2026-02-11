@@ -424,8 +424,8 @@ export function CreateBotWizardSteps(props: CreateBotWizardStepsProps) {
                 <View style={styles.captainImageFrame}>
                   <Image
                     source={imageForCaptainKey(option.imageKey)}
-                    style={styles.captainImage}
-                    resizeMode="cover"
+                    style={[styles.captainImage, { height: Math.round((captainViewportWidth - 8) * 1.5) }]}
+                    resizeMode="stretch"
                   />
                 </View>
                 <View style={styles.captainInfoRow}>

@@ -332,39 +332,46 @@ export function CreateBotScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    const loadSetupOptions = async () => {
-      setAssetsLoading(true);
-      setAssistantOptionsLoading(true);
-      const [assetsResult, assistantOptionsResult] = await Promise.allSettled([
-        api.bot.listTradeableAssets(),
-        api.bot.listAssistantOptions(),
-      ]);
 
-      if (cancelled) {
-        return;
+    setAssetsLoading(true);
+    api.bot.listTradeableAssets().then(
+      (assets) => {
+        if (!cancelled) {
+          setTradeableAssets(assets);
+          setAssetsLoading(false);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setTradeableAssets([]);
+          setAssetsLoading(false);
+        }
       }
+    );
 
-      if (assetsResult.status === 'fulfilled') {
-        setTradeableAssets(assetsResult.value);
-      } else {
-        setTradeableAssets([]);
+    setAssistantOptionsLoading(true);
+    api.bot.listAssistantOptions().then(
+      (options) => {
+        if (!cancelled) {
+          if (options.length > 0) {
+            setAssistantOptions(options);
+            setAssistantStyle(options[0].assistantStyle);
+          } else {
+            setAssistantOptions(FALLBACK_ASSISTANT_OPTIONS);
+            setAssistantStyle(FALLBACK_ASSISTANT_OPTIONS[0].assistantStyle);
+          }
+          setAssistantOptionsLoading(false);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setAssistantOptions(FALLBACK_ASSISTANT_OPTIONS);
+          setAssistantStyle(FALLBACK_ASSISTANT_OPTIONS[0].assistantStyle);
+          setAssistantOptionsLoading(false);
+        }
       }
-      setAssetsLoading(false);
+    );
 
-      if (
-        assistantOptionsResult.status === 'fulfilled' &&
-        assistantOptionsResult.value.length > 0
-      ) {
-        setAssistantOptions(assistantOptionsResult.value);
-        setAssistantStyle(assistantOptionsResult.value[0].assistantStyle);
-      } else {
-        setAssistantOptions(FALLBACK_ASSISTANT_OPTIONS);
-        setAssistantStyle(FALLBACK_ASSISTANT_OPTIONS[0].assistantStyle);
-      }
-      setAssistantOptionsLoading(false);
-    };
-
-    loadSetupOptions();
     return () => {
       cancelled = true;
     };

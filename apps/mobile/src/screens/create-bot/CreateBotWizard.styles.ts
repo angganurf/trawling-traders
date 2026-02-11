@@ -34,8 +34,9 @@ export const createBotWizardStyles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: lightTheme.colors.cardBorder,
-    padding: 16,
+    padding: 18,
     marginBottom: 12,
+    overflow: 'hidden',
   },
   stepLabel: {
     fontSize: 12,
@@ -282,12 +283,10 @@ export const createBotWizardStyles = StyleSheet.create({
   },
   captainImage: {
     width: '100%',
-    height: 330,
-    transform: [{ translateY: 24 }],
   },
   captainInfoRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 6,
   },
   captainInfoCopy: {
@@ -296,7 +295,6 @@ export const createBotWizardStyles = StyleSheet.create({
   captainArrowButton: {
     width: 28,
     height: 28,
-    marginTop: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
