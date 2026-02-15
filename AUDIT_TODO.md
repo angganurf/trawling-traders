@@ -116,7 +116,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Cleaned now-unused imports from `lib.rs`.
     - Verified with `cd services/control-plane && cargo check`.
 
-- [ ] **F-009 Duplicate API client implementation drift (`index.ts` vs `client.ts`)**
+- [x] **F-009 Duplicate API client implementation drift (`index.ts` vs `client.ts`)**
   - Files touched: `packages/api-client/src/client.ts`, `packages/api-client/src/index.ts` (if needed)
   - Planned fix:
     - Make `client.ts` a thin re-export of canonical `index.ts` implementation.
@@ -125,6 +125,10 @@ Legend: `[ ]` pending, `[x]` completed.
   - Test plan:
     - `cd packages/api-client && npm run build`.
     - `cd apps/mobile && npm run --silent tsc --noEmit` (if available).
+  - Completion note:
+    - Replaced duplicated `client.ts` implementation with a compatibility re-export of canonical `index.ts`.
+    - Verified package build with `cd packages/api-client && npm run build`.
+    - `cd apps/mobile && npx tsc --noEmit` reports an existing unrelated screen typing error in `/Users/conorholdsworth/Workspace/temp/trawling-traders/apps/mobile/src/screens/create-bot/CreateBotWizardSteps.tsx`.
 
 ## Low
 
