@@ -200,6 +200,7 @@ LLM_PROVIDER=$LLM_PROVIDER
 LLM_MODEL=$LLM_MODEL
 LLM_API_KEY=$LLM_API_KEY
 TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
+CONTROL_PLANE_BOT_TOKEN=$BOOTSTRAP_TOKEN
 EOFSECRETS
 chmod 600 "$SECRETS_FILE"
 
@@ -270,6 +271,7 @@ touch /var/log/bot-runner.log
 # Register bot with control plane
 echo "Registering bot with control plane..."
 curl -X POST "$CONTROL_PLANE_URL/v1/bot/$BOT_ID/register" \
+    -H "Authorization: Bearer $CONTROL_PLANE_BOT_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{}' || echo "Registration may have failed, bot-runner will retry"
 

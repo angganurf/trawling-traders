@@ -275,6 +275,10 @@ async fn build_router(
         )
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
+            control_plane::middleware::bot_auth_middleware,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
             control_plane::middleware::rate_limit::bot_rate_limit_middleware,
         ))
         .with_state(state.clone());

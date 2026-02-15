@@ -19,18 +19,32 @@ pub struct ControlPlaneClient {
     client: Client,
     base_url: String,
     bot_id: Uuid,
+    auth_token: Option<String>,
 }
 
 impl ControlPlaneClient {
     /// Create new control plane client
     pub fn new(base_url: &str, bot_id: Uuid) -> anyhow::Result<Self> {
         let client = Client::builder().timeout(Duration::from_secs(30)).build()?;
+        let auth_token = std::env::var("CONTROL_PLANE_BOT_TOKEN")
+            .ok()
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty());
 
         Ok(Self {
             client,
             base_url: base_url.trim_end_matches('/').to_string(),
             bot_id,
+            auth_token,
         })
+    }
+
+    fn apply_auth<'a>(&self, builder: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        if let Some(token) = &self.auth_token {
+            builder.bearer_auth(token)
+        } else {
+            builder
+        }
     }
 
     /// Execute request with retry logic for transient failures
@@ -92,7 +106,7 @@ impl ControlPlaneClient {
         };
 
         let response = self
-            .with_retry("register", || self.client.post(&url).json(&req).send())
+            .with_retry("register", || self.apply_auth(self.client.post(&url)).json(&req).send())
             .await?;
 
         if response.status().is_success() {
@@ -119,7 +133,9 @@ impl ControlPlaneClient {
         };
 
         let response = self
-            .with_retry("report_wallet", || self.client.post(&url).json(&req).send())
+            .with_retry("report_wallet", || {
+                self.apply_auth(self.client.post(&url)).json(&req).send()
+            })
             .await?;
 
         if response.status().is_success() {
@@ -143,7 +159,7 @@ impl ControlPlaneClient {
         debug!("Polling config from {}", url);
 
         let response = self
-            .with_retry("get_config", || self.client.get(&url).send())
+            .with_retry("get_config", || self.apply_auth(self.client.get(&url)).send())
             .await?;
 
         match response.status() {
@@ -175,7 +191,9 @@ impl ControlPlaneClient {
         };
 
         let response = self
-            .with_retry("ack_config", || self.client.post(&url).json(&req).send())
+            .with_retry("ack_config", || {
+                self.apply_auth(self.client.post(&url)).json(&req).send()
+            })
             .await?;
 
         if response.status().is_success() {
@@ -203,7 +221,9 @@ impl ControlPlaneClient {
         };
 
         let response = self
-            .with_retry("heartbeat", || self.client.post(&url).json(&req).send())
+            .with_retry("heartbeat", || {
+                self.apply_auth(self.client.post(&url)).json(&req).send()
+            })
             .await?;
 
         if response.status().is_success() {
@@ -223,7 +243,9 @@ impl ControlPlaneClient {
         let req = EventsBatchRequest { events };
 
         let response = self
-            .with_retry("send_events", || self.client.post(&url).json(&req).send())
+            .with_retry("send_events", || {
+                self.apply_auth(self.client.post(&url)).json(&req).send()
+            })
             .await?;
 
         if response.status().is_success() {
