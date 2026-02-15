@@ -18,7 +18,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Bot runner now sends `Authorization: Bearer $CONTROL_PLANE_BOT_TOKEN`; bootstrap writes token into service env file.
     - Verified with `cd services/control-plane && cargo test middleware::bot_auth` and `cd services/bot-runner && cargo check`.
 
-- [ ] **F-002 Remove production debug leaks (`/debug/*`)**
+- [x] **F-002 Remove production debug leaks (`/debug/*`)**
   - Files touched: `services/control-plane/src/main.rs`
   - Planned fix:
     - Gate debug routes behind explicit env var `ENABLE_DEBUG_ROUTES=true`.
@@ -26,6 +26,10 @@ Legend: `[ ]` pending, `[x]` completed.
     - Ensure no auth token preview is exposed when disabled.
   - Test plan:
     - Router test validating `/debug/startup` is absent by default.
+  - Completion note:
+    - Added `ENABLE_DEBUG_ROUTES` gate; debug routes are now disabled by default and only enabled when explicitly set to `true`.
+    - Added unit tests for flag parsing behavior.
+    - Verified with `cd services/control-plane && cargo test debug_routes`.
 
 ## High
 

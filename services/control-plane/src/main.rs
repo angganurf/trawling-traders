@@ -416,6 +416,7 @@ async fn build_router(
                 }))
             }),
         );
+    let debug_routes_enabled = is_debug_routes_enabled(std::env::var("ENABLE_DEBUG_ROUTES").ok());
 
     // Health check routes (no auth)
     let health_routes = Router::new()
@@ -449,9 +450,37 @@ async fn build_router(
             },
         )))
         .nest("/v1", health_routes)
-        .merge(diagnostics_route)
+        .merge(if debug_routes_enabled {
+            diagnostics_route
+        } else {
+            Router::new()
+        })
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 
     Ok(router)
+}
+
+fn is_debug_routes_enabled(value: Option<String>) -> bool {
+    value
+        .map(|v| v.trim().eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_debug_routes_enabled;
+
+    #[test]
+    fn debug_routes_disabled_by_default() {
+        assert!(!is_debug_routes_enabled(None));
+    }
+
+    #[test]
+    fn debug_routes_enabled_only_for_true() {
+        assert!(is_debug_routes_enabled(Some("true".to_string())));
+        assert!(is_debug_routes_enabled(Some(" TRUE ".to_string())));
+        assert!(!is_debug_routes_enabled(Some("1".to_string())));
+        assert!(!is_debug_routes_enabled(Some("false".to_string())));
+    }
 }
