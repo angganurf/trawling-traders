@@ -3,6 +3,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use futures::stream::{self, StreamExt};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{info, warn};
@@ -20,6 +21,22 @@ pub struct PriceQuery {
 
 fn default_quote() -> String {
     "USD".to_string()
+}
+
+const MAX_BATCH_SYMBOLS: usize = 100;
+const MAX_CONCURRENT_BATCH_LOOKUPS: usize = 10;
+
+fn validate_batch_size(symbols_len: usize) -> Result<(), (StatusCode, String)> {
+    if symbols_len > MAX_BATCH_SYMBOLS {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Too many symbols requested. Maximum is {} per batch request.",
+                MAX_BATCH_SYMBOLS
+            ),
+        ));
+    }
+    Ok(())
 }
 
 /// GET /prices/:symbol - Get current price for any symbol
@@ -76,41 +93,48 @@ pub async fn get_prices_batch(
     State(state): State<Arc<AppState>>,
     Json(req): Json<BatchPriceRequest>,
 ) -> Result<Json<BatchPriceResponse>, (StatusCode, String)> {
-    let mut results = HashMap::new();
+    validate_batch_size(req.symbols.len())?;
+
+    let mut results = HashMap::with_capacity(req.symbols.len());
     let mut errors = Vec::new();
 
-    for symbol in &req.symbols {
-        let sym = symbol.to_uppercase();
+    let lookup_results = stream::iter(req.symbols.into_iter())
+        .map(|symbol| {
+            let state = Arc::clone(&state);
+            async move {
+                let sym = symbol.to_uppercase();
+                let asset_class = AssetClass::from_symbol(&sym);
+                let price = match asset_class {
+                    AssetClass::Stock | AssetClass::Etf | AssetClass::Metal => {
+                        state.pyth_client.get_price(&sym).await.ok()
+                    }
+                    AssetClass::Crypto => state
+                        .price_aggregator
+                        .get_price_realtime(&sym, "USD")
+                        .await
+                        .ok(),
+                };
+                (sym, price)
+            }
+        })
+        .buffered(MAX_CONCURRENT_BATCH_LOOKUPS)
+        .collect::<Vec<_>>()
+        .await;
 
-        // Use consistent asset class detection
-        let asset_class = AssetClass::from_symbol(&sym);
-        let price = match asset_class {
-            AssetClass::Stock | AssetClass::Etf | AssetClass::Metal => {
-                state.pyth_client.get_price(&sym).await.ok()
-            }
-            AssetClass::Crypto => state
-                .price_aggregator
-                .get_price_realtime(&sym, "USD")
-                .await
-                .ok(),
-        };
-
-        match price {
-            Some(p) => {
-                results.insert(
-                    sym.clone(),
-                    PriceResponse {
-                        symbol: p.symbol,
-                        price: p.price,
-                        source: p.source,
-                        timestamp: p.timestamp,
-                        confidence: p.confidence,
-                    },
-                );
-            }
-            None => {
-                errors.push(sym);
-            }
+    for (sym, price) in lookup_results {
+        if let Some(p) = price {
+            results.insert(
+                sym,
+                PriceResponse {
+                    symbol: p.symbol,
+                    price: p.price,
+                    source: p.source,
+                    timestamp: p.timestamp,
+                    confidence: p.confidence,
+                },
+            );
+        } else {
+            errors.push(sym);
         }
     }
 
@@ -183,4 +207,39 @@ pub struct SupportedSymbolsResponse {
 pub struct HealthResponse {
     pub status: String,
     pub sources: Vec<SourceHealth>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{get_prices_batch, validate_batch_size, BatchPriceRequest};
+    use crate::AppState;
+    use axum::{extract::State, Json};
+    use std::sync::Arc;
+
+    #[test]
+    fn validate_batch_size_rejects_oversized() {
+        let result = validate_batch_size(101);
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn get_prices_batch_accepts_empty_batch() {
+        let state = Arc::new(AppState {
+            price_aggregator: data_retrieval::PriceAggregator::new(),
+            pyth_client: data_retrieval::PythClient::new(),
+        });
+
+        let response = get_prices_batch(
+            State(state),
+            Json(BatchPriceRequest {
+                symbols: Vec::new(),
+            }),
+        )
+        .await
+        .expect("empty batch should succeed")
+        .0;
+
+        assert!(response.prices.is_empty());
+        assert!(response.errors.is_empty());
+    }
 }

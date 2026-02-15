@@ -60,7 +60,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Added `filter_rows_preserves_order_and_filters_for_tax_report` unit test.
     - Verified with `cd services/control-plane && cargo test filter_rows_preserves_order_and_filters_for_tax_report` and `cd services/control-plane && cargo check`.
 
-- [ ] **F-005 Batch pricing endpoint is sequential and unbounded**
+- [x] **F-005 Batch pricing endpoint is sequential and unbounded**
   - Files touched: `services/data-retrieval/src/handlers.rs`
   - Planned fix:
     - Add max symbol limit validation.
@@ -69,6 +69,10 @@ Legend: `[ ]` pending, `[x]` completed.
   - Test plan:
     - Add tests for oversized request rejection.
     - Add test for successful bounded batch execution.
+  - Completion note:
+    - Added max batch-size validation (`MAX_BATCH_SYMBOLS=100`) with explicit `400` error.
+    - Reworked batch lookups to bounded concurrent execution (`buffered(10)`) while preserving response semantics.
+    - Added tests `validate_batch_size_rejects_oversized` and `get_prices_batch_accepts_empty_batch`; verified with `cd services/data-retrieval && cargo test validate_batch_size_rejects_oversized`, `cd services/data-retrieval && cargo test get_prices_batch_accepts_empty_batch`, and `cd services/data-retrieval && cargo check`.
 
 ## Medium
 
