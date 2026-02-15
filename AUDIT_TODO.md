@@ -144,7 +144,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Updated root scripts to workspace-aware, runnable commands that execute shared TS package builds from repo root.
     - Verified with `npm run lint` and `npm run typecheck`.
 
-- [ ] **F-011 Over-broad dead_code allowances in bot-runner**
+- [x] **F-011 Over-broad dead_code allowances in bot-runner**
   - Files touched: `services/bot-runner/src/main.rs`, `services/bot-runner/src/lib.rs`
   - Planned fix:
     - Remove crate-level `#![allow(dead_code)]`.
@@ -152,6 +152,9 @@ Legend: `[ ]` pending, `[x]` completed.
     - Keep build warning-clean where practical.
   - Test plan:
     - `cd services/bot-runner && cargo check`.
+  - Completion note:
+    - Removed crate-level `#![allow(dead_code)]` from both bot-runner library and binary entrypoints.
+    - Verified with `cd services/bot-runner && cargo check` (warnings are now visible and can be addressed incrementally).
 
 - [ ] **F-012 `with_retry` zero-attempt panic edge case**
   - Files touched: `services/control-plane/src/provisioning.rs`

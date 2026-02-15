@@ -14,9 +14,6 @@
 //! - `GatewayManager` - Config rendering and gateway lifecycle
 //! - `BotRunner` - Main orchestrator with decision tick loop
 
-// Allow dead code during early development - scaffolding for future features
-#![allow(dead_code)]
-
 pub mod amount;
 pub mod client;
 pub mod config;
