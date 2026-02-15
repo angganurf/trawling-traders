@@ -156,7 +156,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Removed crate-level `#![allow(dead_code)]` from both bot-runner library and binary entrypoints.
     - Verified with `cd services/bot-runner && cargo check` (warnings are now visible and can be addressed incrementally).
 
-- [ ] **F-012 `with_retry` zero-attempt panic edge case**
+- [x] **F-012 `with_retry` zero-attempt panic edge case**
   - Files touched: `services/control-plane/src/provisioning.rs`
   - Planned fix:
     - Validate `max_attempts >= 1` before loop.
@@ -164,3 +164,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Add unit test for invalid retry config.
   - Test plan:
     - New unit test + `cd services/control-plane && cargo test provisioning`.
+  - Completion note:
+    - Updated `with_retry` to return `anyhow::Result<T>` and explicitly reject `max_attempts == 0` with a structured error.
+    - Removed panic-based `expect` fallback in retry completion path.
+    - Added `with_retry_rejects_zero_attempts` unit test and verified with `cd services/control-plane && cargo test with_retry_rejects_zero_attempts` and `cd services/control-plane && cargo check`.

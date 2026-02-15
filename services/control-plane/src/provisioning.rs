@@ -47,12 +47,18 @@ fn backoff_delay(attempt: u32, config: &RetryConfig) -> Duration {
 }
 
 /// Execute a fallible async operation with retry logic
-pub async fn with_retry<F, Fut, T, E>(operation: F, config: RetryConfig) -> Result<T, E>
+pub async fn with_retry<F, Fut, T, E>(operation: F, config: RetryConfig) -> anyhow::Result<T>
 where
     F: Fn() -> Fut,
     Fut: std::future::Future<Output = Result<T, E>>,
     E: std::fmt::Display,
 {
+    if config.max_attempts == 0 {
+        return Err(anyhow::anyhow!(
+            "Invalid RetryConfig: max_attempts must be at least 1"
+        ));
+    }
+
     let mut last_error = None;
 
     for attempt in 0..config.max_attempts {
@@ -65,7 +71,7 @@ where
                     config.max_attempts,
                     e
                 );
-                last_error = Some(e);
+                last_error = Some(anyhow::anyhow!("{}", e));
 
                 if attempt < config.max_attempts - 1 {
                     let delay = backoff_delay(attempt, &config);
@@ -76,7 +82,9 @@ where
         }
     }
 
-    Err(last_error.expect("last_error should be set"))
+    Err(last_error.unwrap_or_else(|| {
+        anyhow::anyhow!("Retry operation failed without an error payload")
+    }))
 }
 
 // ==================== CIRCUIT BREAKER ====================
@@ -217,6 +225,29 @@ impl CircuitBreaker {
 /// Global circuit breaker for DO provisioning
 pub fn create_provision_circuit_breaker() -> CircuitBreaker {
     CircuitBreaker::new(CircuitConfig::default())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{with_retry, RetryConfig};
+
+    #[tokio::test]
+    async fn with_retry_rejects_zero_attempts() {
+        let config = RetryConfig {
+            max_attempts: 0,
+            ..RetryConfig::default()
+        };
+
+        let result = with_retry(|| async { Ok::<(), anyhow::Error>(()) }, config).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .err()
+                .expect("error expected")
+                .to_string()
+                .contains("max_attempts must be at least 1")
+        );
+    }
 }
 
 // ==================== ORPHAN CLEANUP ====================
