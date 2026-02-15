@@ -47,7 +47,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Added bot-runner fmt/clippy/test steps and target cache path in GitHub Actions deploy workflow.
     - Verified with `cd services/bot-runner && cargo test`.
 
-- [ ] **F-004 N+1 in report generation + non-global ordering risk**
+- [x] **F-004 N+1 in report generation + non-global ordering risk**
   - Files touched: `services/control-plane/src/handlers/reports.rs`
   - Planned fix:
     - Replace per-bot event loading loop with a single joined query by user/timeframe.
@@ -55,6 +55,10 @@ Legend: `[ ]` pending, `[x]` completed.
     - Ensure stable global ordering by `created_at`.
   - Test plan:
     - Add unit test covering row ordering/filtering behavior.
+  - Completion note:
+    - Replaced per-bot event loading loop with a single `events`+`bots` join query filtered by user/timeframe and globally ordered by `created_at`.
+    - Added `filter_rows_preserves_order_and_filters_for_tax_report` unit test.
+    - Verified with `cd services/control-plane && cargo test filter_rows_preserves_order_and_filters_for_tax_report` and `cd services/control-plane && cargo check`.
 
 - [ ] **F-005 Batch pricing endpoint is sequential and unbounded**
   - Files touched: `services/data-retrieval/src/handlers.rs`

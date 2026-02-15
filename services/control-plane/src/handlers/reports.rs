@@ -15,6 +15,17 @@ use crate::{
     AppState,
 };
 
+#[derive(sqlx::FromRow)]
+struct EventWithBotName {
+    bot_name: String,
+    id: Uuid,
+    bot_id: Uuid,
+    event_type: EventType,
+    message: String,
+    metadata: Option<serde_json::Value>,
+    created_at: DateTime<Utc>,
+}
+
 fn csv_escape(value: &str) -> String {
     let mut escaped = value.replace('"', "\"\"");
     if escaped.contains(',') || escaped.contains('\n') || escaped.contains('"') {
@@ -107,61 +118,59 @@ async fn resolve_recipient_email(
     })
 }
 
-async fn load_user_bots(
-    state: &AppState,
-    user_id: Uuid,
-) -> Result<Vec<(Uuid, String)>, (StatusCode, String)> {
-    sqlx::query_as::<_, (Uuid, String)>("SELECT id, name FROM bots WHERE user_id = $1")
+async fn user_has_bots(state: &AppState, user_id: Uuid) -> Result<bool, (StatusCode, String)> {
+    let bot_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM bots WHERE user_id = $1")
         .bind(user_id)
-        .fetch_all(&state.db)
+        .fetch_one(&state.db)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(bot_count > 0)
 }
 
-async fn load_events_for_bot(
-    state: &AppState,
-    bot_id: Uuid,
-    cutoff: Option<DateTime<Utc>>,
-) -> Result<Vec<Event>, (StatusCode, String)> {
-    let query = if cutoff.is_some() {
-        "SELECT * FROM events WHERE bot_id = $1 AND created_at >= $2 ORDER BY created_at ASC"
-    } else {
-        "SELECT * FROM events WHERE bot_id = $1 ORDER BY created_at ASC"
-    };
-
-    if let Some(cutoff_time) = cutoff {
-        sqlx::query_as::<_, Event>(query)
-            .bind(bot_id)
-            .bind(cutoff_time)
-            .fetch_all(&state.db)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
-    } else {
-        sqlx::query_as::<_, Event>(query)
-            .bind(bot_id)
-            .fetch_all(&state.db)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
-    }
+fn filter_report_rows(rows: Vec<(String, Event)>, report_kind: &str) -> Vec<(String, Event)> {
+    rows.into_iter()
+        .filter(|(_, event)| should_include_event(report_kind, event.event_type))
+        .collect()
 }
 
 async fn collect_report_rows(
     state: &AppState,
-    bots: &[(Uuid, String)],
+    user_id: Uuid,
     cutoff: Option<DateTime<Utc>>,
     report_kind: &str,
 ) -> Result<Vec<(String, Event)>, (StatusCode, String)> {
-    let mut report_rows: Vec<(String, Event)> = Vec::new();
+    let rows: Vec<EventWithBotName> = sqlx::query_as(
+        "SELECT b.name AS bot_name, e.id, e.bot_id, e.event_type, e.message, e.metadata, e.created_at
+         FROM events e
+         INNER JOIN bots b ON b.id = e.bot_id
+         WHERE b.user_id = $1
+           AND ($2::timestamptz IS NULL OR e.created_at >= $2)
+         ORDER BY e.created_at ASC, e.id ASC",
+    )
+    .bind(user_id)
+    .bind(cutoff)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    for (bot_id, bot_name) in bots {
-        let events = load_events_for_bot(state, *bot_id, cutoff).await?;
-        let filtered = events
-            .into_iter()
-            .filter(|event| should_include_event(report_kind, event.event_type));
-        report_rows.extend(filtered.map(|event| (bot_name.clone(), event)));
-    }
+    let report_rows = rows
+        .into_iter()
+        .map(|row| {
+            (
+                row.bot_name,
+                Event {
+                    id: row.id,
+                    bot_id: row.bot_id,
+                    event_type: row.event_type,
+                    message: row.message,
+                    metadata: row.metadata,
+                    created_at: row.created_at,
+                },
+            )
+        })
+        .collect();
 
-    Ok(report_rows)
+    Ok(filter_report_rows(report_rows, report_kind))
 }
 
 async fn resolve_webhook_url(state: &AppState) -> Result<String, (StatusCode, String)> {
@@ -263,15 +272,14 @@ pub async fn request_email_csv_report(
     })?;
 
     let recipient_email = resolve_recipient_email(&state, &auth, user_id).await?;
-    let bots = load_user_bots(&state, user_id).await?;
-    if bots.is_empty() {
+    if !user_has_bots(&state, user_id).await? {
         return Err((
             StatusCode::BAD_REQUEST,
             "No bots found. Create a bot before requesting reports.".to_string(),
         ));
     }
 
-    let report_rows = collect_report_rows(&state, &bots, cutoff, report_kind).await?;
+    let report_rows = collect_report_rows(&state, user_id, cutoff, report_kind).await?;
     let csv_content = build_report_csv(&report_rows, report_kind, &req.timeframe, &recipient_email);
 
     let payload = build_email_payload(
@@ -294,4 +302,58 @@ pub async fn request_email_csv_report(
         delivered_to: recipient_email,
         rows_included: report_rows.len() as i64,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::filter_report_rows;
+    use crate::models::{Event, EventType};
+    use chrono::{Duration, Utc};
+    use uuid::Uuid;
+
+    #[test]
+    fn filter_rows_preserves_order_and_filters_for_tax_report() {
+        let now = Utc::now();
+        let rows = vec![
+            (
+                "bot-a".to_string(),
+                Event {
+                    id: Uuid::new_v4(),
+                    bot_id: Uuid::new_v4(),
+                    event_type: EventType::TradeOpened,
+                    message: "opened".to_string(),
+                    metadata: None,
+                    created_at: now,
+                },
+            ),
+            (
+                "bot-b".to_string(),
+                Event {
+                    id: Uuid::new_v4(),
+                    bot_id: Uuid::new_v4(),
+                    event_type: EventType::Error,
+                    message: "error".to_string(),
+                    metadata: None,
+                    created_at: now + Duration::seconds(1),
+                },
+            ),
+            (
+                "bot-a".to_string(),
+                Event {
+                    id: Uuid::new_v4(),
+                    bot_id: Uuid::new_v4(),
+                    event_type: EventType::TradeClosed,
+                    message: "closed".to_string(),
+                    metadata: None,
+                    created_at: now + Duration::seconds(2),
+                },
+            ),
+        ];
+
+        let filtered = filter_report_rows(rows, "tax");
+        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered[0].1.event_type, EventType::TradeOpened);
+        assert_eq!(filtered[1].1.event_type, EventType::TradeClosed);
+        assert!(filtered[0].1.created_at < filtered[1].1.created_at);
+    }
 }
