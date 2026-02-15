@@ -132,7 +132,7 @@ Legend: `[ ]` pending, `[x]` completed.
 
 ## Low
 
-- [ ] **F-010 Root lint/typecheck scripts are non-runnable**
+- [x] **F-010 Root lint/typecheck scripts are non-runnable**
   - Files touched: `package.json`
   - Planned fix:
     - Make root scripts workspace-aware and runnable in repo context.
@@ -140,6 +140,9 @@ Legend: `[ ]` pending, `[x]` completed.
     - Ensure commands fail only on real project issues.
   - Test plan:
     - Run `npm run lint` and `npm run typecheck` from repo root.
+  - Completion note:
+    - Updated root scripts to workspace-aware, runnable commands that execute shared TS package builds from repo root.
+    - Verified with `npm run lint` and `npm run typecheck`.
 
 - [ ] **F-011 Over-broad dead_code allowances in bot-runner**
   - Files touched: `services/bot-runner/src/main.rs`, `services/bot-runner/src/lib.rs`

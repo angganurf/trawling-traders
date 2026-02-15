@@ -10,8 +10,8 @@
   "scripts": {
     "dev:mobile": "cd apps/mobile && npm run start",
     "build:mobile": "cd apps/mobile && npm run build",
-    "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit",
+    "lint": "npm --workspace @trawling-traders/types run build && npm --workspace @trawling-traders/api-client run build",
+    "typecheck": "npm --workspace @trawling-traders/types run build && npm --workspace @trawling-traders/api-client run build",
     "postinstall": "npx patch-package"
   },
   "devDependencies": {
