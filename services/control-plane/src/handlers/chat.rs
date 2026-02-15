@@ -160,15 +160,16 @@ fn default_model_for_provider(provider: &str) -> &'static str {
 }
 
 async fn call_llm(
+    http_client: &reqwest::Client,
     llm: &LlmConfig,
     system_prompt: &str,
     messages: &[BotChatMessage],
 ) -> Result<String, (StatusCode, String)> {
     let provider = llm.provider.to_lowercase();
     match provider.as_str() {
-        "anthropic" => call_anthropic(llm, system_prompt, messages).await,
+        "anthropic" => call_anthropic(http_client, llm, system_prompt, messages).await,
         "openai" | "openrouter" | "venice" => {
-            call_openai_compatible(llm, system_prompt, messages).await
+            call_openai_compatible(http_client, llm, system_prompt, messages).await
         }
         _ => Err((
             StatusCode::BAD_REQUEST,
@@ -178,6 +179,7 @@ async fn call_llm(
 }
 
 async fn call_openai_compatible(
+    http_client: &reqwest::Client,
     llm: &LlmConfig,
     system_prompt: &str,
     messages: &[BotChatMessage],
@@ -207,7 +209,7 @@ async fn call_openai_compatible(
         "temperature": 0.3,
     });
 
-    let response = reqwest::Client::new()
+    let response = http_client
         .post(endpoint)
         .bearer_auth(&llm.api_key)
         .json(&body)
@@ -255,6 +257,7 @@ async fn call_openai_compatible(
 }
 
 async fn call_anthropic(
+    http_client: &reqwest::Client,
     llm: &LlmConfig,
     system_prompt: &str,
     messages: &[BotChatMessage],
@@ -276,7 +279,7 @@ async fn call_anthropic(
         "messages": anthropic_messages,
     });
 
-    let response = reqwest::Client::new()
+    let response = http_client
         .post("https://api.anthropic.com/v1/messages")
         .header("x-api-key", &llm.api_key)
         .header("anthropic-version", "2023-06-01")
@@ -401,7 +404,7 @@ pub async fn post_bot_chat_message(
 
     let llm = load_llm_config(&state, bot_id).await?;
     let system_prompt = build_system_prompt(&bot);
-    let assistant_content = call_llm(&llm, &system_prompt, &chronological).await?;
+    let assistant_content = call_llm(&state.http_client, &llm, &system_prompt, &chronological).await?;
 
     let assistant_message = sqlx::query_as::<_, BotChatMessage>(
         "INSERT INTO bot_chat_messages (bot_id, role, content) VALUES ($1, 'assistant', $2) RETURNING *",

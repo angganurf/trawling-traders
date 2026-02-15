@@ -190,10 +190,11 @@ async fn resolve_webhook_url(state: &AppState) -> Result<String, (StatusCode, St
 }
 
 async fn post_email_webhook(
+    http_client: &reqwest::Client,
     webhook_url: &str,
     payload: &Value,
 ) -> Result<(), (StatusCode, String)> {
-    let response = reqwest::Client::new()
+    let response = http_client
         .post(webhook_url)
         .json(payload)
         .send()
@@ -291,7 +292,7 @@ pub async fn request_email_csv_report(
     );
 
     let webhook_url = resolve_webhook_url(&state).await?;
-    post_email_webhook(&webhook_url, &payload).await?;
+    post_email_webhook(&state.http_client, &webhook_url, &payload).await?;
 
     Ok(Json(EmailCsvReportResponse {
         success: true,

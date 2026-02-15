@@ -76,7 +76,7 @@ Legend: `[ ]` pending, `[x]` completed.
 
 ## Medium
 
-- [ ] **F-006 Missing explicit upstream timeouts/client reuse in chat/report handlers**
+- [x] **F-006 Missing explicit upstream timeouts/client reuse in chat/report handlers**
   - Files touched: `services/control-plane/src/lib.rs`, `services/control-plane/src/main.rs`, `services/control-plane/src/handlers/chat.rs`, `services/control-plane/src/handlers/reports.rs`
   - Planned fix:
     - Add shared `reqwest::Client` to app state with explicit timeout.
@@ -84,6 +84,10 @@ Legend: `[ ]` pending, `[x]` completed.
     - Preserve payload and error mapping semantics.
   - Test plan:
     - Compile checks and existing handler tests.
+  - Completion note:
+    - Added shared `reqwest::Client` with explicit 15s timeout to `AppState`.
+    - Updated chat/report webhook handlers to reuse the shared client instead of creating ad hoc clients per request.
+    - Verified with `cd services/control-plane && cargo check` and `cd services/control-plane && cargo test handlers::reports::tests::filter_rows_preserves_order_and_filters_for_tax_report`.
 
 - [ ] **F-007 Runtime panic footguns (`unwrap`/`expect`)**
   - Files touched: `services/control-plane/src/webhook.rs`, `services/control-plane/src/provisioning.rs`, `services/control-plane/src/handlers/bots.rs`

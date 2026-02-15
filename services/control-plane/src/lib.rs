@@ -32,6 +32,7 @@ use axum::{
     Router,
 };
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Semaphore;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -61,10 +62,17 @@ pub struct AppState {
     pub jwt_service: Option<cedros_login::services::JwtService>,
     /// Circuit breaker for DO provisioning API calls
     pub provision_cb: provisioning::CircuitBreaker,
+    /// Shared outbound HTTP client for webhook/LLM calls
+    pub http_client: reqwest::Client,
 }
 
 impl AppState {
     pub fn new(db: Db, max_concurrent: usize) -> Self {
+        let http_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(15))
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
+
         Self {
             db,
             secrets: SecretsManager::new(),
@@ -76,6 +84,7 @@ impl AppState {
             webhooks: WebhookNotifier::new(WebhookConfig::default()),
             jwt_service: None,
             provision_cb: provisioning::create_provision_circuit_breaker(),
+            http_client,
         }
     }
 
