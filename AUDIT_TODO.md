@@ -33,7 +33,7 @@ Legend: `[ ]` pending, `[x]` completed.
 
 ## High
 
-- [ ] **F-003 Broken test gate + missing CI coverage for bot-runner**
+- [x] **F-003 Broken test gate + missing CI coverage for bot-runner**
   - Files touched: `services/bot-runner/tests/paper_trading_harness.rs`, `.github/workflows/deploy.yml`
   - Planned fix:
     - Fix `BotConfig` test fixture fields (`llm_model`, `telegram_bot_token`).
@@ -42,6 +42,10 @@ Legend: `[ ]` pending, `[x]` completed.
   - Test plan:
     - Run `cd services/bot-runner && cargo test`.
     - Validate workflow YAML parses and references bot-runner steps.
+  - Completion note:
+    - Updated `paper_trading_harness` fixtures for current `BotConfig` fields (`llm_model`, `telegram_bot_token`).
+    - Added bot-runner fmt/clippy/test steps and target cache path in GitHub Actions deploy workflow.
+    - Verified with `cd services/bot-runner && cargo test`.
 
 - [ ] **F-004 N+1 in report generation + non-global ordering risk**
   - Files touched: `services/control-plane/src/handlers/reports.rs`

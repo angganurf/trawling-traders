@@ -74,6 +74,7 @@ jobs:
             ~/.cargo/git/db/
             services/control-plane/target/
             services/data-retrieval/target/
+            services/bot-runner/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -86,6 +87,10 @@ jobs:
         working-directory: services/data-retrieval
         run: cargo fmt --check
 
+      - name: Check formatting (bot-runner)
+        working-directory: services/bot-runner
+        run: cargo fmt --check
+
       - name: Run Clippy (control-plane)
         working-directory: services/control-plane
         run: cargo clippy --all-targets -- -D warnings
@@ -94,12 +99,20 @@ jobs:
         working-directory: services/data-retrieval
         run: cargo clippy --all-targets -- -D warnings
 
+      - name: Run Clippy (bot-runner)
+        working-directory: services/bot-runner
+        run: cargo clippy --all-targets -- -D warnings
+
       - name: Run tests (control-plane)
         working-directory: services/control-plane
         run: cargo test --release
 
       - name: Run tests (data-retrieval)
         working-directory: services/data-retrieval
+        run: cargo test --release
+
+      - name: Run tests (bot-runner)
+        working-directory: services/bot-runner
         run: cargo test --release
 
   build-control-plane:
