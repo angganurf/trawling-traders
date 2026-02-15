@@ -103,7 +103,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Verified with `cd services/control-plane && cargo check` and `cd services/control-plane && cargo test handlers::settings::tests::normalize_display_name_trims_and_keeps_valid_input`.
     - Note: `with_retry` zero-attempt panic is intentionally handled in `F-012`.
 
-- [ ] **F-008 Dead router path divergence (`lib.rs::app` unused)**
+- [x] **F-008 Dead router path divergence (`lib.rs::app` unused)**
   - Files touched: `services/control-plane/src/lib.rs`
   - Planned fix:
     - Remove unused `app(...)` router builder to avoid drift.
@@ -111,6 +111,10 @@ Legend: `[ ]` pending, `[x]` completed.
     - Ensure public exports remain intact.
   - Test plan:
     - `cd services/control-plane && cargo check`.
+  - Completion note:
+    - Removed unused `control_plane::app(...)` router builder from `lib.rs` so route composition is defined only in `main.rs`.
+    - Cleaned now-unused imports from `lib.rs`.
+    - Verified with `cd services/control-plane && cargo check`.
 
 - [ ] **F-009 Duplicate API client implementation drift (`index.ts` vs `client.ts`)**
   - Files touched: `packages/api-client/src/client.ts`, `packages/api-client/src/index.ts` (if needed)
