@@ -342,7 +342,11 @@ pub async fn create_bot(
     }
 
     let config_id = Uuid::new_v4();
-    let custom_assets_json = req.custom_assets.map(|a| serde_json::to_value(a).unwrap());
+    let custom_assets_json = req
+        .custom_assets
+        .map(serde_json::to_value)
+        .transpose()
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid custom_assets payload: {}", e)))?;
     let algorithm_factors_json = req
         .algorithm_factors
         .as_ref()
@@ -845,7 +849,9 @@ pub async fn update_bot_config(
     let custom_assets_json = req
         .config
         .custom_assets
-        .map(|a| serde_json::to_value(a).unwrap());
+        .map(serde_json::to_value)
+        .transpose()
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid custom_assets payload: {}", e)))?;
     let algorithm_factors_json = req
         .config
         .algorithm_factors

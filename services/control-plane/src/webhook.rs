@@ -35,7 +35,13 @@ impl WebhookNotifier {
         let client = Client::builder()
             .timeout(Duration::from_secs(config.timeout_secs))
             .build()
-            .expect("Failed to build HTTP client");
+            .unwrap_or_else(|e| {
+                warn!(
+                    "Failed to build webhook HTTP client with timeout ({}), falling back to default client",
+                    e
+                );
+                Client::new()
+            });
 
         Self { config, client }
     }

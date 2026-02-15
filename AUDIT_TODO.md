@@ -89,7 +89,7 @@ Legend: `[ ]` pending, `[x]` completed.
     - Updated chat/report webhook handlers to reuse the shared client instead of creating ad hoc clients per request.
     - Verified with `cd services/control-plane && cargo check` and `cd services/control-plane && cargo test handlers::reports::tests::filter_rows_preserves_order_and_filters_for_tax_report`.
 
-- [ ] **F-007 Runtime panic footguns (`unwrap`/`expect`)**
+- [x] **F-007 Runtime panic footguns (`unwrap`/`expect`)**
   - Files touched: `services/control-plane/src/webhook.rs`, `services/control-plane/src/provisioning.rs`, `services/control-plane/src/handlers/bots.rs`
   - Planned fix:
     - Replace runtime `expect`/`unwrap` with explicit error propagation/fallback handling.
@@ -97,6 +97,11 @@ Legend: `[ ]` pending, `[x]` completed.
     - Add defensive handling for serialization/encryption edge cases.
   - Test plan:
     - Existing test suite + new targeted unit tests for error branches.
+  - Completion note:
+    - Replaced webhook client constructor `expect` with non-panicking fallback and warning.
+    - Replaced runtime `serde_json::to_value(...).unwrap()` in bot config handlers with explicit `400` error mapping.
+    - Verified with `cd services/control-plane && cargo check` and `cd services/control-plane && cargo test handlers::settings::tests::normalize_display_name_trims_and_keeps_valid_input`.
+    - Note: `with_retry` zero-attempt panic is intentionally handled in `F-012`.
 
 - [ ] **F-008 Dead router path divergence (`lib.rs::app` unused)**
   - Files touched: `services/control-plane/src/lib.rs`
