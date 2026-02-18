@@ -329,12 +329,15 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - `health()` now returns cached stats instead of making a live BTC price call
     - Verified: `cargo check` clean
 
-- [ ] **R2-014 `redis` v0.25.4 future incompatibility**
-  - Files: `services/control-plane/Cargo.toml`, `services/data-retrieval/Cargo.toml`
+- [x] **R2-014 `redis` v0.25.4 future incompatibility**
+  - Files: `services/data-retrieval/Cargo.toml`
   - Planned fix:
     - Upgrade redis dependency to latest compatible version
   - Test plan: `cargo check` with no future-incompat warnings
-  - Status: pending
+  - Completion note:
+    - Upgraded redis from 0.25 to 1.0 (API-compatible, no code changes needed)
+    - Future-incompat warnings eliminated across all services
+    - Verified: `cargo check` clean for both data-retrieval and control-plane
 
 - [ ] **R2-015 Duplicate SafeAreaProvider in App.tsx**
   - Files: `apps/mobile/App.tsx`
