@@ -339,12 +339,14 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Future-incompat warnings eliminated across all services
     - Verified: `cargo check` clean for both data-retrieval and control-plane
 
-- [ ] **R2-015 Duplicate SafeAreaProvider in App.tsx**
+- [x] **R2-015 Duplicate SafeAreaProvider in App.tsx**
   - Files: `apps/mobile/App.tsx`
   - Planned fix:
     - Remove nested SafeAreaProvider wrapping payments error banner
   - Test plan: Visual check; typecheck
-  - Status: pending
+  - Completion note:
+    - Removed redundant inner SafeAreaProvider (already provided by outer content wrapper)
+    - Error banner View is now a direct child of the Fragment
 
 - [ ] **R2-016 Dead animation code in mobile**
   - Files: `apps/mobile/src/utils/animations.ts`

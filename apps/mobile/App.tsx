@@ -73,55 +73,53 @@ export default function App() {
           ) : (
             <>
               {content}
-              <SafeAreaProvider>
-                <View
-                  style={{
-                    position: 'absolute',
-                    bottom: 20,
-                    left: 16,
-                    right: 16,
-                    borderRadius: 12,
-                    padding: 12,
-                    backgroundColor: '#fff8e1',
-                    borderWidth: 1,
-                    borderColor: '#fbbf24',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  }}
-                >
-                  {configError ? (
-                    <>
-                      <Text style={{ textAlign: 'center', fontWeight: '600' }}>
-                        Payments unavailable in this session.
-                      </Text>
-                      <Text style={{ marginTop: 4, textAlign: 'center', opacity: 0.75 }}>
-                        {configError}
-                      </Text>
-                      <TouchableOpacity
-                        style={{
-                          marginTop: 10,
-                          backgroundColor: '#0f172a',
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 8,
-                          alignSelf: 'center',
-                        }}
-                        onPress={loadPayConfig}
-                      >
-                        <Text style={{ color: '#fff', fontWeight: '600' }}>Retry payments init</Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <View style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
-                      <ActivityIndicator size="small" />
-                      <Text style={{ marginLeft: 8 }}>Loading payment configuration…</Text>
-                    </View>
-                  )}
-                </View>
-              </SafeAreaProvider>
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 20,
+                  left: 16,
+                  right: 16,
+                  borderRadius: 12,
+                  padding: 12,
+                  backgroundColor: '#fff8e1',
+                  borderWidth: 1,
+                  borderColor: '#fbbf24',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+              >
+                {configError ? (
+                  <>
+                    <Text style={{ textAlign: 'center', fontWeight: '600' }}>
+                      Payments unavailable in this session.
+                    </Text>
+                    <Text style={{ marginTop: 4, textAlign: 'center', opacity: 0.75 }}>
+                      {configError}
+                    </Text>
+                    <TouchableOpacity
+                      style={{
+                        marginTop: 10,
+                        backgroundColor: '#0f172a',
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        alignSelf: 'center',
+                      }}
+                      onPress={loadPayConfig}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '600' }}>Retry payments init</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <View style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+                    <ActivityIndicator size="small" />
+                    <Text style={{ marginLeft: 8 }}>Loading payment configuration…</Text>
+                  </View>
+                )}
+              </View>
             </>
           )}
         </PaymentsProvider>
