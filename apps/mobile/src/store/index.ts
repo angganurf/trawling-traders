@@ -1,7 +1,21 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import type { Bot, User, BotConfig, LlmProvider, LlmModel } from '@trawling-traders/types';
+
+/** Zustand-compatible storage backed by expo-secure-store (encrypted at rest). */
+const secureStorage: StateStorage = {
+  getItem: async (name: string) => {
+    return SecureStore.getItemAsync(name);
+  },
+  setItem: async (name: string, value: string) => {
+    await SecureStore.setItemAsync(name, value);
+  },
+  removeItem: async (name: string) => {
+    await SecureStore.deleteItemAsync(name);
+  },
+};
 
 interface BotsState {
   bots: Bot[];
@@ -142,7 +156,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-preferences',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => secureStorage),
     }
   )
 );

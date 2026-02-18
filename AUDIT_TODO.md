@@ -281,13 +281,17 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Chose handler-level check over applying blunt middleware (which would block all Free requests)
     - Verified: `cargo check` clean
 
-- [ ] **R2-010 LLM API keys stored in AsyncStorage (not SecureStore)**
+- [x] **R2-010 LLM API keys stored in AsyncStorage (not SecureStore)**
   - Files: `apps/mobile/src/store/index.ts`
   - Planned fix:
     - Move sensitive settings (llmApiKey fields) to expo-secure-store wrapper
     - Keep non-sensitive preferences in AsyncStorage
   - Test plan: Mobile typecheck
-  - Status: pending
+  - Completion note:
+    - Created `secureStorage` Zustand adapter backed by `expo-secure-store` (encrypted at rest)
+    - Changed settings store (containing API keys) from AsyncStorage to secureStorage
+    - Non-sensitive stores (bots, user, prices) remain on AsyncStorage
+    - Verified: `tsc --noEmit` clean (only pre-existing error in CreateBotWizardSteps)
 
 ## Low
 
