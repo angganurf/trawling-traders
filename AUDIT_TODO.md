@@ -213,13 +213,17 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Converted 2 call sites in sync.rs from `histogram()` to `gauge()` so duration data is actually visible in snapshots
     - Verified: `cargo check` clean
 
-- [ ] **R2-004 Spawned provisioning tasks silently swallow panics**
+- [x] **R2-004 Spawned provisioning tasks silently swallow panics**
   - Files: `services/control-plane/src/handlers/bots.rs`
   - Planned fix:
     - Wrap each `tokio::spawn` call with a supervisor that catches JoinError and updates bot status to "error"
     - Log panic info for diagnostics
   - Test plan: `cargo check`, `cargo test` on control-plane
-  - Status: pending
+  - Completion note:
+    - Added `supervised_spawn()` helper that wraps a JoinHandle and catches panics
+    - On panic: logs error with bot_id and updates bot status to Error
+    - Applied to all 3 spawn sites (create, redeploy, destroy)
+    - Verified: `cargo check` clean
 
 ## Medium
 

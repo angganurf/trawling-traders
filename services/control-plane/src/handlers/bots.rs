@@ -21,6 +21,24 @@ use crate::{
     AppState,
 };
 
+/// Spawn a background task with panic supervision.
+///
+/// If the task panics, logs the error and updates the bot status to `Error`.
+/// The `supervisor_pool` is used only for the error-path DB update.
+fn supervised_spawn<F>(supervisor_pool: Db, bot_id: Uuid, task: F)
+where
+    F: std::future::Future<Output = ()> + Send + 'static,
+{
+    let handle = tokio::spawn(task);
+    tokio::spawn(async move {
+        if let Err(join_err) = handle.await {
+            error!(bot_id = %bot_id, error = %join_err, "Background task panicked");
+            update_bot_status(&supervisor_pool, bot_id, BotStatus::Error, "Internal panic")
+                .await;
+        }
+    });
+}
+
 /// Encrypt a secret value, returning a 500 error instead of silently falling back to empty string.
 fn encrypt_secret(secrets: &SecretsManager, value: &str) -> Result<String, (StatusCode, String)> {
     secrets.encrypt(value).map_err(|e| {
@@ -491,7 +509,8 @@ pub async fn create_bot(
     let semaphore = state.droplet_semaphore.clone();
     let metrics = state.metrics.clone();
     let provision_cb = state.provision_cb.clone();
-    tokio::spawn(async move {
+    let supervisor_pool = state.db.clone();
+    supervised_spawn(supervisor_pool, bot_id, async move {
         spawn_bot_droplet(
             bot_id,
             normalized_name.clone(),
@@ -976,7 +995,8 @@ pub async fn bot_action(
             let semaphore = state.droplet_semaphore.clone();
             let metrics = state.metrics.clone();
             let provision_cb = state.provision_cb.clone();
-            tokio::spawn(async move {
+            let supervisor_pool = state.db.clone();
+            supervised_spawn(supervisor_pool, bot_id, async move {
                 redeploy_bot_droplet(
                     bot_id,
                     bot_name,
@@ -1001,7 +1021,8 @@ pub async fn bot_action(
 
             if let Some(droplet_id) = bot.droplet_id {
                 let secrets = state.secrets.clone();
-                tokio::spawn(async move {
+                let supervisor_pool = state.db.clone();
+                supervised_spawn(supervisor_pool, bot_id, async move {
                     destroy_bot_droplet(bot_id, droplet_id, pool, secrets).await;
                 });
             }
