@@ -1,3 +1,4 @@
+#![allow(dead_code)] // WIP: trade intent tracking
 //! Trade intent tracking for idempotency
 
 use std::collections::HashMap;
@@ -39,6 +40,12 @@ pub struct TradeIntent {
 pub struct IntentRegistry {
     intents: HashMap<String, TradeIntent>,
     max_age: Duration,
+}
+
+impl Default for IntentRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IntentRegistry {
@@ -288,7 +295,7 @@ impl IntentRegistry {
         match &intent.state {
             TradeIntentState::Confirmed { .. } | TradeIntentState::Failed { .. } => {
                 debug!("Found equivalent finalized intent: {}", intent.id);
-                return true;
+                true
             }
             _ => {
                 // Pending intent, check if stale

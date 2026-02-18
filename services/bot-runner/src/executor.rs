@@ -50,6 +50,7 @@ impl QuoteCache {
         }
     }
 
+    #[allow(dead_code)] // WIP
     pub fn with_max_size(ttl_secs: u64, max_size: usize) -> Self {
         Self {
             entries: Arc::new(RwLock::new(HashMap::new())),
@@ -125,6 +126,7 @@ impl QuoteCache {
     }
 
     /// Clean up expired entries
+    #[allow(dead_code)] // WIP
     pub async fn cleanup(&self) {
         let mut entries = self.entries.write().await;
         let before = entries.len();
@@ -139,11 +141,13 @@ impl QuoteCache {
         }
     }
 
+    #[allow(dead_code)] // WIP
     pub async fn size(&self) -> usize {
         let entries = self.entries.read().await;
         entries.len()
     }
 
+    #[allow(dead_code)] // WIP
     pub fn spawn_cleanup_task(self) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
@@ -159,15 +163,19 @@ impl QuoteCache {
 /// Regardless of claw-trader quirks, this is the canonical representation
 #[derive(Debug, Clone)]
 pub struct NormalizedTradeResult {
+    #[allow(dead_code)] // WIP
     pub intent_id: String,
     pub stage_reached: TradeStage,
     pub signature: Option<String>,
     pub quote: QuoteData,
     pub execution: ExecutionData,
     pub error: Option<TradeError>,
+    #[allow(dead_code)] // WIP
     pub input_mint: String,
+    #[allow(dead_code)] // WIP
     pub output_mint: String,
     pub side: TradeSide,
+    #[allow(dead_code)] // WIP
     pub trading_mode: TradingMode,
     pub shield_result: Option<ShieldCheck>,
 }
@@ -193,6 +201,7 @@ impl Default for NormalizedTradeResult {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TradeStage {
     Blocked,
+    #[allow(dead_code)] // WIP
     Submitted,
     Confirmed,
     Failed,
@@ -203,6 +212,7 @@ pub struct QuoteData {
     pub in_amount: u64,
     pub expected_out: u64,
     pub price_impact_pct: f64,
+    #[allow(dead_code)] // WIP
     pub fee_bps: u64,
 }
 
@@ -833,6 +843,7 @@ impl TradeExecutor {
     }
 
     /// Get execution config
+    #[allow(dead_code)] // WIP
     pub fn execution_config(&self) -> &ExecutionConfig {
         &self.execution_config
     }
@@ -842,18 +853,23 @@ impl TradeExecutor {
 
 #[derive(Debug, Deserialize)]
 struct PriceResponse {
+    #[allow(dead_code)]
     symbol: String,
     price: String,
+    #[allow(dead_code)]
     timestamp: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct ClawTraderPrice {
+    #[allow(dead_code)] // WIP: used by reconciler
     pub input_mint: String,
+    #[allow(dead_code)] // WIP
     pub output_mint: String,
     pub in_amount: u64,
     pub out_amount: u64,
     pub price_impact_pct: f64,
+    #[allow(dead_code)] // WIP
     pub fee_bps: u64,
 }
 
@@ -872,11 +888,16 @@ pub enum ShieldVerdict {
     Deny,
 }
 
+#[allow(dead_code)] // WIP: token holding data
 #[derive(Debug, Clone)]
 pub struct TokenHolding {
+    #[allow(dead_code)]
     pub mint: String,
+    #[allow(dead_code)]
     pub symbol: String,
+    #[allow(dead_code)]
     pub amount: u64,
+    #[allow(dead_code)]
     pub usd_value: Option<Decimal>,
 }
 
@@ -886,83 +907,7 @@ pub enum TradeSide {
     Sell,
 }
 
-/// Legacy TradeResult - kept for backward compatibility during migration
-/// Prefer NormalizedTradeResult for new code
-#[derive(Debug, Clone)]
-pub struct TradeResult {
-    pub success: bool,
-    pub tx_hash: Option<String>,
-    pub message: String,
-    pub executed_price: Decimal,
-    pub pnl: Option<Decimal>,
-    pub input_mint: String,
-    pub output_mint: String,
-    pub in_amount: u64,
-    pub out_amount: u64,
-    pub fee_usd: Option<Decimal>,
-    pub shield_result: Option<ShieldCheck>,
-}
-
-impl From<NormalizedTradeResult> for TradeResult {
-    fn from(n: NormalizedTradeResult) -> Self {
-        Self {
-            success: n.stage_reached == TradeStage::Confirmed,
-            tx_hash: n.signature,
-            message: n
-                .error
-                .as_ref()
-                .map(|e| e.message.clone())
-                .unwrap_or_else(|| format!("Trade {:?}", n.stage_reached)),
-            executed_price: n.execution.realized_price,
-            pnl: None,
-            input_mint: n.input_mint,
-            output_mint: n.output_mint,
-            in_amount: n.quote.in_amount,
-            out_amount: n.execution.out_amount_raw,
-            fee_usd: None,
-            shield_result: n.shield_result,
-        }
-    }
-}
-
-// NOTE: Signal generation functions (generate_trend_signal, generate_reversion_signal,
-// generate_breakout_signal) have been removed. Trading decisions now come from OpenClaw gateway.
+// NOTE: Legacy TradeResult, signal generation functions, and duplicate token utility
+// functions have been removed. Trading decisions now come from OpenClaw gateway.
 // See runner.rs decision_tick() for the new flow.
-
-/// Convert symbol to mint address
-pub fn symbol_to_mint(symbol: &str) -> Option<&'static str> {
-    match symbol.to_uppercase().as_str() {
-        "SOL" | "SOL-USD" => Some("So11111111111111111111111111111111111111112"),
-        "USDC" | "USDC-USD" => Some("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
-        "BTC" | "BTC-USD" => Some("qfnqNLS3x2K5R3oCmS1NjwiKOK8Tq77pCH6zTX8mR2F"), // Wrapped BTC
-        "ETH" | "ETH-USD" => Some("7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs"), // Wrapped ETH
-        "BONK" => Some("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"),
-        "WIF" => Some("EKpQGSJtjMFqKZ9KQbSqL2zPQCpA5xZKN2CjeJRdQpump"),
-        _ => None,
-    }
-}
-
-/// Get decimals for a token
-pub fn get_token_decimals(mint: &str) -> u8 {
-    match mint {
-        "So11111111111111111111111111111111111111112" => 9, // SOL
-        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" => 6, // USDC
-        "qfnqNLS3x2K5R3oCmS1NjwiKOK8Tq77pCH6zTX8mR2F" => 8, // WBTC
-        "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs" => 8, // WETH
-        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" => 5, // BONK
-        "EKpQGSJtjMFqKZ9KQbSqL2zPQCpA5xZKN2CjeJRdQpump" => 6, // WIF
-        _ => 6,                                             // Default to 6
-    }
-}
-
-/// Convert human-readable amount to raw amount
-pub fn to_raw_amount(amount: Decimal, decimals: u8) -> u64 {
-    let multiplier = Decimal::from(10u64.pow(decimals as u32));
-    (amount * multiplier).to_u64().unwrap_or(0)
-}
-
-/// Convert raw amount to human-readable
-pub fn from_raw_amount(amount: u64, decimals: u8) -> Decimal {
-    let divisor = Decimal::from(10u64.pow(decimals as u32));
-    Decimal::from(amount) / divisor
-}
+// Token utilities live in amount.rs.

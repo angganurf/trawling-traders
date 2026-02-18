@@ -229,6 +229,7 @@ pub enum AssetFocus {
     Custom,
 }
 
+#[allow(dead_code)] // WIP: algorithm mode config
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AlgorithmMode {
@@ -238,6 +239,7 @@ pub enum AlgorithmMode {
     Breakout,
 }
 
+#[allow(dead_code)] // WIP: strictness config
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Strictness {

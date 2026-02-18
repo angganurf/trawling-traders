@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::fs;
-use tracing::{debug, error};
+use tracing::debug;
 
 /// Manages state files for observability
 pub struct StateManager {

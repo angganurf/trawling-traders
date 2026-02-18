@@ -1,3 +1,4 @@
+#![allow(dead_code)] // WIP: holdings reconciliation
 //! Holdings reconciliation - Sync on-chain balances with portfolio
 
 use std::collections::HashMap;

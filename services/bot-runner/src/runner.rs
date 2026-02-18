@@ -464,7 +464,7 @@ impl BotRunner {
                 self.write_journal_entry(&journal_entry).ok();
 
                 // Emit blocked event
-                self.emit_intent_blocked(&intent, &validation).await;
+                self.emit_intent_blocked(intent, &validation).await;
                 continue;
             }
 

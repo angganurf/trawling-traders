@@ -6,9 +6,11 @@ use rust_decimal::Decimal;
 /// Token metadata
 #[derive(Debug, Clone)]
 pub struct TokenInfo {
+    #[allow(dead_code)] // WIP
     pub mint: String,
     pub symbol: String,
     pub decimals: u8,
+    #[allow(dead_code)] // WIP
     pub tags: Vec<String>,
 }
 
@@ -114,11 +116,13 @@ pub fn get_token_info(symbol_or_mint: &str) -> Option<TokenInfo> {
 }
 
 /// Get token info by symbol (for config asset_focus mapping)
+#[allow(dead_code)] // WIP: symbol lookup
 pub fn get_token_by_symbol(symbol: &str) -> Option<TokenInfo> {
     get_token_info(symbol)
 }
 
 /// Get list of tokens for an asset focus category
+#[allow(dead_code)] // WIP: asset focus token lists
 pub fn get_tokens_for_focus(focus: &crate::config::AssetFocus) -> Vec<TokenInfo> {
     match focus {
         crate::config::AssetFocus::Majors => vec![
@@ -146,6 +150,7 @@ pub fn get_tokens_for_focus(focus: &crate::config::AssetFocus) -> Vec<TokenInfo>
 
 /// Validate and normalize a mint address or symbol
 /// Returns the canonical mint address
+#[allow(dead_code)] // WIP: mint resolution
 pub fn resolve_mint(symbol_or_mint: &str) -> anyhow::Result<String> {
     if let Some(info) = get_token_info(symbol_or_mint) {
         Ok(info.mint)

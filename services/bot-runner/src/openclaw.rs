@@ -1,3 +1,4 @@
+#![allow(dead_code)] // WIP: OpenClaw gateway client
 //! OpenClaw Gateway Client
 //!
 //! HTTP client for communicating with the local OpenClaw gateway

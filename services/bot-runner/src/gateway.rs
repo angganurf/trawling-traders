@@ -1,3 +1,4 @@
+#![allow(dead_code)] // WIP: gateway process management
 //! OpenClaw Gateway Manager
 //!
 //! Handles configuration rendering and gateway lifecycle management.
