@@ -249,12 +249,15 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Added `llmModel` mapping in api-client `mapBotConfig()`
     - Verified: `tsc --noEmit` clean for both packages
 
-- [ ] **R2-007 Plaintext secrets fallback in production**
+- [x] **R2-007 Plaintext secrets fallback in production**
   - Files: `services/control-plane/src/secrets.rs`
   - Planned fix:
     - Add startup guard: if ENVIRONMENT is not "development"/"dev" and encryption key is missing, log error and exit
   - Test plan: `cargo check` on control-plane
-  - Status: pending
+  - Completion note:
+    - Exit with error if SECRETS_ENCRYPTION_KEY unset unless ALLOW_PLAINTEXT_SECRETS=true
+    - Production will fail fast; dev explicitly opts in to plaintext
+    - Verified: `cargo check` clean, `cargo test secrets` passes (4/4)
 
 - [ ] **R2-008 Kline processing stub does nothing**
   - Files: `services/data-retrieval/src/sources/binance_ws.rs`

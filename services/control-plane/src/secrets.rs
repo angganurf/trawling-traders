@@ -49,9 +49,19 @@ impl SecretsManager {
         });
 
         if encryption_key.is_none() {
-            tracing::warn!(
-                "SECRETS_ENCRYPTION_KEY not set or invalid - secrets will be stored in plaintext!"
-            );
+            let allow_plaintext =
+                std::env::var("ALLOW_PLAINTEXT_SECRETS").unwrap_or_default() == "true";
+            if allow_plaintext {
+                tracing::warn!(
+                    "SECRETS_ENCRYPTION_KEY not set - plaintext secrets allowed via ALLOW_PLAINTEXT_SECRETS"
+                );
+            } else {
+                tracing::error!(
+                    "SECRETS_ENCRYPTION_KEY not set and ALLOW_PLAINTEXT_SECRETS is not 'true'. \
+                     Set SECRETS_ENCRYPTION_KEY for production or ALLOW_PLAINTEXT_SECRETS=true for dev."
+                );
+                std::process::exit(1);
+            }
         }
 
         Self { encryption_key }
