@@ -307,13 +307,15 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Added targeted `#[allow(dead_code)]` on specific WIP items in executor.rs, amount.rs, config.rs
     - Verified: `cargo check` clean (0 warnings), `cargo test` passes (13/13)
 
-- [ ] **R2-012 `_error` parameter never used in `update_bot_status`**
+- [x] **R2-012 `_error` parameter never used in `update_bot_status`**
   - Files: `services/control-plane/src/handlers/bots.rs`
   - Planned fix:
     - Log the error parameter with `tracing::warn!` when status is error
     - Remove underscore prefix
   - Test plan: `cargo check` on control-plane
-  - Status: pending
+  - Completion note:
+    - Renamed `_error` to `reason`, log it with `warn!` when status is Error
+    - Verified: `cargo check` clean
 
 - [ ] **R2-013 Pyth health check makes real API call**
   - Files: `services/data-retrieval/src/sources/pyth.rs`

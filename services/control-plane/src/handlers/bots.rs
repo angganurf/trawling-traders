@@ -852,7 +852,10 @@ async fn redeploy_bot_droplet(
 }
 
 /// Helper: Update bot status with error message
-async fn update_bot_status(pool: &Db, bot_id: Uuid, status: BotStatus, _error: &str) {
+async fn update_bot_status(pool: &Db, bot_id: Uuid, status: BotStatus, reason: &str) {
+    if status == BotStatus::Error {
+        warn!(bot_id = %bot_id, reason = %reason, "Bot entering error state");
+    }
     if let Err(e) = sqlx::query("UPDATE bots SET status = $1, updated_at = NOW() WHERE id = $2")
         .bind(status)
         .bind(bot_id)
