@@ -185,19 +185,35 @@ async fn get_authorized_bot(
 }
 
 /// GET /bots - List all bots for authenticated user
+const MAX_BOTS_LIMIT: i64 = 100;
+const DEFAULT_BOTS_LIMIT: i64 = 50;
+
+#[derive(serde::Deserialize)]
+pub struct ListBotsQuery {
+    pub limit: Option<i64>,
+}
+
 pub async fn list_bots(
     State(state): State<Arc<AppState>>,
     Extension(auth): Extension<AuthContext>,
+    Query(query): Query<ListBotsQuery>,
 ) -> Result<Json<ListBotsResponse>, (StatusCode, String)> {
     let user_id = Uuid::parse_str(&auth.user_id)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid user ID".to_string()))?;
 
-    let bots =
-        sqlx::query_as::<_, Bot>("SELECT * FROM bots WHERE user_id = $1 ORDER BY created_at DESC")
-            .bind(user_id)
-            .fetch_all(&state.db)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    let limit = query
+        .limit
+        .unwrap_or(DEFAULT_BOTS_LIMIT)
+        .clamp(1, MAX_BOTS_LIMIT);
+
+    let bots = sqlx::query_as::<_, Bot>(
+        "SELECT * FROM bots WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2",
+    )
+    .bind(user_id)
+    .bind(limit)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let total = bots.len() as i64;
 

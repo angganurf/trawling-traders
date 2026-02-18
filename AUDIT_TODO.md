@@ -227,13 +227,16 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
 
 ## Medium
 
-- [ ] **R2-005 No pagination on bot list endpoint**
+- [x] **R2-005 No pagination on bot list endpoint**
   - Files: `services/control-plane/src/handlers/bots.rs`
   - Planned fix:
     - Add `LIMIT 50` default to `list_bots` query
     - Accept optional `?limit=N` query param (max 100)
   - Test plan: `cargo check` on control-plane
-  - Status: pending
+  - Completion note:
+    - Added `ListBotsQuery` with optional `limit` param, clamped to 1..100, default 50
+    - Added LIMIT $2 to SQL query
+    - Verified: `cargo check` clean
 
 - [ ] **R2-006 Missing `llmModel` in BotConfig response mapping**
   - Files: `packages/types/src/index.ts`, `packages/api-client/src/index.ts`
