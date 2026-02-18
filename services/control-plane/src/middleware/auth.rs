@@ -84,40 +84,24 @@ async fn authenticate_api_key(state: &AppState, api_key: &str) -> Result<AuthCon
     let key_hash = hex::encode(Sha256::digest(api_key.as_bytes()));
     let key_prefix: String = api_key.chars().take(16).collect();
 
-    let row: Option<(uuid::Uuid,)> =
-        sqlx::query_as("SELECT user_id FROM api_keys WHERE key_prefix = $1 AND key_hash = $2")
-            .bind(&key_prefix)
-            .bind(&key_hash)
-            .fetch_optional(&state.db)
-            .await
-            .map_err(|e| {
-                tracing::error!("API key lookup failed: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
+    let row: Option<(uuid::Uuid, Option<String>, bool)> = sqlx::query_as(
+        "SELECT u.id, u.email, COALESCE(u.is_system_admin, false) \
+         FROM api_keys ak JOIN users u ON u.id = ak.user_id \
+         WHERE ak.key_prefix = $1 AND ak.key_hash = $2",
+    )
+    .bind(&key_prefix)
+    .bind(&key_hash)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("API key lookup failed: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    let (user_id,) = row.ok_or_else(|| {
+    let (user_id, email, is_admin) = row.ok_or_else(|| {
         tracing::debug!("Invalid API key (prefix: {})", &key_prefix);
         StatusCode::UNAUTHORIZED
     })?;
-
-    // Check admin status from users table
-    let is_admin: bool =
-        sqlx::query_scalar("SELECT COALESCE(is_system_admin, false) FROM users WHERE id = $1")
-            .bind(user_id)
-            .fetch_optional(&state.db)
-            .await
-            .map_err(|e| {
-                tracing::error!("User lookup for API key failed: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?
-            .unwrap_or(false);
-
-    let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .flatten();
 
     Ok(AuthContext {
         user_id: user_id.to_string(),

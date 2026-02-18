@@ -358,12 +358,15 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Kept `pressScale` (still imported by AnimatedBotCard and BotFleetCard)
     - Kept all hook versions (useFadeIn, useSlideIn, etc.) as they're the proper replacements
 
-- [ ] **R2-017 API key auth uses two separate queries**
+- [x] **R2-017 API key auth uses two separate queries**
   - Files: `services/control-plane/src/middleware/auth.rs`
   - Planned fix:
     - Merge api_keys + users lookup into single JOIN query
   - Test plan: `cargo check` on control-plane
-  - Status: pending
+  - Completion note:
+    - Merged 3 separate queries (api_keys lookup, is_admin check, email lookup) into single JOIN
+    - Reduces API key auth from 3 round-trips to 1
+    - Verified: `cargo check` clean
 
 - [ ] **R2-018 `strict: false` in API client tsconfig**
   - Files: `packages/api-client/tsconfig.json`, `packages/api-client/src/index.ts`
