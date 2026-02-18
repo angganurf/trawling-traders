@@ -254,52 +254,7 @@ export function useStaggeredFadeIn(
   return { values: valuesRef.current, start, stop, reset };
 }
 
-// Common animation presets (unchanged)
-export const AnimationPresets = {
-  cardPress: {
-    scale: { min: 0.98, max: 1 },
-    duration: 100,
-  },
-  screenTransition: {
-    duration: 250,
-    easing: Easing.out(Easing.cubic),
-  },
-  listItem: {
-    duration: 300,
-    stagger: 50,
-  },
-  spinner: {
-    duration: 1000,
-    easing: Easing.linear,
-  },
-};
-
-// Legacy exports for backwards compatibility (deprecated)
-
-/** @deprecated Use useFadeIn hook instead */
-export function fadeIn(duration = 300) {
-  const opacity = new Animated.Value(0);
-  const animation = Animated.timing(opacity, {
-    toValue: 1,
-    duration,
-    useNativeDriver: true,
-    easing: Easing.ease,
-  });
-  animation.start();
-  return opacity;
-}
-
-/** @deprecated Use useSlideIn hook instead */
-export function slideInFromRight(translateX: Animated.Value, duration = 250) {
-  Animated.timing(translateX, {
-    toValue: 0,
-    duration,
-    useNativeDriver: true,
-    easing: Easing.out(Easing.cubic),
-  }).start();
-}
-
-/** @deprecated Use usePressScale hook instead */
+/** Imperative press scale — still used by AnimatedBotCard and BotFleetCard. */
 export function pressScale(animatedValue: Animated.Value, pressed: boolean) {
   Animated.spring(animatedValue, {
     toValue: pressed ? 0.98 : 1,
@@ -307,60 +262,4 @@ export function pressScale(animatedValue: Animated.Value, pressed: boolean) {
     friction: 5,
     tension: 300,
   }).start();
-}
-
-/** @deprecated Use usePulseAnimation hook instead */
-export function pulse(animatedValue: Animated.Value) {
-  return Animated.loop(
-    Animated.sequence([
-      Animated.timing(animatedValue, {
-        toValue: 1.2,
-        duration: 500,
-        useNativeDriver: true,
-        easing: Easing.inOut(Easing.ease),
-      }),
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-        easing: Easing.inOut(Easing.ease),
-      }),
-    ])
-  );
-}
-
-/** @deprecated Use useStaggeredFadeIn hook instead */
-export function staggerFadeIn(items: Animated.Value[], baseDelay = 50) {
-  const animations = items.map((item, index) =>
-    Animated.timing(item, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-      delay: index * baseDelay,
-      easing: Easing.ease,
-    })
-  );
-  Animated.stagger(baseDelay, animations).start();
-}
-
-/** @deprecated Use useShimmerAnimation hook instead */
-export function shimmer(translateX: Animated.Value, width: number) {
-  return Animated.loop(
-    Animated.timing(translateX, {
-      toValue: width,
-      duration: 1500,
-      useNativeDriver: true,
-      easing: Easing.linear,
-    })
-  );
-}
-
-/** @deprecated Use standard Animated.spring with cleanup */
-export function bounce(animatedValue: Animated.Value) {
-  return Animated.spring(animatedValue, {
-    toValue: 1,
-    useNativeDriver: true,
-    friction: 3,
-    tension: 40,
-  });
 }

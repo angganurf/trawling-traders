@@ -348,12 +348,15 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Removed redundant inner SafeAreaProvider (already provided by outer content wrapper)
     - Error banner View is now a direct child of the Fragment
 
-- [ ] **R2-016 Dead animation code in mobile**
+- [x] **R2-016 Dead animation code in mobile**
   - Files: `apps/mobile/src/utils/animations.ts`
   - Planned fix:
     - Remove unused `AnimationPresets` and deprecated animation functions
   - Test plan: Grep for imports to verify no references
-  - Status: pending
+  - Completion note:
+    - Removed AnimationPresets and 7 deprecated functions (fadeIn, slideInFromRight, pulse, staggerFadeIn, shimmer, bounce)
+    - Kept `pressScale` (still imported by AnimatedBotCard and BotFleetCard)
+    - Kept all hook versions (useFadeIn, useSlideIn, etc.) as they're the proper replacements
 
 - [ ] **R2-017 API key auth uses two separate queries**
   - Files: `services/control-plane/src/middleware/auth.rs`
