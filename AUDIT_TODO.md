@@ -202,13 +202,16 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Replaced all 6 `.unwrap_or_default()` on encrypt calls with `encrypt_secret()` + `?` propagation
     - Verified: `cargo check` clean
 
-- [ ] **R2-003 Histogram memory leak in MetricsCollector**
-  - Files: `services/control-plane/src/observability.rs`
+- [x] **R2-003 Histogram memory leak in MetricsCollector**
+  - Files: `services/control-plane/src/observability.rs`, `services/control-plane/src/handlers/sync.rs`
   - Planned fix:
     - Remove unused histogram collection (histograms field, `histogram()` method) since `snapshot()` never surfaces it
     - Simplify MetricsInner struct
   - Test plan: `cargo check` on control-plane
-  - Status: pending
+  - Completion note:
+    - Removed `histograms` field, `HashMap` allocation, and `histogram()` method from MetricsCollector
+    - Converted 2 call sites in sync.rs from `histogram()` to `gauge()` so duration data is actually visible in snapshots
+    - Verified: `cargo check` clean
 
 - [ ] **R2-004 Spawned provisioning tasks silently swallow panics**
   - Files: `services/control-plane/src/handlers/bots.rs`

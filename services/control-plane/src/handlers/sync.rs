@@ -107,7 +107,7 @@ pub async fn get_bot_config(
     let duration = start.elapsed().as_millis() as f64;
     state
         .metrics
-        .histogram(metrics::CONFIG_FETCH_DURATION_MS, duration)
+        .gauge(metrics::CONFIG_FETCH_DURATION_MS, duration)
         .await;
     state
         .metrics
@@ -283,7 +283,7 @@ pub async fn heartbeat(
     let duration = start.elapsed().as_millis() as f64;
     state
         .metrics
-        .histogram(metrics::HEARTBEAT_DURATION_MS, duration)
+        .gauge(metrics::HEARTBEAT_DURATION_MS, duration)
         .await;
     state.metrics.increment(metrics::HEARTBEAT_COUNT, 1).await;
 

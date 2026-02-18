@@ -14,7 +14,6 @@ pub struct MetricsCollector {
 struct MetricsInner {
     counters: HashMap<String, u64>,
     gauges: HashMap<String, f64>,
-    histograms: HashMap<String, Vec<f64>>,
     start_time: Instant,
 }
 
@@ -24,7 +23,6 @@ impl MetricsCollector {
             inner: Arc::new(RwLock::new(MetricsInner {
                 counters: HashMap::new(),
                 gauges: HashMap::new(),
-                histograms: HashMap::new(),
                 start_time: Instant::now(),
             })),
         }
@@ -41,16 +39,6 @@ impl MetricsCollector {
     pub async fn gauge(&self, name: &str, value: f64) {
         let mut inner = self.inner.write().await;
         inner.gauges.insert(name.to_string(), value);
-    }
-
-    /// Record a histogram value
-    pub async fn histogram(&self, name: &str, value: f64) {
-        let mut inner = self.inner.write().await;
-        inner
-            .histograms
-            .entry(name.to_string())
-            .or_insert_with(Vec::new)
-            .push(value);
     }
 
     /// Get all metrics as JSON-serializable format
