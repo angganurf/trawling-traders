@@ -259,13 +259,16 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Production will fail fast; dev explicitly opts in to plaintext
     - Verified: `cargo check` clean, `cargo test secrets` passes (4/4)
 
-- [ ] **R2-008 Kline processing stub does nothing**
+- [x] **R2-008 Kline processing stub does nothing**
   - Files: `services/data-retrieval/src/sources/binance_ws.rs`
   - Planned fix:
     - Remove unimplemented kline processing stub
     - Have `subscribe_klines()` return an error indicating feature is not yet implemented
   - Test plan: `cargo check` on data-retrieval
-  - Status: pending
+  - Completion note:
+    - Removed dead `subscribe_klines()` (never called) and stub `process_kline()` (parsed then discarded data)
+    - Kline events in `process_message` now just log a debug message
+    - Verified: `cargo check` clean
 
 - [ ] **R2-009 `live_trading_guard_middleware` defined but never applied**
   - Files: `services/control-plane/src/middleware/subscription.rs`, `services/control-plane/src/main.rs`

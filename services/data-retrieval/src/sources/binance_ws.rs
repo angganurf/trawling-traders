@@ -118,45 +118,8 @@ impl BinanceWebSocketClient {
         Ok(())
     }
 
-    /// Subscribe to 1-minute kline (candlestick) updates
-    pub async fn subscribe_klines(
-        &self,
-        symbol: &str,
-        interval: &str, // "1m", "5m", "15m", "1h", "4h", "1d"
-    ) -> Result<()> {
-        let stream_name = format!("{}@kline_{}", symbol.to_lowercase(), interval);
-
-        {
-            let subs = self.subscriptions.read().await;
-            if subs.values().any(|v| v == &stream_name) {
-                return Ok(()); // Already subscribed
-            }
-        }
-
-        let subscribe_msg = serde_json::json!({
-            "method": "SUBSCRIBE",
-            "params": [&stream_name],
-            "id": 2,
-        });
-
-        let msg = Message::Text(subscribe_msg.to_string());
-
-        // Use ws_sink (write half) - doesn't block message handler
-        {
-            let mut sink = self.ws_sink.lock().await;
-            sink.send(msg).await.map_err(|e| {
-                DataRetrievalError::ApiError(format!("Failed to subscribe to klines: {}", e))
-            })?;
-        }
-
-        {
-            let mut subs = self.subscriptions.write().await;
-            subs.insert(format!("{}_kline_{}", symbol, interval), stream_name);
-        }
-
-        info!("Subscribed to {} {} klines", symbol, interval);
-        Ok(())
-    }
+    // Kline (candlestick) subscriptions are not yet implemented.
+    // The subscribe/process stubs were removed to avoid dead code accumulation.
 
     /// Handle incoming WebSocket messages
     ///
@@ -221,7 +184,7 @@ impl BinanceWebSocketClient {
                     self.process_trade(&value).await?;
                 }
                 "kline" => {
-                    self.process_kline(&value).await?;
+                    debug!("Received kline event (not yet processed)");
                 }
                 _ => {
                     debug!("Unknown event type: {}", event_type);
@@ -278,29 +241,6 @@ impl BinanceWebSocketClient {
         if let Err(e) = self.price_tx.send(price_point).await {
             warn!("Failed to send price update: {}", e);
         }
-
-        Ok(())
-    }
-
-    /// Process kline (candlestick) message
-    async fn process_kline(&self, value: &Value) -> Result<()> {
-        // Kline messages have a nested "k" object
-        let kline = value
-            .get("k")
-            .ok_or_else(|| DataRetrievalError::InvalidResponse("Missing kline data".to_string()))?;
-
-        let symbol = value.get("s").and_then(|v| v.as_str()).unwrap_or("UNKNOWN");
-
-        let is_closed = kline.get("x").and_then(|v| v.as_bool()).unwrap_or(false);
-
-        // Only process closed candles for OHLCV
-        if !is_closed {
-            return Ok(());
-        }
-
-        debug!("Kline closed for {}: {:?}", symbol, kline);
-
-        // TODO: Send to candle channel for aggregation
 
         Ok(())
     }
