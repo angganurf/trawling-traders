@@ -98,6 +98,7 @@ export interface BotConfig {
   
   // Secrets (encrypted server-side)
   llmProvider: LlmProvider;
+  llmModel?: LlmModel;
   llmApiKey: string;
 }
 

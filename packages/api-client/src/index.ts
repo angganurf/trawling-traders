@@ -445,6 +445,7 @@ function mapBotConfig(raw: any): BotConfig {
     riskCaps: raw.riskCaps ?? raw.risk_caps,
     tradingMode: raw.tradingMode ?? raw.trading_mode,
     llmProvider: raw.llmProvider ?? raw.llm_provider,
+    llmModel: raw.llmModel ?? raw.llm_model,
     llmApiKey: raw.llmApiKey ?? raw.llm_api_key ?? '',
   };
 }

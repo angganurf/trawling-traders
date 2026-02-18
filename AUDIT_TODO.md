@@ -238,13 +238,16 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Added LIMIT $2 to SQL query
     - Verified: `cargo check` clean
 
-- [ ] **R2-006 Missing `llmModel` in BotConfig response mapping**
+- [x] **R2-006 Missing `llmModel` in BotConfig response mapping**
   - Files: `packages/types/src/index.ts`, `packages/api-client/src/index.ts`
   - Planned fix:
     - Add `llmModel?: string` to `BotConfig` interface
     - Map `llm_model` in `mapBotConfig()`
   - Test plan: `npm run typecheck`
-  - Status: pending
+  - Completion note:
+    - Added `llmModel?: LlmModel` to BotConfig interface in types package
+    - Added `llmModel` mapping in api-client `mapBotConfig()`
+    - Verified: `tsc --noEmit` clean for both packages
 
 - [ ] **R2-007 Plaintext secrets fallback in production**
   - Files: `services/control-plane/src/secrets.rs`
