@@ -13,13 +13,27 @@ use uuid::Uuid;
 
 use crate::{
     db::Db,
-    middleware::AuthContext,
+    middleware::{subscription::SubscriptionContext, AuthContext},
     models::User,
     models::*,
     observability::{metrics, Logger},
     secrets::SecretsManager,
     AppState,
 };
+
+/// Reject live trading requests from Free-tier users.
+fn require_live_trading_permission(
+    sub: &SubscriptionContext,
+    mode: TradingMode,
+) -> Result<(), (StatusCode, String)> {
+    if mode == TradingMode::Live && sub.tier == crate::middleware::subscription::SubscriptionTier::Free {
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Live trading requires a paid subscription".to_string(),
+        ));
+    }
+    Ok(())
+}
 
 /// Spawn a background task with panic supervision.
 ///
@@ -318,11 +332,13 @@ fn derive_default_persona(user_id: Uuid) -> Persona {
 pub async fn create_bot(
     State(state): State<Arc<AppState>>,
     Extension(auth): Extension<AuthContext>,
+    Extension(sub): Extension<SubscriptionContext>,
     Json(req): Json<CreateBotRequest>,
 ) -> Result<Json<Bot>, (StatusCode, String)> {
     if let Err(errors) = req.validate() {
         return Err((StatusCode::BAD_REQUEST, errors.to_string()));
     }
+    require_live_trading_permission(&sub, req.trading_mode)?;
     let normalized_name = normalize_bot_name(&req.name)?;
 
     let user_id = Uuid::parse_str(&auth.user_id)
@@ -868,9 +884,12 @@ pub async fn get_bot(
 pub async fn update_bot_config(
     State(state): State<Arc<AppState>>,
     Extension(auth): Extension<AuthContext>,
+    Extension(sub): Extension<SubscriptionContext>,
     Path(bot_id): Path<Uuid>,
     Json(req): Json<UpdateBotConfigRequest>,
 ) -> Result<Json<ConfigVersion>, (StatusCode, String)> {
+    require_live_trading_permission(&sub, req.config.trading_mode)?;
+
     // Verify bot exists and user is authorized
     let _bot = get_authorized_bot(&state.db, &auth, bot_id).await?;
 

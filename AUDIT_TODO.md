@@ -270,12 +270,16 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Kline events in `process_message` now just log a debug message
     - Verified: `cargo check` clean
 
-- [ ] **R2-009 `live_trading_guard_middleware` defined but never applied**
-  - Files: `services/control-plane/src/middleware/subscription.rs`, `services/control-plane/src/main.rs`
+- [x] **R2-009 `live_trading_guard_middleware` defined but never applied**
+  - Files: `services/control-plane/src/handlers/bots.rs`
   - Planned fix:
     - Apply `live_trading_guard_middleware` to the bot update/deploy routes that can change trading mode
   - Test plan: `cargo check` on control-plane
-  - Status: pending
+  - Completion note:
+    - Added `require_live_trading_permission()` targeted check in create_bot and update_bot_config
+    - Rejects live trading mode for Free-tier users with 403, allows paper mode for all tiers
+    - Chose handler-level check over applying blunt middleware (which would block all Free requests)
+    - Verified: `cargo check` clean
 
 - [ ] **R2-010 LLM API keys stored in AsyncStorage (not SecureStore)**
   - Files: `apps/mobile/src/store/index.ts`
