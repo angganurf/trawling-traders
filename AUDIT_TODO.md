@@ -191,13 +191,16 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
 
 ## High
 
-- [ ] **R2-002 Encryption silently returns empty string on failure**
+- [x] **R2-002 Encryption silently returns empty string on failure**
   - Files: `services/control-plane/src/handlers/bots.rs`
   - Planned fix:
     - Replace `.unwrap_or_default()` on `secrets.encrypt()` with proper error propagation via `map_err`
     - Return 500 to caller instead of storing empty string
   - Test plan: `cargo check`, `cargo test` on control-plane
-  - Status: pending
+  - Completion note:
+    - Added `encrypt_secret()` helper that maps encryption errors to 500 with error logging
+    - Replaced all 6 `.unwrap_or_default()` on encrypt calls with `encrypt_secret()` + `?` propagation
+    - Verified: `cargo check` clean
 
 - [ ] **R2-003 Histogram memory leak in MetricsCollector**
   - Files: `services/control-plane/src/observability.rs`

@@ -17,8 +17,20 @@ use crate::{
     models::User,
     models::*,
     observability::{metrics, Logger},
+    secrets::SecretsManager,
     AppState,
 };
+
+/// Encrypt a secret value, returning a 500 error instead of silently falling back to empty string.
+fn encrypt_secret(secrets: &SecretsManager, value: &str) -> Result<String, (StatusCode, String)> {
+    secrets.encrypt(value).map_err(|e| {
+        error!(error = %e, "Failed to encrypt secret");
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Encryption failed".to_string(),
+        )
+    })
+}
 
 #[derive(serde::Deserialize)]
 pub struct BotNameQuery {
@@ -381,7 +393,8 @@ pub async fn create_bot(
     .bind(
         req.llm_api_key
             .as_ref()
-            .map(|k| state.secrets.encrypt(k).unwrap_or_default())
+            .map(|k| encrypt_secret(&state.secrets, k))
+            .transpose()?
             .unwrap_or_default(),
     )
     .execute(&mut *tx)
@@ -422,18 +435,21 @@ pub async fn create_bot(
     let encrypted_llm_api_key = req
         .llm_api_key
         .as_ref()
-        .map(|key| state.secrets.encrypt(key).unwrap_or_default())
+        .map(|key| encrypt_secret(&state.secrets, key))
+        .transpose()?
         .unwrap_or_default();
     let encrypted_telegram_bot_token = req
         .telegram_bot_token
         .as_ref()
         .filter(|token| !token.is_empty())
-        .map(|token| state.secrets.encrypt(token).unwrap_or_default());
+        .map(|token| encrypt_secret(&state.secrets, token))
+        .transpose()?;
     let encrypted_telegram_pairing_code = req
         .telegram_pairing_code
         .as_ref()
         .filter(|code| !code.is_empty())
-        .map(|code| state.secrets.encrypt(code).unwrap_or_default());
+        .map(|code| encrypt_secret(&state.secrets, code))
+        .transpose()?;
 
     sqlx::query(
         r#"
@@ -888,7 +904,8 @@ pub async fn update_bot_config(
         req.config
             .llm_api_key
             .as_ref()
-            .map(|k| state.secrets.encrypt(k).unwrap_or_default())
+            .map(|k| encrypt_secret(&state.secrets, k))
+            .transpose()?
             .unwrap_or_default(),
     )
     .execute(&state.db)
