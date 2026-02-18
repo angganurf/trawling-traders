@@ -2,7 +2,7 @@
 export type BotStatus = 'provisioning' | 'online' | 'offline' | 'paused' | 'error' | 'destroying';
 
 // Trading personas (drives UI complexity)
-export type Persona = 'beginner' | 'tweaker' | 'quant-lite';
+export type Persona = 'beginner' | 'tweaker' | 'quant_lite';
 
 // Algorithm modes
 export type AlgorithmMode = 'trend' | 'mean-reversion' | 'breakout';

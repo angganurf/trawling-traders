@@ -11,6 +11,7 @@ pub use data_retrieval::types::TimeFrame;
 // Trading enums defined locally
 #[derive(Debug, Clone, Copy, PartialEq, sqlx::Type, Serialize, Deserialize)]
 #[sqlx(type_name = "persona", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Persona {
     Beginner,
     Tweaker,

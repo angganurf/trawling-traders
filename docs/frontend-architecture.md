@@ -139,7 +139,7 @@ Key types:
 - `Bot` - Bot entity with status, config state, timestamps
 - `BotConfig` - Full configuration (identity, algorithm, risk, secrets)
 - `BotStatus` - 'provisioning' | 'online' | 'offline' | 'paused' | 'error' | 'destroying'
-- `Persona` - 'beginner' | 'tweaker' | 'quant-lite'
+- `Persona` - 'beginner' | 'tweaker' | 'quant_lite'
 - `AlgorithmMode` - 'trend' | 'mean-reversion' | 'breakout'
 - `BotEvent` - Events from bot (trade_opened, config_applied, error, etc.)
 - `MetricPoint` - Time-series data for charts

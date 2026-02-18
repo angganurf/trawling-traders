@@ -223,8 +223,8 @@ const FALLBACK_ASSISTANT_OPTIONS: AIAssistantOption[] = [
     isActive: true,
   },
   {
-    id: 'fallback-quant-lite',
-    assistantStyle: 'quant-lite',
+    id: 'fallback-quant_lite',
+    assistantStyle: 'quant_lite',
     captainName: 'Rocky Reef',
     personalityDescription:
       'Signal-driven and analytical. Tracks structure, validates with data, and avoids emotional overtrading during turbulence.',

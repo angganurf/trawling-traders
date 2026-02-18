@@ -26,7 +26,7 @@ type BotSettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamL
 const PERSONAS: { value: Persona; label: string; description: string }[] = [
   { value: 'beginner', label: 'Clear Guide', description: 'Friendly and plain-language explanations.' },
   { value: 'tweaker', label: 'Pro Operator', description: 'Direct and professional communication style.' },
-  { value: 'quant-lite', label: 'Quant Analyst', description: 'Technical and data-heavy communication style.' },
+  { value: 'quant_lite', label: 'Quant Analyst', description: 'Technical and data-heavy communication style.' },
 ];
 
 const ALGORITHMS: { value: AlgorithmMode; label: string; description: string }[] = [
