@@ -317,13 +317,17 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Renamed `_error` to `reason`, log it with `warn!` when status is Error
     - Verified: `cargo check` clean
 
-- [ ] **R2-013 Pyth health check makes real API call**
+- [x] **R2-013 Pyth health check makes real API call**
   - Files: `services/data-retrieval/src/sources/pyth.rs`
   - Planned fix:
     - Add `HealthTracker` struct (same pattern as CoinGecko) with atomic success/failure counters
     - Return cached health instead of making API call
   - Test plan: `cargo check` on data-retrieval
-  - Status: pending
+  - Completion note:
+    - Added `HealthTracker` with atomic counters (same pattern as CoinGecko)
+    - Instrumented `get_price()` to record success/failure + latency
+    - `health()` now returns cached stats instead of making a live BTC price call
+    - Verified: `cargo check` clean
 
 - [ ] **R2-014 `redis` v0.25.4 future incompatibility**
   - Files: `services/control-plane/Cargo.toml`, `services/data-retrieval/Cargo.toml`

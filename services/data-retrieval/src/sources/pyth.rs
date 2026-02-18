@@ -4,11 +4,62 @@ use reqwest::Client;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tracing::{debug, info};
 
 use crate::types::{
     Candle, DataRetrievalError, PriceDataSource, PricePoint, SourceHealth, TimeFrame,
 };
+
+/// Tracks API success/failure to avoid live health-check calls.
+struct HealthTracker {
+    last_success_ms: AtomicU64,
+    last_failure_ms: AtomicU64,
+    success_count: AtomicU64,
+    failure_count: AtomicU64,
+    last_latency_ms: AtomicU64,
+}
+
+impl HealthTracker {
+    fn new() -> Self {
+        Self {
+            last_success_ms: AtomicU64::new(0),
+            last_failure_ms: AtomicU64::new(0),
+            success_count: AtomicU64::new(0),
+            failure_count: AtomicU64::new(0),
+            last_latency_ms: AtomicU64::new(0),
+        }
+    }
+
+    fn record_success(&self, latency_ms: u64) {
+        let now_ms = Utc::now().timestamp_millis() as u64;
+        self.last_success_ms.store(now_ms, Ordering::Relaxed);
+        self.last_latency_ms.store(latency_ms, Ordering::Relaxed);
+        self.success_count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn record_failure(&self) {
+        let now_ms = Utc::now().timestamp_millis() as u64;
+        self.last_failure_ms.store(now_ms, Ordering::Relaxed);
+        self.failure_count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn is_healthy(&self) -> bool {
+        let last_success = self.last_success_ms.load(Ordering::Relaxed);
+        let last_failure = self.last_failure_ms.load(Ordering::Relaxed);
+        last_success > 0 && (last_failure == 0 || last_success > last_failure)
+    }
+
+    fn success_rate(&self) -> f64 {
+        let successes = self.success_count.load(Ordering::Relaxed);
+        let failures = self.failure_count.load(Ordering::Relaxed);
+        let total = successes + failures;
+        if total == 0 {
+            return 1.0;
+        }
+        successes as f64 / total as f64
+    }
+}
 
 const PYTH_HERMES_BASE: &str = "https://hermes.pyth.network/v2";
 
@@ -73,6 +124,7 @@ pub struct PriceData {
 pub struct PythClient {
     client: Client,
     base_url: String,
+    health_tracker: std::sync::Arc<HealthTracker>,
 }
 
 impl Default for PythClient {
@@ -91,6 +143,7 @@ impl PythClient {
                 .build()
                 .expect("Failed to create HTTP client"),
             base_url: PYTH_HERMES_BASE.to_string(),
+            health_tracker: std::sync::Arc::new(HealthTracker::new()),
         }
     }
 
@@ -104,12 +157,14 @@ impl PythClient {
 
         debug!("Fetching Pyth price for {} from {}", symbol, url);
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .context("Failed to send Pyth request")?;
+        let start = std::time::Instant::now();
+        let response = match self.client.get(&url).send().await {
+            Ok(r) => r,
+            Err(e) => {
+                self.health_tracker.record_failure();
+                return Err(e).context("Failed to send Pyth request");
+            }
+        };
 
         if !response.status().is_success() {
             let status = response.status();
@@ -150,6 +205,9 @@ impl PythClient {
             "Pyth price for {}: ${:.4} (confidence: ${:.4})",
             symbol, price_f64, confidence_usd
         );
+
+        self.health_tracker
+            .record_success(start.elapsed().as_millis() as u64);
 
         Ok(PricePoint {
             symbol: symbol.to_string(),
@@ -270,23 +328,19 @@ impl PriceDataSource for PythClient {
     }
 
     async fn health(&self) -> SourceHealth {
-        match PythClient::get_price(self, "BTC").await {
-            Ok(_) => SourceHealth {
-                source: "pyth".to_string(),
-                is_healthy: true,
-                last_success: Some(Utc::now()),
-                last_error: None,
-                success_rate_24h: 1.0,
-                avg_latency_ms: 0,
-            },
-            Err(e) => SourceHealth {
-                source: "pyth".to_string(),
-                is_healthy: false,
-                last_success: None,
-                last_error: Some(e.to_string()),
-                success_rate_24h: 0.0,
-                avg_latency_ms: 0,
-            },
+        let last_success_ms = self.health_tracker.last_success_ms.load(Ordering::Relaxed);
+        let last_success = if last_success_ms > 0 {
+            DateTime::from_timestamp_millis(last_success_ms as i64)
+        } else {
+            None
+        };
+        SourceHealth {
+            source: "pyth".to_string(),
+            is_healthy: self.health_tracker.is_healthy(),
+            last_success,
+            last_error: None,
+            success_rate_24h: self.health_tracker.success_rate(),
+            avg_latency_ms: self.health_tracker.last_latency_ms.load(Ordering::Relaxed),
         }
     }
 
