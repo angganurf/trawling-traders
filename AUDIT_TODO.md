@@ -368,9 +368,12 @@ Based on comprehensive full-codebase audit (2026-02-18). IDs prefixed R2- to dis
     - Reduces API key auth from 3 round-trips to 1
     - Verified: `cargo check` clean
 
-- [ ] **R2-018 `strict: false` in API client tsconfig**
-  - Files: `packages/api-client/tsconfig.json`, `packages/api-client/src/index.ts`
+- [x] **R2-018 `strict: false` in API client tsconfig**
+  - Files: `packages/api-client/tsconfig.json`
   - Planned fix:
     - Enable `strict: true` and fix resulting type errors
   - Test plan: `npm run typecheck`
-  - Status: pending
+  - Completion note:
+    - Enabled `strict: true` and removed redundant `noImplicitAny: false`
+    - Code was already strict-compatible, zero errors
+    - Verified: `tsc --noEmit` clean
